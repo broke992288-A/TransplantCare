@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, UserPlus, Download, Users, AlertTriangle, Activity, Heart } from "lucide-react";
+import { Search, UserPlus, Download, Users, AlertTriangle, Activity, Heart } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,59 +9,73 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
-const allPatients = [
-  { id: "R-2024-001", name: "Azimov Rustam", age: 45, gender: "M", organ: "Kidney", transplantDate: "2023-06-15", region: "Tashkent", center: "Republican Center", status: "Alive", riskScore: 85 },
-  { id: "R-2024-002", name: "Karimova Nilufar", age: 38, gender: "F", organ: "Liver", transplantDate: "2022-11-20", region: "Samarkand", center: "Samarkand Regional", status: "Alive", riskScore: 62 },
-  { id: "R-2024-003", name: "Toshmatov Bekzod", age: 52, gender: "M", organ: "Kidney", transplantDate: "2024-01-08", region: "Fergana", center: "Fergana Medical", status: "Alive", riskScore: 28 },
-  { id: "R-2024-004", name: "Yuldasheva Malika", age: 29, gender: "F", organ: "Liver", transplantDate: "2023-09-12", region: "Bukhara", center: "Bukhara Regional", status: "Alive", riskScore: 15 },
-  { id: "R-2024-005", name: "Rahimov Sardor", age: 61, gender: "M", organ: "Kidney", transplantDate: "2021-04-25", region: "Tashkent", center: "Republican Center", status: "Dialysis", riskScore: 78 },
-  { id: "R-2024-006", name: "Umarova Dilfuza", age: 44, gender: "F", organ: "Liver", transplantDate: "2023-03-18", region: "Navoi", center: "Navoi Medical", status: "Alive", riskScore: 45 },
-];
+interface PatientRow {
+  id: string;
+  full_name: string;
+  organ_type: string;
+  risk_level: string;
+  gender: string | null;
+  date_of_birth: string | null;
+  transplant_date: string | null;
+  created_at: string;
+  dialysis_history: boolean | null;
+  return_dialysis_date: string | null;
+}
 
 export default function Patients() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [organFilter, setOrganFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
+  const [patients, setPatients] = useState<PatientRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const filteredPatients = allPatients.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || p.status.toLowerCase() === statusFilter.toLowerCase();
-    const matchesOrgan = organFilter === "all" || p.organ.toLowerCase() === organFilter.toLowerCase();
-    return matchesSearch && matchesStatus && matchesOrgan;
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase.from("patients").select("id, full_name, organ_type, risk_level, gender, date_of_birth, transplant_date, created_at, dialysis_history, return_dialysis_date");
+      setPatients(data ?? []);
+      setLoading(false);
+    };
+    load();
+  }, [user]);
+
+  const filteredPatients = patients.filter((p) => {
+    const matchesSearch = p.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesOrgan = organFilter === "all" || p.organ_type.toLowerCase() === organFilter.toLowerCase();
+    const matchesRisk = riskFilter === "all" || p.risk_level === riskFilter;
+    return matchesSearch && matchesOrgan && matchesRisk;
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Deceased": return <Badge variant="destructive">{status}</Badge>;
-      case "Dialysis": return <Badge className="bg-warning text-warning-foreground">{status}</Badge>;
-      default: return <Badge className="bg-success text-success-foreground">{status}</Badge>;
-    }
+  const getRiskBadge = (level: string) => {
+    const cls = level === "high" ? "bg-destructive text-destructive-foreground" : level === "medium" ? "bg-warning text-warning-foreground" : "bg-success text-success-foreground";
+    return <Badge className={cls}>{level.toUpperCase()}</Badge>;
   };
 
-  const getRiskBadge = (score: number) => {
-    if (score === 0) return <span className="text-muted-foreground">—</span>;
-    if (score >= 70) return <Badge variant="destructive">{score}%</Badge>;
-    if (score >= 40) return <Badge className="bg-warning text-warning-foreground">{score}%</Badge>;
-    return <Badge className="bg-success text-success-foreground">{score}%</Badge>;
+  const getAge = (dob: string | null) => {
+    if (!dob) return "—";
+    return Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
   };
 
   const stats = {
-    total: allPatients.length,
-    alive: allPatients.filter(p => p.status === "Alive").length,
-    dialysis: allPatients.filter(p => p.status === "Dialysis").length,
-    deceased: allPatients.filter(p => p.status === "Deceased").length,
+    total: patients.length,
+    high: patients.filter(p => p.risk_level === "high").length,
+    medium: patients.filter(p => p.risk_level === "medium").length,
+    low: patients.filter(p => p.risk_level === "low").length,
   };
 
   return (
     <DashboardLayout>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Users className="w-5 h-5 text-primary" /></div><div><p className="text-2xl font-bold text-foreground">{stats.total}</p><p className="text-xs text-muted-foreground">{t("patients.total")}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><Heart className="w-5 h-5 text-success" /></div><div><p className="text-2xl font-bold text-foreground">{stats.alive}</p><p className="text-xs text-muted-foreground">{t("patients.alive")}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><Activity className="w-5 h-5 text-warning" /></div><div><p className="text-2xl font-bold text-foreground">{stats.dialysis}</p><p className="text-xs text-muted-foreground">{t("patients.onDialysis")}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div><div><p className="text-2xl font-bold text-foreground">{stats.deceased}</p><p className="text-xs text-muted-foreground">{t("patients.deceased")}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Users className="w-5 h-5 text-primary" /></div><div><p className="text-2xl font-bold text-foreground">{loading ? "—" : stats.total}</p><p className="text-xs text-muted-foreground">{t("patients.total")}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><Heart className="w-5 h-5 text-success" /></div><div><p className="text-2xl font-bold text-foreground">{loading ? "—" : stats.low}</p><p className="text-xs text-muted-foreground">Low Risk</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><Activity className="w-5 h-5 text-warning" /></div><div><p className="text-2xl font-bold text-foreground">{loading ? "—" : stats.medium}</p><p className="text-xs text-muted-foreground">Medium Risk</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div><div><p className="text-2xl font-bold text-foreground">{loading ? "—" : stats.high}</p><p className="text-xs text-muted-foreground">High Risk</p></div></div></CardContent></Card>
       </div>
 
       <Card>
@@ -69,7 +83,6 @@ export default function Patients() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <CardTitle className="text-lg font-semibold">{t("patients.recipientsList")}</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />{t("patients.export")}</Button>
               <Button size="sm" onClick={() => navigate("/add-patient")}><UserPlus className="w-4 h-4 mr-2" />{t("patients.newTransplant")}</Button>
             </div>
           </div>
@@ -84,33 +97,40 @@ export default function Patients() {
               <SelectTrigger className="w-32"><SelectValue placeholder={t("patients.organ")} /></SelectTrigger>
               <SelectContent><SelectItem value="all">{t("patients.allOrgans")}</SelectItem><SelectItem value="kidney">{t("analytics.kidney")}</SelectItem><SelectItem value="liver">{t("analytics.liver")}</SelectItem></SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32"><SelectValue placeholder={t("patients.status")} /></SelectTrigger>
-              <SelectContent><SelectItem value="all">{t("patients.allStatus")}</SelectItem><SelectItem value="alive">Alive</SelectItem><SelectItem value="dialysis">Dialysis</SelectItem><SelectItem value="deceased">Deceased</SelectItem></SelectContent>
+            <Select value={riskFilter} onValueChange={setRiskFilter}>
+              <SelectTrigger className="w-32"><SelectValue placeholder="Risk" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent>
             </Select>
           </div>
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead><TableHead>{t("patients.name")}</TableHead><TableHead>{t("patients.ageGender")}</TableHead><TableHead>{t("patients.organ")}</TableHead><TableHead>{t("patients.transplantDate")}</TableHead><TableHead>{t("patients.region")}</TableHead><TableHead>{t("patients.status")}</TableHead><TableHead>{t("patients.riskScore")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPatients.map((patient) => (
-                  <TableRow key={patient.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${patient.id}`)}>
-                    <TableCell className="font-medium text-primary">{patient.id}</TableCell>
-                    <TableCell className="font-medium">{patient.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{patient.age}/{patient.gender}</TableCell>
-                    <TableCell><Badge variant="outline">{patient.organ}</Badge></TableCell>
-                    <TableCell className="text-muted-foreground">{patient.transplantDate}</TableCell>
-                    <TableCell>{patient.region}</TableCell>
-                    <TableCell>{getStatusBadge(patient.status)}</TableCell>
-                    <TableCell>{getRiskBadge(patient.riskScore)}</TableCell>
+            {loading ? (
+              <p className="text-muted-foreground text-sm py-8 text-center">Loading...</p>
+            ) : filteredPatients.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-8 text-center">{t("dashboard.noPatients")}</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("patients.name")}</TableHead>
+                    <TableHead>{t("patients.ageGender")}</TableHead>
+                    <TableHead>{t("patients.organ")}</TableHead>
+                    <TableHead>{t("patients.transplantDate")}</TableHead>
+                    <TableHead>Risk</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredPatients.map((p) => (
+                    <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}>
+                      <TableCell className="font-medium">{p.full_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{getAge(p.date_of_birth)}/{p.gender ?? "—"}</TableCell>
+                      <TableCell><Badge variant="outline" className="capitalize">{p.organ_type}</Badge></TableCell>
+                      <TableCell className="text-muted-foreground">{p.transplant_date ?? "—"}</TableCell>
+                      <TableCell>{getRiskBadge(p.risk_level)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>
