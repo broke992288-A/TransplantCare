@@ -13,6 +13,11 @@ import PatientDetail from "./pages/PatientDetail";
 import PatientHome from "./pages/PatientHome";
 import ResetPassword from "./pages/ResetPassword";
 import Compare from "./pages/Compare";
+import Analytics from "./pages/Analytics";
+import Reports from "./pages/Reports";
+import Alerts from "./pages/Alerts";
+import Medications from "./pages/Medications";
+import Patients from "./pages/Patients";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +34,15 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; 
   return <>{children}</>;
 }
 
+function DoctorOrAdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, loading } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!role) return <Navigate to="/select-role" replace />;
+  if (!["doctor", "admin", "support"].includes(role)) return <Navigate to="/patient/home" replace />;
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -41,9 +55,14 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-role" element={<SelectRole />} />
-              <Route path="/doctor-dashboard" element={<ProtectedRoute allowedRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
-              <Route path="/add-patient" element={<ProtectedRoute allowedRole="doctor"><AddPatient /></ProtectedRoute>} />
-              <Route path="/patient/:id" element={<ProtectedRoute allowedRole="doctor"><PatientDetail /></ProtectedRoute>} />
+              <Route path="/doctor-dashboard" element={<DoctorOrAdminRoute><DoctorDashboard /></DoctorOrAdminRoute>} />
+              <Route path="/add-patient" element={<DoctorOrAdminRoute><AddPatient /></DoctorOrAdminRoute>} />
+              <Route path="/patient/:id" element={<DoctorOrAdminRoute><PatientDetail /></DoctorOrAdminRoute>} />
+              <Route path="/patients" element={<DoctorOrAdminRoute><Patients /></DoctorOrAdminRoute>} />
+              <Route path="/analytics" element={<DoctorOrAdminRoute><Analytics /></DoctorOrAdminRoute>} />
+              <Route path="/reports" element={<DoctorOrAdminRoute><Reports /></DoctorOrAdminRoute>} />
+              <Route path="/alerts" element={<DoctorOrAdminRoute><Alerts /></DoctorOrAdminRoute>} />
+              <Route path="/medications" element={<DoctorOrAdminRoute><Medications /></DoctorOrAdminRoute>} />
               <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><PatientHome /></ProtectedRoute>} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/" element={<Navigate to="/login" replace />} />
