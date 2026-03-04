@@ -1,0 +1,1 @@
+export type AppRole = "doctor" | "patient" | "support" | "admin";
