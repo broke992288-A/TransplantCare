@@ -117,6 +117,7 @@ export type Database = {
           id: string
           linked_user_id: string | null
           organ_type: string
+          phone: string | null
           rejection_type: string | null
           return_dialysis_date: string | null
           risk_level: string
@@ -135,6 +136,7 @@ export type Database = {
           id?: string
           linked_user_id?: string | null
           organ_type: string
+          phone?: string | null
           rejection_type?: string | null
           return_dialysis_date?: string | null
           risk_level?: string
@@ -153,6 +155,7 @@ export type Database = {
           id?: string
           linked_user_id?: string | null
           organ_type?: string
+          phone?: string | null
           rejection_type?: string | null
           return_dialysis_date?: string | null
           risk_level?: string

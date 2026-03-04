@@ -17,6 +17,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function Login() {
         toast({ title: t("login.resetSent"), description: t("login.resetSentDesc") });
         setIsForgot(false);
       } else if (isSignUp) {
-        await signUp(email, password, fullName);
+        await signUp(email, password, fullName, phone);
         toast({ title: t("login.accountCreated"), description: t("login.checkEmail") });
       } else {
         await signIn(email, password);
@@ -65,7 +66,10 @@ export default function Login() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && !isForgot && (
-                <div className="space-y-2"><Label htmlFor="fullName">{t("login.fullName")}</Label><Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Dr. Jane Smith" /></div>
+                <>
+                  <div className="space-y-2"><Label htmlFor="fullName">{t("login.fullName")}</Label><Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Dr. Jane Smith" /></div>
+                  <div className="space-y-2"><Label htmlFor="phone">Телефон рақами</Label><Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998901234567" /></div>
+                </>
               )}
               <div className="space-y-2"><Label htmlFor="email">{t("login.email")}</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="jane@hospital.com" /></div>
               {!isForgot && (
