@@ -39,9 +39,8 @@ export default function AddLabDialog({ patientId, organType, onLabAdded }: AddLa
         labData.proteinuria = parseFloat(form.proteinuria) || null;
         labData.potassium = parseFloat(form.potassium) || null;
       }
-      const { error } = await supabase.from("lab_results").insert(labData);
-      if (error) throw error;
-      await supabase.from("patient_events").insert({ patient_id: patientId, event_type: "lab_added", description: t("detail.labAddedEvent") });
+      await insertLabResult(labData);
+      await insertEvent({ patient_id: patientId, event_type: "lab_added", description: t("detail.labAddedEvent") });
       toast({ title: t("detail.labAdded") });
       setForm({ tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "", creatinine: "", egfr: "", proteinuria: "", potassium: "" });
       setOpen(false);
