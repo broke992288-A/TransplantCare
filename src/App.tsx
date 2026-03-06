@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import Login from "./pages/Login";
 import SelectRole from "./pages/SelectRole";
@@ -20,7 +21,16 @@ import Medications from "./pages/Medications";
 import Patients from "./pages/Patients";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,       // 2 min before refetch
+      gcTime: 1000 * 60 * 10,          // 10 min garbage collection
+      refetchOnWindowFocus: true,
+      retry: 1,
+    },
+  },
+});
 
 function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole?: string }) {
   const { user, role, loading } = useAuth();
@@ -43,6 +53,11 @@ function DoctorOrAdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RealtimeProvider({ children }: { children: React.ReactNode }) {
+  useRealtimeInvalidation();
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -51,6 +66,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <RealtimeProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -68,6 +84,7 @@ const App = () => (
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </RealtimeProvider>
           </AuthProvider>
         </BrowserRouter>
       </LanguageProvider>
