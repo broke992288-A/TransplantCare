@@ -30,6 +30,9 @@ export default function PatientDetail() {
   const { t } = useLanguage();
 
   const { patient, labs: allLabs, latestLab, events: timeline, loading, invalidateAll } = usePatientDetail(id);
+  const { data: riskSnapshots = [] } = useRiskSnapshots(id);
+  const latestRisk = riskSnapshots[0] ?? null;
+  const prevRisk = riskSnapshots[1] ?? null;
 
   const [overrideLevel, setOverrideLevel] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
