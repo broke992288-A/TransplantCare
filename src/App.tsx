@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@ta
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { ErrorBoundary } from "@/components/features/ErrorBoundary";
 import { handleError } from "@/utils/errorHandler";
