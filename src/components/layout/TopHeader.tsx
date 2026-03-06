@@ -2,7 +2,7 @@ import { Bell, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import LanguageSelector from "@/components/LanguageSelector";
+import LanguageSelector from "@/components/features/LanguageSelector";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
