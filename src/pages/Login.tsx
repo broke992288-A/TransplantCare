@@ -29,8 +29,7 @@ export default function Login() {
     setLoading(true);
     try {
       if (isForgot) {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
-        if (error) throw error;
+        await resetPasswordForEmail(email);
         toast({ title: t("login.resetSent"), description: t("login.resetSentDesc") });
         setIsForgot(false);
       } else if (isSignUp) {
