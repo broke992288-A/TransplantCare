@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import LanguageSelector from "@/components/LanguageSelector";
+import LanguageSelector from "@/components/features/LanguageSelector";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");

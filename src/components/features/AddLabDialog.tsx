@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
+import { insertLabResult } from "@/services/labService";
+import { insertEvent } from "@/services/eventService";
 
 interface AddLabDialogProps { patientId: string; organType: string; onLabAdded: () => void; }
 
@@ -38,9 +39,8 @@ export default function AddLabDialog({ patientId, organType, onLabAdded }: AddLa
         labData.proteinuria = parseFloat(form.proteinuria) || null;
         labData.potassium = parseFloat(form.potassium) || null;
       }
-      const { error } = await supabase.from("lab_results").insert(labData);
-      if (error) throw error;
-      await supabase.from("patient_events").insert({ patient_id: patientId, event_type: "lab_added", description: t("detail.labAddedEvent") });
+      await insertLabResult(labData);
+      await insertEvent({ patient_id: patientId, event_type: "lab_added", description: t("detail.labAddedEvent") });
       toast({ title: t("detail.labAdded") });
       setForm({ tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "", creatinine: "", egfr: "", proteinuria: "", potassium: "" });
       setOpen(false);
