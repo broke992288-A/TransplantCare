@@ -12,7 +12,12 @@ import { computeRiskScore, insertRiskSnapshot } from "@/services/riskSnapshotSer
 import { insertPatientAlert } from "@/services/patientAlertService";
 import { updatePatient } from "@/services/patientService";
 
-interface AddLabDialogProps { patientId: string; organType: string; onLabAdded: () => void; }
+interface AddLabDialogProps {
+  patientId: string;
+  organType: string;
+  onLabAdded: () => void;
+  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null };
+}
 
 export default function AddLabDialog({ patientId, organType, onLabAdded }: AddLabDialogProps) {
   const [open, setOpen] = useState(false);
