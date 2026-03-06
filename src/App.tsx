@@ -70,6 +70,7 @@ function DoctorOrAdminRoute({ children }: { children: React.ReactNode }) {
 
 function RealtimeProvider({ children }: { children: React.ReactNode }) {
   useRealtimeInvalidation();
+  useSessionTimeout();
   return <>{children}</>;
 }
 
