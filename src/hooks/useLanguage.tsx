@@ -908,6 +908,8 @@ const translations: Record<Language, Record<string, string>> = {
     "alerts.unread": "O'qilmagan",
     "alerts.resolved": "Hal qilingan",
     "alerts.view": "Ko'rish",
+    "alerts.noAlerts": "Ogohlantirishlar yo'q",
+    "alerts.markRead": "O'qildi",
     "alerts.criticalLabResult": "Kritik tahlil natijasi",
     "alerts.medicationStockCritical": "Dori zahirasi kritik",
     "alerts.missedCheckin": "Dori qabuli o'tkazib yuborildi",
