@@ -344,9 +344,6 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       const mergedGroups = Array.from(mergedMap.values());
 
       let totalFilled = 0;
-      let lastRiskLevel = "";
-      let lastRiskScore = 0;
-      let lastFlags: string[] = [];
 
       for (const group of mergedGroups) {
         const labData: Record<string, any> = { patient_id: patientId };
