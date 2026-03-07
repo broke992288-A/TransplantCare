@@ -407,14 +407,6 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
       }
 
-      // Update patient risk level with the latest computed risk
-      if (lastRiskLevel && organType) {
-        try {
-          await updatePatient(patientId, { risk_level: lastRiskLevel });
-        } catch (e) {
-          console.error("Failed to update patient risk level:", e);
-        }
-      }
 
       await insertEvent({ patient_id: patientId, event_type: "lab_uploaded", description: `Lab report uploaded via OCR (${mergedGroups.length} date(s))` });
       logAudit({ action: "lab_upload", entityType: "patient", entityId: patientId, metadata: { dateCount: mergedGroups.length, totalFilled } });
