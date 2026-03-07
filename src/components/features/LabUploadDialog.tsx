@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Camera, Upload, Loader2, CheckCircle2, Edit3, FileText, AlertTriangle, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { insertLabResult } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
@@ -71,16 +72,16 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
   return (
     <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
       <AlertTriangle className="h-2.5 w-2.5" />
-      {confidence}% — verify
+      {confidence}%
     </span>
   );
 }
 
-function formatDate(dateStr: string): string {
-  if (dateStr === "unknown") return "Сана аниқланмади";
+function formatDateLocalized(dateStr: string, t: (key: string) => string): string {
+  if (dateStr === "unknown") return t("upload.dateNotDetected");
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("uz-UZ", { year: "numeric", month: "long", day: "numeric" });
+    return d.toLocaleDateString();
   } catch {
     return dateStr;
   }
@@ -89,9 +90,11 @@ function formatDate(dateStr: string): string {
 function DateGroupValues({
   group,
   onValueChange,
+  t,
 }: {
   group: DateGroup;
   onValueChange: (key: string, value: string) => void;
+  t: (key: string) => string;
 }) {
   const filledCount = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "").length;
   const lowConfFields = LAB_FIELDS.filter(
@@ -103,12 +106,12 @@ function DateGroupValues({
       <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 p-3">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">{filledCount} қиймат топилди</span>
+          <span className="text-sm font-medium">{filledCount} {t("upload.valuesFound")}</span>
         </div>
         {lowConfFields.length > 0 && (
           <span className="flex items-center gap-1 text-xs font-medium text-destructive">
             <AlertTriangle className="h-3.5 w-3.5" />
-            {lowConfFields.length} текшириш керак
+            {lowConfFields.length} {t("upload.needsVerification")}
           </span>
         )}
       </div>
@@ -116,7 +119,7 @@ function DateGroupValues({
       {lowConfFields.length > 0 && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
           <p className="text-xs font-medium text-destructive mb-1">
-            ⚠ Паст ишончлилик — текширинг:
+            ⚠ {t("upload.lowConfidence")}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {lowConfFields.map((f) => (
@@ -155,7 +158,7 @@ function DateGroupValues({
               </Label>
               {origText && origText !== group.values[field.key] && (
                 <p className="text-[10px] text-muted-foreground truncate" title={origText}>
-                  Original: "{origText}"
+                  {t("upload.original")}: "{origText}"
                 </p>
               )}
               <Input
@@ -185,6 +188,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const reset = () => {
     setStep("upload");
@@ -218,7 +222,6 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
       if (ocrErr) throw ocrErr;
       if (ocrData?.error) throw new Error(ocrData.error);
 
-      // Handle multi-date response
       let groups: DateGroup[] = [];
 
       if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
@@ -236,7 +239,6 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
           };
         });
       } else {
-        // Legacy single-date fallback
         const extracted = ocrData?.data ?? {};
         const values: Record<string, string> = {};
         for (const field of LAB_FIELDS) {
@@ -262,23 +264,22 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
 
       if (totalLowConf > 0) {
         toast({
-          title: `${totalLowConf} та қиймат текширишни талаб қилади`,
-          description: "Паст ишончлиликдаги қийматлар ажратиб кўрсатилган.",
+          title: `${totalLowConf} ${t("upload.verifyValues")}`,
+          description: t("upload.lowConfidenceDesc"),
           variant: "destructive",
         });
       }
 
       if (groups.length > 1) {
         toast({
-          title: `${groups.length} та сана аниқланди`,
-          description: "Ҳар бир сана учун натижалар алоҳида сақланади.",
+          title: `${groups.length} ${t("upload.datesDetected")}`,
         });
       }
 
       setStep("confirm");
     } catch (err: any) {
       console.error("Upload/OCR error:", err);
-      toast({ title: "Хатолик", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
       setStep("upload");
     }
   };
@@ -313,7 +314,6 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
         const labData: Record<string, any> = { patient_id: patientId };
         if (reportUrl) labData.report_file_url = reportUrl;
 
-        // Set recorded_at based on detected date
         if (group.date && group.date !== "unknown") {
           labData.recorded_at = new Date(group.date).toISOString();
         }
@@ -325,7 +325,6 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
           if (!isNaN(v)) filledCount++;
         }
 
-        // Only save if at least one value is filled
         if (filledCount > 0) {
           await insertLabResult(labData as Record<string, any> & { patient_id: string });
           totalFilled += filledCount;
@@ -335,43 +334,38 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
       await insertEvent({ patient_id: patientId, event_type: "lab_uploaded", description: `Lab report uploaded via OCR (${dateGroups.length} date(s))` });
       logAudit({ action: "lab_upload", entityType: "patient", entityId: patientId, metadata: { dateCount: dateGroups.length, totalFilled } });
       
-      toast({ title: `${dateGroups.length} та сана учун натижалар сақланди` });
+      toast({ title: `${dateGroups.length} ${t("upload.resultsSaved")}` });
       reset();
       setOpen(false);
       onLabAdded();
     } catch (err: any) {
-      toast({ title: "Хатолик", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
-  const totalFilled = dateGroups.reduce(
-    (sum, g) => sum + LAB_FIELDS.filter((f) => g.values[f.key] && g.values[f.key] !== "").length,
-    0
-  );
-
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2">
-          <Upload className="h-4 w-4" /> Upload Lab Report
+          <Upload className="h-4 w-4" /> {t("upload.title")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            {step === "upload" && "Лаборатория ҳисоботини юклаш"}
-            {step === "processing" && "Ҳисобот қайта ишланмоқда..."}
-            {step === "confirm" && "Натижаларни тасдиқланг"}
+            {step === "upload" && t("upload.uploadTitle")}
+            {step === "processing" && t("upload.processing")}
+            {step === "confirm" && t("upload.confirm")}
           </DialogTitle>
         </DialogHeader>
 
         {step === "upload" && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Лаб ҳисоботингизнинг расми ёки файлини юкланг. Бир файлда бир нечта санадаги натижалар бўлса, ҳар бири алоҳида сақланади.
+              {t("upload.description")}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Button
@@ -380,7 +374,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                 onClick={() => cameraRef.current?.click()}
               >
                 <Camera className="h-8 w-8 text-primary" />
-                <span className="font-medium">Расм олиш</span>
+                <span className="font-medium">{t("upload.takePhoto")}</span>
               </Button>
               <Button
                 variant="outline"
@@ -388,7 +382,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                 onClick={() => fileRef.current?.click()}
               >
                 <Upload className="h-8 w-8 text-primary" />
-                <span className="font-medium">Файл юклаш</span>
+                <span className="font-medium">{t("upload.uploadFile")}</span>
               </Button>
             </div>
             <input ref={cameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleFileChange} />
@@ -399,19 +393,18 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
         {step === "processing" && (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-muted-foreground">AI ёрдамида лаб қийматлари ажратилмоқда...</p>
-            <p className="text-xs text-muted-foreground">Саналар, макет ва тест номлари аниқланмоқда</p>
+            <p className="text-muted-foreground">{t("upload.aiProcessing")}</p>
+            <p className="text-xs text-muted-foreground">{t("upload.detectingDates")}</p>
           </div>
         )}
 
         {step === "confirm" && (
           <div className="space-y-4">
-            {/* Multi-date summary */}
             {dateGroups.length > 1 && (
               <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <Calendar className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">
-                  {dateGroups.length} та алоҳида сана аниқланди — ҳар бири алоҳида лаб натижаси сифатида сақланади
+                  {dateGroups.length} {t("upload.datesDetected")}
                 </span>
               </div>
             )}
@@ -424,7 +417,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                     return (
                       <TabsTrigger key={i} value={String(i)} className="gap-1.5 text-xs">
                         <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(group.date)}
+                        {formatDateLocalized(group.date, t)}
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {filled}
                         </Badge>
@@ -435,7 +428,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                 {dateGroups.map((group, i) => (
                   <TabsContent key={i} value={String(i)} className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">Сана:</Label>
+                      <Label className="text-xs text-muted-foreground">{t("upload.dateLabel")}</Label>
                       <Input
                         type="date"
                         value={group.date === "unknown" ? "" : group.date}
@@ -444,13 +437,14 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                       />
                       {group.date === "unknown" && (
                         <span className="text-xs text-destructive flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Санани қўлда киритинг
+                          <AlertTriangle className="h-3 w-3" /> {t("upload.enterDateManually")}
                         </span>
                       )}
                     </div>
                     <DateGroupValues
                       group={group}
                       onValueChange={(key, value) => updateGroupValue(i, key, value)}
+                      t={t}
                     />
                   </TabsContent>
                 ))}
@@ -460,7 +454,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                 {dateGroups[0]?.date !== "unknown" && (
                   <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                     <Calendar className="h-4 w-4 text-primary" />
-                    <span className="text-sm">Сана: {formatDate(dateGroups[0]?.date)}</span>
+                    <span className="text-sm">{t("upload.dateLabel")} {formatDateLocalized(dateGroups[0]?.date, t)}</span>
                     <Input
                       type="date"
                       value={dateGroups[0]?.date === "unknown" ? "" : dateGroups[0]?.date}
@@ -472,7 +466,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                 {dateGroups[0]?.date === "unknown" && (
                   <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
                     <AlertTriangle className="h-4 w-4 text-destructive" />
-                    <span className="text-sm text-destructive">Сана аниқланмади — қўлда киритинг:</span>
+                    <span className="text-sm text-destructive">{t("upload.dateNotDetectedDesc")}</span>
                     <Input
                       type="date"
                       value=""
@@ -485,6 +479,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
                   <DateGroupValues
                     group={dateGroups[0]}
                     onValueChange={(key, value) => updateGroupValue(0, key, value)}
+                    t={t}
                   />
                 )}
               </>
@@ -494,11 +489,11 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
               <Button onClick={handleConfirm} disabled={saving} className="flex-1 gap-2">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {dateGroups.length > 1
-                  ? `${dateGroups.length} та натижани сақлаш`
-                  : "Натижаларни тасдиқлаш"}
+                  ? `${dateGroups.length} ${t("upload.saveResults")}`
+                  : t("upload.confirmResults")}
               </Button>
               <Button variant="outline" onClick={() => setStep("upload")} className="gap-2">
-                <Edit3 className="h-4 w-4" /> Қайта юклаш
+                <Edit3 className="h-4 w-4" /> {t("upload.reupload")}
               </Button>
             </div>
           </div>

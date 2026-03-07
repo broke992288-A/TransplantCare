@@ -34,7 +34,7 @@ export default function PatientProfile() {
     queryClient.invalidateQueries({ queryKey: ["risk-snapshots", patient?.id] });
   };
 
-  if (isLoading) return <DashboardLayout><div className="flex items-center justify-center py-20 text-muted-foreground">Loading...</div></DashboardLayout>;
+  if (isLoading) return <DashboardLayout><div className="flex items-center justify-center py-20 text-muted-foreground">{t("common.loading")}</div></DashboardLayout>;
   if (!patient) return (
     <DashboardLayout>
       <Card className="max-w-md mx-auto mt-12">
@@ -58,7 +58,7 @@ export default function PatientProfile() {
               <h1 className="text-xl font-bold">{patient.full_name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <Badge className={riskColorClass(patient.risk_level)}>{patient.risk_level.toUpperCase()}</Badge>
-                <span className="text-sm text-muted-foreground capitalize">{patient.organ_type} transplant</span>
+                <span className="text-sm text-muted-foreground capitalize">{patient.organ_type} {t("profile.transplant").toLowerCase()}</span>
               </div>
             </div>
           </div>
@@ -69,39 +69,39 @@ export default function PatientProfile() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
-              <User className="h-3.5 w-3.5" /> Overview
+              <User className="h-3.5 w-3.5" /> {t("profile.overview")}
             </TabsTrigger>
             <TabsTrigger value="results" className="gap-1.5 text-xs sm:text-sm">
-              <FlaskConical className="h-3.5 w-3.5" /> Lab Results
+              <FlaskConical className="h-3.5 w-3.5" /> {t("profile.labResults")}
             </TabsTrigger>
             <TabsTrigger value="trends" className="gap-1.5 text-xs sm:text-sm">
-              <TrendingUp className="h-3.5 w-3.5" /> Trends
+              <TrendingUp className="h-3.5 w-3.5" /> {t("profile.trends")}
             </TabsTrigger>
             <TabsTrigger value="risk" className="gap-1.5 text-xs sm:text-sm">
-              <Shield className="h-3.5 w-3.5" /> Risk
+              <Shield className="h-3.5 w-3.5" /> {t("profile.risk")}
             </TabsTrigger>
             <TabsTrigger value="timeline" className="gap-1.5 text-xs sm:text-sm">
-              <Clock className="h-3.5 w-3.5" /> Timeline
+              <Clock className="h-3.5 w-3.5" /> {t("profile.timeline")}
             </TabsTrigger>
           </TabsList>
 
           {/* Overview */}
           <TabsContent value="overview" className="space-y-4">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Patient Information</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{t("profile.patientInfo")}</CardTitle></CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
-                <InfoRow label="Full Name" value={patient.full_name} />
-                <InfoRow label="Organ Type" value={patient.organ_type} />
-                <InfoRow label="Gender" value={patient.gender ?? "—"} />
-                <InfoRow label="Date of Birth" value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : "—"} />
-                {patient.phone && <InfoRow label="Phone" value={patient.phone} icon={<Phone className="h-3 w-3" />} />}
-                {patient.transplant_date && <InfoRow label="Transplant Date" value={new Date(patient.transplant_date).toLocaleDateString()} icon={<Calendar className="h-3 w-3" />} />}
+                <InfoRow label={t("profile.fullName")} value={patient.full_name} />
+                <InfoRow label={t("profile.organType")} value={patient.organ_type} />
+                <InfoRow label={t("profile.gender")} value={patient.gender ?? "—"} />
+                <InfoRow label={t("profile.dob")} value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : "—"} />
+                {patient.phone && <InfoRow label={t("common.phone")} value={patient.phone} icon={<Phone className="h-3 w-3" />} />}
+                {patient.transplant_date && <InfoRow label={t("profile.transplantDate")} value={new Date(patient.transplant_date).toLocaleDateString()} icon={<Calendar className="h-3 w-3" />} />}
               </CardContent>
             </Card>
             <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
             {patient.risk_level === "high" && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
-                ⚠️ Your risk level is elevated. Please consult your doctor as soon as possible.
+                {t("profile.highRiskWarning")}
               </div>
             )}
           </TabsContent>
@@ -125,10 +125,10 @@ export default function PatientProfile() {
           {/* Timeline */}
           <TabsContent value="timeline">
             <Card>
-              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> Care Timeline</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> {t("profile.careTimeline")}</CardTitle></CardHeader>
               <CardContent>
                 {timeline.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No events recorded</p>
+                  <p className="text-muted-foreground text-sm">{t("profile.noEvents")}</p>
                 ) : (
                   <div className="space-y-3">
                     {timeline.map((ev) => (

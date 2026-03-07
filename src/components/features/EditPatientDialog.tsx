@@ -36,7 +36,7 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
 
   const handleSave = async () => {
     if (!fullName.trim()) {
-      toast({ title: t("add.fillRequired") || "Исмни киритинг", variant: "destructive" });
+      toast({ title: t("edit.enterName"), variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -54,11 +54,11 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
         rejection_type: rejectionType || null,
         biopsy_result: biopsyResult || null,
       });
-      toast({ title: t("detail.patientUpdated") || "Бемор маълумотлари сақланди" });
+      toast({ title: t("edit.patientUpdated") });
       setOpen(false);
       onUpdated();
     } catch (err: any) {
-      toast({ title: "Хатолик юз берди", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -80,93 +80,93 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
       setOpen(v);
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm"><Pencil className="h-4 w-4 mr-1" />{t("common.edit") || "Таҳрирлаш"}</Button>
+        <Button variant="outline" size="sm"><Pencil className="h-4 w-4 mr-1" />{t("common.edit")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("detail.editPatient") || "Бемор маълумотларини таҳрирлаш"}</DialogTitle>
+          <DialogTitle>{t("edit.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
-            <Label>{t("add.fullName") || "Тўлиқ исм"}</Label>
+            <Label>{t("add.fullName")}</Label>
             <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>{t("add.gender") || "Жинси"}</Label>
+              <Label>{t("add.gender")}</Label>
               <Select value={gender} onValueChange={setGender}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">{t("add.male") || "Эркак"}</SelectItem>
-                  <SelectItem value="female">{t("add.female") || "Аёл"}</SelectItem>
+                  <SelectItem value="male">{t("add.male")}</SelectItem>
+                  <SelectItem value="female">{t("add.female")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>{t("add.organ") || "Орган"}</Label>
+              <Label>{t("home.organ")}</Label>
               <Select value={organType} onValueChange={setOrganType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="kidney">{t("analytics.kidney") || "Буйрак"}</SelectItem>
-                  <SelectItem value="liver">{t("analytics.liver") || "Жигар"}</SelectItem>
+                  <SelectItem value="kidney">{t("analytics.kidney")}</SelectItem>
+                  <SelectItem value="liver">{t("analytics.liver")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label>{t("detail.dob") || "Туғилган сана"}</Label>
+            <Label>{t("detail.dob")}</Label>
             <DateInputSeparate value={dateOfBirth} onChange={setDateOfBirth} />
           </div>
 
           <div>
-            <Label>{t("add.phone") || "Телефон"}</Label>
+            <Label>{t("common.phone")}</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998..." />
           </div>
 
           <div>
-            <Label>{t("add.transplantDate") || "Трансплантация санаси"}</Label>
+            <Label>{t("add.transplantDate")}</Label>
             <DateInputSeparate value={transplantDate} onChange={setTransplantDate} />
           </div>
 
           <div>
-            <Label>{t("add.transplantNumber") || "Трансплантация рақами"}</Label>
+            <Label>{t("add.transplantNumber")}</Label>
             <Input type="number" min="1" value={transplantNumber} onChange={(e) => setTransplantNumber(e.target.value)} />
           </div>
 
           <div className="flex items-center gap-3">
             <Switch checked={dialysisHistory} onCheckedChange={setDialysisHistory} />
-            <Label>{t("add.dialysisHistory") || "Диализ тарихи"}</Label>
+            <Label>{t("add.dialysisHistory")}</Label>
           </div>
 
           {dialysisHistory && (
             <div>
-              <Label>{t("add.returnDialysisDate") || "Диализга қайтган сана"}</Label>
+              <Label>{t("add.returnDialysisDate")}</Label>
               <DateInputSeparate value={returnDialysisDate} onChange={setReturnDialysisDate} />
             </div>
           )}
 
           <div>
-            <Label>{t("add.rejectionType") || "Рад этиш тури"}</Label>
+            <Label>{t("add.rejectionType")}</Label>
             <Select value={rejectionType} onValueChange={setRejectionType}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{t("add.none") || "Йўқ"}</SelectItem>
-                <SelectItem value="acute">{t("add.acute") || "Ўткир"}</SelectItem>
-                <SelectItem value="chronic">{t("add.chronic") || "Сурункали"}</SelectItem>
+                <SelectItem value="none">{t("edit.none")}</SelectItem>
+                <SelectItem value="acute">{t("edit.acute")}</SelectItem>
+                <SelectItem value="chronic">{t("edit.chronic")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label>{t("add.biopsyResult") || "Биопсия натижаси"}</Label>
+            <Label>{t("add.biopsyResult")}</Label>
             <Input value={biopsyResult} onChange={(e) => setBiopsyResult(e.target.value)} />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel") || "Бекор қилиш"}</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "..." : (t("common.save") || "Сақлаш")}</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? "..." : t("common.save")}</Button>
           </div>
         </div>
       </DialogContent>

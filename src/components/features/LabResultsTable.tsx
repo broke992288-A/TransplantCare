@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/hooks/useLanguage";
 import type { LabResult } from "@/types/patient";
 
 const REFERENCE_RANGES: Record<string, { min: number; max: number; unit: string; label: string }> = {
@@ -34,16 +35,16 @@ const REFERENCE_RANGES: Record<string, { min: number; max: number; unit: string;
   proteinuria: { min: 0, max: 150, unit: "mg/dL", label: "Proteinuria" },
 };
 
-function getStatus(key: string, value: number): { label: string; color: string } {
+function getStatus(key: string, value: number, t: (k: string) => string): { label: string; color: string } {
   const ref = REFERENCE_RANGES[key];
   if (!ref) return { label: "—", color: "" };
   
   const lowBorder = ref.min * 0.9;
   const highBorder = ref.max * 1.1;
   
-  if (value >= ref.min && value <= ref.max) return { label: "Normal", color: "bg-green-500/15 text-green-700 border-green-200" };
-  if (value < lowBorder || value > highBorder) return { label: "High", color: "bg-red-500/15 text-red-700 border-red-200" };
-  return { label: "Borderline", color: "bg-yellow-500/15 text-yellow-700 border-yellow-200" };
+  if (value >= ref.min && value <= ref.max) return { label: t("lab.normal"), color: "bg-green-500/15 text-green-700 border-green-200" };
+  if (value < lowBorder || value > highBorder) return { label: t("lab.high"), color: "bg-red-500/15 text-red-700 border-red-200" };
+  return { label: t("lab.borderline"), color: "bg-yellow-500/15 text-yellow-700 border-yellow-200" };
 }
 
 interface Props {
@@ -51,7 +52,9 @@ interface Props {
 }
 
 export default function LabResultsTable({ labs }: Props) {
-  if (labs.length === 0) return <p className="text-muted-foreground text-sm py-4">No lab results available</p>;
+  const { t } = useLanguage();
+
+  if (labs.length === 0) return <p className="text-muted-foreground text-sm py-4">{t("lab.noResults")}</p>;
 
   return (
     <div className="space-y-6">
@@ -60,7 +63,7 @@ export default function LabResultsTable({ labs }: Props) {
           .map(([key, ref]) => {
             const val = (lab as any)[key];
             if (val == null) return null;
-            const status = getStatus(key, val);
+            const status = getStatus(key, val, t);
             return { key, label: ref.label, value: val, unit: ref.unit, range: `${ref.min}–${ref.max}`, status };
           })
           .filter(Boolean) as Array<{ key: string; label: string; value: number; unit: string; range: string; status: { label: string; color: string } }>;
@@ -71,16 +74,16 @@ export default function LabResultsTable({ labs }: Props) {
           <div key={lab.id} className="rounded-xl border overflow-hidden">
             <div className="bg-muted/50 px-4 py-2.5 flex items-center justify-between">
               <span className="text-sm font-semibold">{new Date(lab.recorded_at).toLocaleDateString()}</span>
-              <span className="text-xs text-muted-foreground">{entries.length} tests</span>
+              <span className="text-xs text-muted-foreground">{entries.length} {t("common.tests")}</span>
             </div>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[180px]">Test Name</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
-                  <TableHead className="text-right">Unit</TableHead>
-                  <TableHead className="text-right">Reference</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="w-[180px]">{t("lab.testName")}</TableHead>
+                  <TableHead className="text-right">{t("lab.value")}</TableHead>
+                  <TableHead className="text-right">{t("lab.unit")}</TableHead>
+                  <TableHead className="text-right">{t("lab.reference")}</TableHead>
+                  <TableHead className="text-center">{t("lab.status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

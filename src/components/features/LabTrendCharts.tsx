@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { useLanguage } from "@/hooks/useLanguage";
 import type { LabResult } from "@/types/patient";
 import { REFERENCE_RANGES } from "./LabResultsTable";
 
@@ -18,11 +19,12 @@ interface Props {
 }
 
 export default function LabTrendCharts({ labs }: Props) {
+  const { t } = useLanguage();
   const sortedLabs = [...labs].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
 
   const charts = CHART_MARKERS.filter((m) => sortedLabs.some((l) => (l as any)[m.key] != null));
 
-  if (charts.length === 0) return <p className="text-muted-foreground text-sm">No trend data available</p>;
+  if (charts.length === 0) return <p className="text-muted-foreground text-sm">{t("lab.noTrendData")}</p>;
 
   return (
     <div className="grid gap-4 md:grid-cols-2">

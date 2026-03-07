@@ -32,10 +32,10 @@ export default function PatientHome() {
                 <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.name")}</span><span className="font-medium">{patient.full_name}</span></div>
                 <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.organ")}</span><span className="capitalize font-medium">{patient.organ_type}</span></div>
                 {patient.phone && (
-                  <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />Телефон</span><span className="font-medium">{patient.phone}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{t("common.phone")}</span><span className="font-medium">{patient.phone}</span></div>
                 )}
                 {patient.transplant_date && (
-                  <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />Трансплантация</span><span className="font-medium">{new Date(patient.transplant_date).toLocaleDateString()}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />{t("profile.transplant")}</span><span className="font-medium">{new Date(patient.transplant_date).toLocaleDateString()}</span></div>
                 )}
                 <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.riskLevel")}</span><Badge className={riskColorClass(patient.risk_level)}>{patient.risk_level.toUpperCase()}</Badge></div>
                 {patient.risk_level === "high" && (
@@ -46,7 +46,7 @@ export default function PatientHome() {
 
             {latestLab && (
               <Card>
-                <CardHeader className="flex flex-row items-center gap-2"><FlaskConical className="h-5 w-5 text-primary" /><CardTitle className="text-lg">Охирги таҳлиллар</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center gap-2"><FlaskConical className="h-5 w-5 text-primary" /><CardTitle className="text-lg">{t("lab.latestLabs")}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {patient.organ_type === "liver" ? (
@@ -66,21 +66,21 @@ export default function PatientHome() {
                       </>
                     )}
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground">Сана: {new Date(latestLab.recorded_at).toLocaleDateString()}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{t("common.date")}: {new Date(latestLab.recorded_at).toLocaleDateString()}</p>
                 </CardContent>
               </Card>
             )}
 
             {allLabs.length > 1 && (
               <Card>
-                <CardHeader><CardTitle className="text-lg">Таҳлиллар тарихи</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">{t("lab.labHistory")}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {allLabs.map((lab, i) => (
                       <div key={lab.id} className={`rounded-lg border p-3 ${i === 0 ? "border-primary/30 bg-primary/5" : ""}`}>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium">{new Date(lab.recorded_at).toLocaleDateString()}</span>
-                          {i === 0 && <Badge variant="outline" className="text-xs">Охирги</Badge>}
+                          {i === 0 && <Badge variant="outline" className="text-xs">{t("lab.latest")}</Badge>}
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           {patient.organ_type === "liver" ? (

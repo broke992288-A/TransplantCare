@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Activity, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 import { riskColorClass } from "@/utils/risk";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
 
@@ -11,10 +12,12 @@ interface RiskScoreCardProps {
 }
 
 export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskScoreCardProps) {
+  const { t } = useLanguage();
+
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">Ҳисоблаш...</CardContent>
+        <CardContent className="py-8 text-center text-muted-foreground">{t("risk.calculating")}</CardContent>
       </Card>
     );
   }
@@ -25,11 +28,11 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            Хавф баҳоси
+            {t("risk.score")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">Таҳлил натижалари киритилмаган</p>
+          <p className="text-muted-foreground text-sm">{t("risk.noLabData")}</p>
         </CardContent>
       </Card>
     );
@@ -47,7 +50,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
-          Хавф баҳоси
+          {t("risk.score")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -66,7 +69,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
 
         {flags.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Хавф омиллари:</p>
+            <p className="text-xs font-medium text-muted-foreground">{t("risk.factors")}</p>
             <ul className="text-sm space-y-1">
               {flags.map((f, i) => (
                 <li key={i} className="flex items-center gap-2">
@@ -79,7 +82,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
         )}
 
         <p className="text-xs text-muted-foreground">
-          Сана: {new Date(snapshot.created_at).toLocaleDateString()}
+          {t("common.date")}: {new Date(snapshot.created_at).toLocaleDateString()}
         </p>
       </CardContent>
     </Card>

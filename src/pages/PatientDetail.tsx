@@ -35,7 +35,6 @@ export default function PatientDetail() {
   const latestRisk = riskSnapshots[0] ?? null;
   const prevRisk = riskSnapshots[1] ?? null;
 
-  // Audit: doctor viewing patient
   useEffect(() => {
     if (id) logAudit({ action: "doctor_view_patient", entityType: "patient", entityId: id });
   }, [id]);
@@ -62,7 +61,7 @@ export default function PatientDetail() {
   };
 
   if (loading) return <DashboardLayout><div className="flex items-center justify-center py-20 text-muted-foreground">{t("common.loading")}</div></DashboardLayout>;
-  if (!patient) return <DashboardLayout><div className="flex items-center justify-center py-20 text-muted-foreground">Patient not found</div></DashboardLayout>;
+  if (!patient) return <DashboardLayout><div className="flex items-center justify-center py-20 text-muted-foreground">{t("detail.patientNotFound")}</div></DashboardLayout>;
 
   return (
     <DashboardLayout>
@@ -77,24 +76,24 @@ export default function PatientDetail() {
             <EditPatientDialog patient={patient} onUpdated={invalidateAll} />
             <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-1" />{t("common.delete") || "Ўчириш"}</Button>
+              <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-1" />{t("common.delete")}</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t("detail.confirmDelete") || "Беморни ўчириш"}</AlertDialogTitle>
-                <AlertDialogDescription>{t("detail.confirmDeleteDesc") || "Ҳақиқатан ҳам бу беморни ўчирмоқчимисиз? Бу амални қайтариб бўлмайди."}</AlertDialogDescription>
+                <AlertDialogTitle>{t("detail.confirmDelete")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("detail.confirmDeleteDesc")}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{t("common.cancel") || "Бекор қилиш"}</AlertDialogCancel>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
                   try {
                     await deletePatient(patient.id);
-                    toast({ title: t("detail.patientDeleted") || "Бемор ўчирилди" });
+                    toast({ title: t("detail.patientDeleted") });
                     navigate("/patients");
                   } catch (err: any) {
-                    toast({ title: "Хатолик", description: err.message, variant: "destructive" });
+                    toast({ title: t("common.error"), description: err.message, variant: "destructive" });
                   }
-                }}>{t("common.delete") || "Ўчириш"}</AlertDialogAction>
+                }}>{t("common.delete")}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

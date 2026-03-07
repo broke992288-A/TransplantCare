@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, CheckCheck } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 import { usePatientAlerts, useInvalidatePatientAlerts } from "@/hooks/usePatientAlerts";
 import { markAlertRead, markAllAlertsRead } from "@/services/patientAlertService";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,7 @@ const severityClass: Record<string, string> = {
 };
 
 export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps) {
+  const { t } = useLanguage();
   const { data: alerts = [], isLoading } = usePatientAlerts(patientId);
   const invalidate = useInvalidatePatientAlerts();
   const { toast } = useToast();
@@ -28,7 +30,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
       await markAllAlertsRead(patientId);
       invalidate(patientId);
     } catch (err: any) {
-      toast({ title: "Хатолик", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -49,14 +51,14 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bell className="h-5 w-5 text-destructive" />
-          Огоҳлантиришлар
+          {t("patientAlerts.title")}
           {unread.length > 0 && (
             <Badge variant="destructive" className="ml-1">{unread.length}</Badge>
           )}
         </CardTitle>
         {unread.length > 0 && (
           <Button variant="ghost" size="sm" onClick={handleMarkAll}>
-            <CheckCheck className="h-4 w-4 mr-1" /> Барчасини ўқилди
+            <CheckCheck className="h-4 w-4 mr-1" /> {t("patientAlerts.markAllRead")}
           </Button>
         )}
       </CardHeader>
