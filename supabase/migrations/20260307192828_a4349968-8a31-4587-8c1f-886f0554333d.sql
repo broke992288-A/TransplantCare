@@ -1,0 +1,1 @@
+DELETE FROM lab_results WHERE id IN ('15758b16-5aa8-4920-8580-5e2891944bdf', 'aa5f576a-0d3f-4ac1-bc47-debac26fbe28', '4cb56df9-fc96-42a7-b884-72a8d4243fe2')
