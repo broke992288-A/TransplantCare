@@ -97,8 +97,8 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
       const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, file);
       if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage.from("lab_reports").getPublicUrl(path);
-      setReportUrl(urlData.publicUrl);
+      const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24 * 365);
+      setReportUrl(urlData?.signedUrl ?? null);
 
       const arrayBuffer = await file.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
