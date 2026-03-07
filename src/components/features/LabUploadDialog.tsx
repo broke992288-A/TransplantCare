@@ -96,18 +96,19 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      // Preprocess image: auto-crop, denoise, contrast, sharpen
+      const { base64, file: processedFile, fileType } = await preprocessLabImage(file);
+
+      // Upload the processed file to storage
+      const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, file);
+      const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, processedFile);
       if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24 * 365);
+      const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
       setReportUrl(urlData?.signedUrl ?? null);
 
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      const fileType = ext === "pdf" ? "pdf" : ext === "png" ? "png" : "jpeg";
-
+      // Send preprocessed image to OCR
       const { data: ocrData, error: ocrErr } = await supabase.functions.invoke("ocr-lab-report", {
         body: { imageBase64: base64, fileType },
       });
@@ -136,7 +137,7 @@ export default function LabUploadDialog({ patientId, onLabAdded }: Props) {
       if (lowConfCount > 0) {
         toast({
           title: `${lowConfCount} value(s) need verification`,
-          description: "Values with low OCR confidence are highlighted in orange. Please review them.",
+          description: "Values with low OCR confidence are highlighted. Please review them.",
           variant: "destructive",
         });
       }
