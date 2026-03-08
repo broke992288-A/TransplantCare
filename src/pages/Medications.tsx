@@ -91,9 +91,9 @@ export default function Medications() {
                   <TableRow>
                     <TableHead>{t("medications.medication")}</TableHead>
                     <TableHead className="text-right">{t("dashboard.totalPatients")}</TableHead>
-                    <TableHead className="text-right">{t("medications.activeLabel") || "Faol"}</TableHead>
-                    <TableHead>{t("medications.dosages") || "Dozalar"}</TableHead>
-                    <TableHead>{t("medications.frequency") || "Chastota"}</TableHead>
+                     <TableHead className="text-right">{t("medications.activeLabel")}</TableHead>
+                     <TableHead>{t("medications.dosages")}</TableHead>
+                     <TableHead>{t("medications.frequency")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
