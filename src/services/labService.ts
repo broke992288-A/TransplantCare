@@ -31,7 +31,7 @@ export async function fetchLabsByPatientId(patientId: string, limit?: number) {
 export async function insertLabResult(labData: Record<string, any>) {
   const { data, error } = await supabase
     .from("lab_results")
-    .insert(labData)
+    .insert([labData])
     .select()
     .single();
 
