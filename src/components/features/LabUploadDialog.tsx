@@ -361,7 +361,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         if (filledCount > 0) {
-          const savedLab = await insertLabResult(labData as Record<string, any> & { patient_id: string });
+          const savedLab = await upsertLabResult(labData as Record<string, any> & { patient_id: string });
           totalFilled += filledCount;
 
           // --- Compute risk score for each saved lab ---
