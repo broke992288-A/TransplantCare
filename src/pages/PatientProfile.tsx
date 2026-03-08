@@ -14,6 +14,7 @@ import LabResultsTable from "@/components/features/LabResultsTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
+import { usePatientMedications } from "@/hooks/useMedications";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PatientProfile() {
