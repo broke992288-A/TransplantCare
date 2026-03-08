@@ -138,7 +138,7 @@ export default function Analytics() {
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
                   <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
                   <Line type="monotone" dataKey="kidney" name={t("analytics.kidney")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
-                  <Line type="monotone" dataKey="liver" name={t("analytics.liver")} stroke="hsl(var(--secondary))" strokeWidth={2} dot={{ fill: "hsl(var(--secondary))" }} />
+                  <Line type="monotone" dataKey="liver" name={t("analytics.liver")} stroke="hsl(var(--liver))" strokeWidth={2} dot={{ fill: "hsl(var(--liver))" }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
