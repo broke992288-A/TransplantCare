@@ -195,7 +195,9 @@ export default function Reports() {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold">{t("reports.availableReports")}</CardTitle>
-            <Button variant="outline" size="sm"><Calendar className="w-4 h-4 mr-2" />{t("reports.generateNew")}</Button>
+            <Button variant="outline" size="sm" onClick={handleGenerateNew} disabled={generating === -1}>
+              {generating === -1 ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Calendar className="w-4 h-4 mr-2" />}{t("reports.generateNew")}
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
