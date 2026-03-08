@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +26,14 @@ export default function PatientProfile() {
   const { data: riskSnapshots = [] } = useRiskSnapshots(patient?.id);
   const { data: medications = [] } = usePatientMedications(patient?.id);
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState("overview");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "overview";
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t) setTab(t);
+  }, [searchParams]);
 
   const latestRisk = riskSnapshots[0] ?? null;
   const prevRisk = riskSnapshots[1] ?? null;
