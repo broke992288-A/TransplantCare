@@ -911,6 +911,8 @@ const translations: Record<Language, Record<string, string>> = {
     "risk.calculating": "Hisoblanmoqda...",
     "risk.noLabData": "Tahlil natijalari kiritilmagan",
     "risk.factors": "Xavf omillari:",
+    "risk.highDetected": "Yuqori xavf aniqlandi",
+    "risk.mediumDetected": "O'rta xavf aniqlandi",
     "patientAlerts.title": "Ogohlantirishlar",
     "patientAlerts.markAllRead": "Barchasini o'qildi",
     "edit.title": "Bemor ma'lumotlarini tahrirlash",
