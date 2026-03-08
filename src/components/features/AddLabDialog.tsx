@@ -79,7 +79,7 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
             patient_id: patientId,
             risk_snapshot_id: snapshot?.id ?? null,
             severity: "warning",
-            title: `Ўртача хавф аниқланди (балл: ${score})`,
+            title: `${t("risk.mediumDetected")} (${score})`,
             message: flags.join("; "),
           });
         }
