@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, AlertTriangle, Activity, Plus, ShieldAlert, UserPlus } from "lucide-react";
+import { Users, AlertTriangle, Activity, Plus, ShieldAlert, UserPlus, Clock } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -11,6 +11,16 @@ import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
 import { riskColorClass, daysSince } from "@/utils/risk";
 import { SkeletonCard, SkeletonTable, SkeletonChart } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
+
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export default function DoctorDashboard() {
   const navigate = useNavigate();
@@ -20,7 +30,10 @@ export default function DoctorDashboard() {
   const patients = data?.patients ?? [];
   const labs = data?.labs ?? {};
 
-  const highRisk = patients.filter((p) => p.risk_level === "high");
+  // Sort high-risk by risk_score descending
+  const highRisk = patients
+    .filter((p) => p.risk_level === "high")
+    .sort((a, b) => ((b as any).risk_score ?? 0) - ((a as any).risk_score ?? 0));
   const mediumRisk = patients.filter((p) => p.risk_level === "medium");
   const pieData = [
     { name: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(0, 72%, 51%)" },
@@ -45,7 +58,7 @@ export default function DoctorDashboard() {
           <Button asChild><Link to="/add-patient"><Plus className="mr-1 h-4 w-4" /> {t("nav.addPatient")}</Link></Button>
         </div>
 
-        {/* Summary cards with skeleton */}
+        {/* Summary cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
@@ -72,7 +85,7 @@ export default function DoctorDashboard() {
                 <EmptyState
                   icon={Users}
                   title={t("dashboard.noPatients")}
-                  description={t("dashboard.addFirstPatient") || "Бемор қўшиш учун тугмани босинг"}
+                  description={t("dashboard.addFirstPatient") || "Add your first patient"}
                   actionLabel={t("nav.addPatient")}
                   onAction={() => navigate("/add-patient")}
                 />
@@ -89,17 +102,17 @@ export default function DoctorDashboard() {
             </CardContent>
           </Card>
 
-          {/* High risk table */}
+          {/* High risk table with score + last evaluation */}
           <Card className="lg:col-span-2">
             <CardHeader><CardTitle className="text-lg">{t("dashboard.highRiskPatients")}</CardTitle></CardHeader>
             <CardContent>
               {loading ? (
-                <SkeletonTable rows={4} cols={5} />
+                <SkeletonTable rows={4} cols={6} />
               ) : highRisk.length === 0 ? (
                 <EmptyState
                   icon={AlertTriangle}
                   title={t("dashboard.noHighRisk")}
-                  description={t("dashboard.noHighRiskDesc") || "Юқори хавфли беморлар ҳозирча мавжуд эмас"}
+                  description={t("dashboard.noHighRiskDesc") || "No high-risk patients currently"}
                 />
               ) : (
                 <Table>
@@ -107,22 +120,28 @@ export default function DoctorDashboard() {
                     <TableRow>
                       <TableHead>{t("dashboard.patient")}</TableHead>
                       <TableHead>{t("dashboard.organ")}</TableHead>
-                      <TableHead>{t("dashboard.daysPostTx")}</TableHead>
+                      <TableHead>{t("patients.riskScore")}</TableHead>
                       <TableHead>{t("dashboard.keyLab")}</TableHead>
                       <TableHead>{t("dashboard.risk")}</TableHead>
+                      <TableHead><Clock className="h-4 w-4" /></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {highRisk.map((p) => {
                       const lab = labs[p.id];
                       const keyLab = p.organ_type === "liver" ? `Tac: ${lab?.tacrolimus_level ?? "—"}` : `Cr: ${lab?.creatinine ?? "—"}`;
+                      const lastEval = (p as any).last_risk_evaluation;
                       return (
                         <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/patient/${p.id}`)}>
                           <TableCell className="font-medium">{p.full_name}</TableCell>
                           <TableCell>{t(`organ.${p.organ_type}`)}</TableCell>
-                          <TableCell>{daysSince(p.created_at)}</TableCell>
+                          <TableCell>
+                            <span className="font-bold text-destructive">{(p as any).risk_score ?? "—"}</span>
+                            <span className="text-muted-foreground text-xs">/100</span>
+                          </TableCell>
                           <TableCell>{keyLab}</TableCell>
                           <TableCell>{riskBadge(p.risk_level)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{timeAgo(lastEval)}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -143,7 +162,7 @@ export default function DoctorDashboard() {
               <EmptyState
                 icon={UserPlus}
                 title={t("dashboard.noPatients")}
-                description={t("dashboard.addFirstPatient") || "Биринчи беморни қўшиш учун тугмани босинг"}
+                description={t("dashboard.addFirstPatient") || "Add your first patient"}
                 actionLabel={t("nav.addPatient")}
                 onAction={() => navigate("/add-patient")}
               />

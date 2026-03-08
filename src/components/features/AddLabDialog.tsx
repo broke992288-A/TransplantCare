@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { insertLabResult } from "@/services/labService";
+import { insertLabResult, fetchLabsByPatientId } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
 import { computeRiskScore, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
@@ -15,7 +15,7 @@ interface AddLabDialogProps {
   patientId: string;
   organType: string;
   onLabAdded: () => void;
-  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null };
+  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null };
 }
 
 export default function AddLabDialog({ patientId, organType, onLabAdded, patientData }: AddLabDialogProps) {
@@ -73,9 +73,19 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
       }
       const savedLab = await insertLabResult(labData);
 
-      // Compute risk score from fresh lab data
+      // Fetch previous lab for trend analysis
+      let prevLab = null;
       try {
-        const { score, level, flags } = computeRiskScore(organType, savedLab as any, patientData ?? {});
+        const prevLabs = await fetchLabsByPatientId(patientId, 2);
+        // prevLabs[0] is the one we just inserted, prevLabs[1] is the previous
+        prevLab = prevLabs.length > 1 ? prevLabs[1] : null;
+      } catch { /* ignore */ }
+
+      // Compute risk score with trend analysis
+      try {
+        const { score, level, flags, explanations } = computeRiskScore(
+          organType, savedLab as any, patientData ?? {}, prevLab
+        );
         const snapshot = await insertRiskSnapshot({
           patient_id: patientId,
           lab_result_id: savedLab.id,
@@ -86,7 +96,7 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
           ast: labData.ast ?? null,
           total_bilirubin: labData.total_bilirubin ?? null,
           tacrolimus_level: labData.tacrolimus_level ?? null,
-          details: { flags },
+          details: { flags, explanations },
         });
 
         // Create alert if risk is high or medium
