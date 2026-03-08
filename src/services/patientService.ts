@@ -61,6 +61,8 @@ export async function insertPatient(patient: {
   dialysis_history?: boolean;
   return_dialysis_date?: string | null;
   biopsy_result?: string | null;
+  region?: string | null;
+  district?: string | null;
 }) {
   const { data, error } = await supabase
     .from("patients")
