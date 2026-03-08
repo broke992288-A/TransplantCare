@@ -83,7 +83,7 @@ export default function Patients() {
                     <TableHead>{t("patients.ageGender")}</TableHead>
                     <TableHead>{t("patients.organ")}</TableHead>
                     <TableHead>{t("patients.transplantDate")}</TableHead>
-                    <TableHead>Risk</TableHead>
+                    <TableHead>{t("dashboard.risk")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -69,7 +69,7 @@ export default function Login() {
               {isSignUp && !isForgot && (
                 <>
                   <div className="space-y-2"><Label htmlFor="fullName">{t("login.fullName")}</Label><Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Dr. Jane Smith" /></div>
-                  <div className="space-y-2"><Label htmlFor="phone">Телефон рақами</Label><Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998901234567" /></div>
+                  <div className="space-y-2"><Label htmlFor="phone">{t("common.phone")}</Label><Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998901234567" /></div>
                 </>
               )}
               <div className="space-y-2"><Label htmlFor="email">{t("login.email")}</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="jane@hospital.com" /></div>
