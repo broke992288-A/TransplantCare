@@ -197,6 +197,8 @@ const translations: Record<Language, Record<string, string>> = {
     "risk.calculating": "Calculating...",
     "risk.noLabData": "No lab results entered",
     "risk.factors": "Risk factors:",
+    "risk.highDetected": "High risk detected",
+    "risk.mediumDetected": "Medium risk detected",
     // Patient Alerts
     "patientAlerts.title": "Alerts",
     "patientAlerts.markAllRead": "Mark all read",
