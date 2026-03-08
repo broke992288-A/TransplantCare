@@ -370,6 +370,7 @@ const translations: Record<Language, Record<string, string>> = {
     "med.as_needed": "As needed",
     "med.unknownMed": "Unknown medication",
     "med.myMedications": "My Medications",
+    "patients.lowRisk": "Low Risk",
   },
   ru: {
     "app.name": "TransplantCare",
