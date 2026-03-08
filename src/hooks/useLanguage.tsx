@@ -685,6 +685,8 @@ const translations: Record<Language, Record<string, string>> = {
     "reports.departmentUtilization": "Использование по отделам",
     "reports.availableReports": "Доступные отчёты",
     "reports.generateNew": "Новый отчёт",
+    "reports.downloaded": "Отчёт скачан",
+    "reports.generated": "Отчёт сформирован",
     "reports.monthlyPatientRegistry": "Месячный реестр пациентов",
     "reports.quarterlyTransplantStats": "Квартальная статистика",
     "reports.medicationUsageReport": "Отчёт по медикаментам",
