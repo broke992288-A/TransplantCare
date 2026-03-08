@@ -1066,6 +1066,7 @@ const translations: Record<Language, Record<string, string>> = {
     "med.as_needed": "Kerak bo'lganda",
     "med.unknownMed": "Noma'lum dori",
     "med.myMedications": "Mening dorilarim",
+    "patients.lowRisk": "Past xavf",
   },
 };
 
