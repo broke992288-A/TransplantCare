@@ -370,6 +370,7 @@ export type Database = {
           full_name: string
           gender: string | null
           id: string
+          last_risk_evaluation: string | null
           linked_user_id: string | null
           organ_type: string
           phone: string | null
@@ -377,6 +378,7 @@ export type Database = {
           rejection_type: string | null
           return_dialysis_date: string | null
           risk_level: string
+          risk_score: number | null
           transplant_date: string | null
           transplant_number: number | null
           updated_at: string
@@ -391,6 +393,7 @@ export type Database = {
           full_name: string
           gender?: string | null
           id?: string
+          last_risk_evaluation?: string | null
           linked_user_id?: string | null
           organ_type: string
           phone?: string | null
@@ -398,6 +401,7 @@ export type Database = {
           rejection_type?: string | null
           return_dialysis_date?: string | null
           risk_level?: string
+          risk_score?: number | null
           transplant_date?: string | null
           transplant_number?: number | null
           updated_at?: string
@@ -412,6 +416,7 @@ export type Database = {
           full_name?: string
           gender?: string | null
           id?: string
+          last_risk_evaluation?: string | null
           linked_user_id?: string | null
           organ_type?: string
           phone?: string | null
@@ -419,6 +424,7 @@ export type Database = {
           rejection_type?: string | null
           return_dialysis_date?: string | null
           risk_level?: string
+          risk_score?: number | null
           transplant_date?: string | null
           transplant_number?: number | null
           updated_at?: string
