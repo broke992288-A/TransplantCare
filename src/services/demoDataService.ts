@@ -119,7 +119,7 @@ export async function generateDemoData(
         labData.albumin = randNum(2.5, 5.0);
       }
 
-      const { error } = await supabase.from("lab_results").insert(labData);
+      const { error } = await supabase.from("lab_results").insert(labData as any);
       if (!error) labCount++;
     }
   }
