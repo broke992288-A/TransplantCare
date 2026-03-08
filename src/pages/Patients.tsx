@@ -72,7 +72,7 @@ export default function Patients() {
           </div>
           <div className="overflow-x-auto">
             {loading ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">Loading...</p>
+              <p className="text-muted-foreground text-sm py-8 text-center">{t("common.loading")}</p>
             ) : filteredPatients.length === 0 ? (
               <p className="text-muted-foreground text-sm py-8 text-center">{t("dashboard.noPatients")}</p>
             ) : (
