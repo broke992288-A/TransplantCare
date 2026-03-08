@@ -7,7 +7,7 @@ import { Camera, Upload, Loader2, CheckCircle2, Edit3, FileText, AlertTriangle, 
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
-import { insertLabResult } from "@/services/labService";
+import { upsertLabResult } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
 import { computeRiskScore, insertRiskSnapshot } from "@/services/riskSnapshotService";
@@ -361,7 +361,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         if (filledCount > 0) {
-          const savedLab = await insertLabResult(labData as Record<string, any> & { patient_id: string });
+          const savedLab = await upsertLabResult(labData as Record<string, any> & { patient_id: string });
           totalFilled += filledCount;
 
           // --- Compute risk score for each saved lab ---
