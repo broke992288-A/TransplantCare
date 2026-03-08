@@ -42,10 +42,10 @@ export function usePatientDetail(patientId: string | undefined) {
   };
 }
 
-export function usePatientHomeLabs(patientId: string | undefined) {
+export function usePatientHomeLabs(patientId: string | undefined, limit?: number) {
   return useQuery({
-    queryKey: ["patient-labs", patientId],
-    queryFn: () => fetchLabsByPatientId(patientId!, 10),
+    queryKey: ["patient-labs", patientId, limit],
+    queryFn: () => fetchLabsByPatientId(patientId!, limit),
     enabled: !!patientId,
   });
 }
