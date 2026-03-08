@@ -12,6 +12,7 @@ import { useRiskSnapshots } from "@/hooks/useRiskSnapshots";
 import { riskColorClass } from "@/utils/risk";
 import LabUploadDialog from "@/components/features/LabUploadDialog";
 import LabResultsTable from "@/components/features/LabResultsTable";
+import LabHistoryTable from "@/components/features/LabHistoryTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
