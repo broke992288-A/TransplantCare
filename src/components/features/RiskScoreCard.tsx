@@ -11,6 +11,43 @@ interface RiskScoreCardProps {
   loading?: boolean;
 }
 
+// Map English risk flag prefixes to translation keys
+const FLAG_MAP: Record<string, string> = {
+  "Tacrolimus low": "flag.tacrolimus_low",
+  "Tacrolimus high": "flag.tacrolimus_high",
+  "ALT critical": "flag.alt_critical",
+  "ALT elevated": "flag.alt_elevated",
+  "AST critical": "flag.ast_critical",
+  "AST elevated": "flag.ast_elevated",
+  "Bilirubin critical": "flag.bilirubin_critical",
+  "Bilirubin elevated": "flag.bilirubin_elevated",
+  "Re-transplant patient": "flag.retransplant",
+  "Creatinine critical": "flag.creatinine_critical",
+  "Creatinine elevated": "flag.creatinine_elevated",
+  "eGFR very low": "flag.egfr_very_low",
+  "eGFR low": "flag.egfr_low",
+  "Dialysis history": "flag.dialysis_history",
+};
+
+function translateFlag(flag: string, t: (key: string) => string): string {
+  // Check exact match first (e.g. "Re-transplant patient", "Dialysis history")
+  if (FLAG_MAP[flag]) return t(FLAG_MAP[flag]);
+  // Check prefix match with value (e.g. "Tacrolimus low: 4.1")
+  for (const [prefix, key] of Object.entries(FLAG_MAP)) {
+    if (flag.startsWith(prefix)) {
+      const value = flag.slice(prefix.length); // ": 4.1"
+      return t(key) + value;
+    }
+  }
+  return flag;
+}
+
+function translateRiskLevel(level: string, t: (key: string) => string): string {
+  const key = `risk.${level}`;
+  const translated = t(key);
+  return translated !== key ? translated : level.toUpperCase();
+}
+
 export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskScoreCardProps) {
   const { t } = useLanguage();
 
@@ -63,7 +100,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
             {trend === "same" && <Minus className="h-5 w-5 text-muted-foreground" />}
           </div>
           <Badge className={riskColorClass(snapshot.risk_level)}>
-            {snapshot.risk_level.toUpperCase()}
+            {translateRiskLevel(snapshot.risk_level, t)}
           </Badge>
         </div>
 
@@ -74,7 +111,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
               {flags.map((f, i) => (
                 <li key={i} className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-destructive inline-block" />
-                  {f}
+                  {translateFlag(f, t)}
                 </li>
               ))}
             </ul>

@@ -52,7 +52,7 @@ export default function PatientDetail() {
     setOverriding(true);
     try {
       await updatePatient(id, { risk_level: overrideLevel });
-      await insertEvent({ patient_id: id, event_type: "risk_override", description: `Risk overridden to ${overrideLevel}: ${overrideReason}`, created_by: user.id });
+      await insertEvent({ patient_id: id, event_type: "risk_override", description: `${t("event.riskOverridden")}: ${t(`risk.${overrideLevel}`)} — ${overrideReason}`, created_by: user.id });
       setOverrideLevel(""); setOverrideReason("");
       toast({ title: t("detail.riskOverridden") });
       invalidateAll();

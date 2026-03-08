@@ -78,7 +78,7 @@ export default function AddPatient() {
       }
       await insertEvents(events);
 
-      toast({ title: t("add.patientAdded"), description: `${form.full_name} — Risk: ${riskLevel.toUpperCase()}` });
+      toast({ title: t("add.patientAdded"), description: `${form.full_name} — ${t("home.riskLevel")}: ${t(`risk.${riskLevel}`)}` });
       navigate("/doctor-dashboard");
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
