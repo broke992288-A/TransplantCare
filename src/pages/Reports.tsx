@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Download, Calendar, TrendingUp, Users, DollarSign, PieChart, Loader2 } from "lucide-react";
+import { FileText, Download, Calendar, TrendingUp, Users, Activity, PieChart, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell } from "recharts";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPatientStats, fetchTotalLabCount, fetchAllMedicationsAggregated } from "@/services/statsService";
+import { SkeletonCard, SkeletonChart } from "@/components/ui/skeleton-card";
 import jsPDF from "jspdf";
-function useMonthlyData(t: (key: string) => string) {
-  return [
-    { month: t("month.jan"), patients: 245, transplants: 12 },
-    { month: t("month.feb"), patients: 268, transplants: 15 },
-    { month: t("month.mar"), patients: 302, transplants: 18 },
-    { month: t("month.apr"), patients: 285, transplants: 14 },
-    { month: t("month.may"), patients: 320, transplants: 22 },
-    { month: t("month.jun"), patients: 356, transplants: 19 },
-  ];
-}
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--accent))"];
 
@@ -26,21 +19,67 @@ export default function Reports() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [generating, setGenerating] = useState<number | null>(null);
-  const monthlyData = useMonthlyData(t);
-  const budgetData = [
-    { name: t("reports.medications"), value: 45, amount: 2250000 },
-    { name: t("reports.equipment"), value: 20, amount: 1000000 },
-    { name: t("reports.personnel"), value: 25, amount: 1250000 },
-    { name: t("reports.facilities"), value: 10, amount: 500000 },
-  ];
 
-  type ReportItem = { id: number; name: string; date: string; type: string; size: string };
+  const { data: patients = [], isLoading: pLoading } = useQuery({
+    queryKey: ["patient-stats"],
+    queryFn: fetchPatientStats,
+  });
+  const { data: labCount = 0 } = useQuery({
+    queryKey: ["total-lab-count"],
+    queryFn: fetchTotalLabCount,
+  });
+  const { data: medications = [] } = useQuery({
+    queryKey: ["all-medications-agg"],
+    queryFn: fetchAllMedicationsAggregated,
+  });
 
-  const reports: ReportItem[] = [
-    { id: 1, name: t("reports.monthlyPatientRegistry"), date: "Oct 2024", type: "PDF", size: "2.4 MB" },
-    { id: 2, name: t("reports.quarterlyTransplantStats"), date: "Q3 2024", type: "PDF", size: "5.1 MB" },
-    { id: 3, name: t("reports.medicationUsageReport"), date: "Sep 2024", type: "Excel", size: "1.8 MB" },
-    { id: 4, name: t("reports.regionalDistribution"), date: "Oct 2024", type: "PDF", size: "3.2 MB" },
+  const isLoading = pLoading;
+
+  const totalPatients = patients.length;
+  const highRisk = patients.filter(p => p.risk_level === "high").length;
+  const mediumRisk = patients.filter(p => p.risk_level === "medium").length;
+  const lowRisk = patients.filter(p => p.risk_level === "low").length;
+  const kidneyCount = patients.filter(p => p.organ_type === "kidney").length;
+  const liverCount = patients.filter(p => p.organ_type === "liver").length;
+  const activeMeds = medications.filter(m => m.is_active).length;
+
+  const riskDistribution = [
+    { name: t("dashboard.highRisk"), value: highRisk },
+    { name: t("dashboard.mediumRisk"), value: mediumRisk },
+    { name: t("patients.lowRisk"), value: lowRisk },
+  ].filter(d => d.value > 0);
+
+  const organDistribution = [
+    { name: t("analytics.kidney"), value: kidneyCount },
+    { name: t("analytics.liver"), value: liverCount },
+  ].filter(d => d.value > 0);
+
+  // Monthly patient additions
+  const monthlyData = (() => {
+    const months: Record<string, { patients: number; kidney: number; liver: number }> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      months[key] = { patients: 0, kidney: 0, liver: 0 };
+    }
+    patients.forEach(p => {
+      const d = new Date(p.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (months[key]) {
+        months[key].patients++;
+        if (p.organ_type === "kidney") months[key].kidney++;
+        else months[key].liver++;
+      }
+    });
+    return Object.entries(months).map(([month, data]) => ({ month, ...data }));
+  })();
+
+  const budgetStats = [
+    { label: t("dashboard.totalPatients"), value: totalPatients.toString(), subtext: `${kidneyCount} ${t("analytics.kidney")} / ${liverCount} ${t("analytics.liver")}`, icon: Users, color: "text-primary" },
+    { label: t("dashboard.highRisk"), value: highRisk.toString(), subtext: `${totalPatients > 0 ? Math.round(highRisk / totalPatients * 100) : 0}%`, icon: TrendingUp, color: "text-destructive" },
+    { label: t("reports.labResults") || "Lab natijalar", value: labCount.toString(), subtext: t("reports.total") || "Jami", icon: Activity, color: "text-success" },
+    { label: t("medications.totalMedications"), value: activeMeds.toString(), subtext: t("medications.activeLabel") || "Faol", icon: PieChart, color: "text-accent" },
   ];
 
   const generatePdf = (reportName: string, content: string[]) => {
@@ -58,83 +97,31 @@ export default function Reports() {
     doc.save(`${reportName.replace(/\s+/g, "_")}.pdf`);
   };
 
-  const buildReportContent = (report: ReportItem) => {
-    const totalPatients = monthlyData.reduce((sum, month) => sum + month.patients, 0);
-    const totalTransplants = monthlyData.reduce((sum, month) => sum + month.transplants, 0);
+  type ReportItem = { id: number; name: string; type: string };
 
-    if (report.id === 1) {
-      return [
-        `${t("reports.availableReports")}: ${report.name}`,
-        `${t("common.date")}: ${report.date}`,
-        "",
-        ...monthlyData.map(
-          (d) => `${d.month}: ${t("reports.patients")} — ${d.patients}, ${t("reports.transplants")} — ${d.transplants}`
-        ),
-        "",
-        `${t("reports.patientsCovered")}: ${totalPatients}`,
-        `${t("reports.transplants")}: ${totalTransplants}`,
-      ];
-    }
-
-    if (report.id === 2) {
-      const quarterlyData = [
-        { quarter: "Q1", items: monthlyData.slice(0, 3) },
-        { quarter: "Q2", items: monthlyData.slice(3, 6) },
-      ].map((q) => ({
-        quarter: q.quarter,
-        patients: q.items.reduce((sum, item) => sum + item.patients, 0),
-        transplants: q.items.reduce((sum, item) => sum + item.transplants, 0),
-      }));
-
-      return [
-        `${t("reports.availableReports")}: ${report.name}`,
-        `${t("common.date")}: ${report.date}`,
-        "",
-        ...quarterlyData.map(
-          (q) => `${q.quarter}: ${t("reports.patients")} — ${q.patients}, ${t("reports.transplants")} — ${q.transplants}`
-        ),
-        "",
-        `${t("reports.transplants")}: ${totalTransplants}`,
-      ];
-    }
-
-    if (report.id === 3) {
-      return [
-        `${t("reports.availableReports")}: ${report.name}`,
-        `${t("common.date")}: ${report.date}`,
-        "",
-        ...budgetData
-          .filter((item) => item.name === t("reports.medications") || item.name === t("reports.personnel"))
-          .map((item) => `${item.name}: ${item.value}% — $${(item.amount / 1000000).toFixed(2)}M`),
-        "",
-        `${t("reports.totalBudget")}: $5.0M`,
-        `${t("reports.spentYTD")}: $3.2M`,
-      ];
-    }
-
-    const regionalData = [
-      { region: "Region A", patients: 132, transplants: 8 },
-      { region: "Region B", patients: 98, transplants: 5 },
-      { region: "Region C", patients: 115, transplants: 7 },
-      { region: "Region D", patients: 143, transplants: 9 },
-    ];
-
-    return [
-      `${t("reports.availableReports")}: ${report.name}`,
-      `${t("common.date")}: ${report.date}`,
-      "",
-      ...regionalData.map(
-        (r) => `${r.region}: ${t("reports.patients")} — ${r.patients}, ${t("reports.transplants")} — ${r.transplants}`
-      ),
-      "",
-      `${t("reports.patientsCovered")}: ${regionalData.reduce((sum, region) => sum + region.patients, 0)}`,
-    ];
-  };
+  const reports: ReportItem[] = [
+    { id: 1, name: t("reports.monthlyPatientRegistry"), type: "PDF" },
+    { id: 2, name: t("reports.quarterlyTransplantStats"), type: "PDF" },
+    { id: 3, name: t("reports.medicationUsageReport"), type: "PDF" },
+    { id: 4, name: t("reports.regionalDistribution"), type: "PDF" },
+  ];
 
   const handleDownload = (report: ReportItem) => {
     setGenerating(report.id);
     setTimeout(() => {
-      generatePdf(report.name, buildReportContent(report));
+      const content: string[] = [
+        `${report.name}`,
+        `${t("common.date") || "Sana"}: ${new Date().toLocaleDateString()}`,
+        "",
+        `${t("dashboard.totalPatients")}: ${totalPatients}`,
+        `${t("analytics.kidney")}: ${kidneyCount}`,
+        `${t("analytics.liver")}: ${liverCount}`,
+        `${t("dashboard.highRisk")}: ${highRisk}`,
+        `${t("dashboard.mediumRisk")}: ${mediumRisk}`,
+        "",
+        ...monthlyData.map(d => `${d.month}: ${d.patients} ${t("reports.patients") || "bemor"}`),
+      ];
+      generatePdf(report.name, content);
       setGenerating(null);
       toast({ title: t("reports.downloaded") });
     }, 600);
@@ -143,118 +130,98 @@ export default function Reports() {
   const handleGenerateNew = () => {
     setGenerating(-1);
     setTimeout(() => {
-      const today = new Date().toLocaleDateString();
-      generatePdf(`${t("reports.generateNew")} — ${today}`, [
-        `${t("reports.totalBudget")}: $5.0M`,
-        `${t("reports.spentYTD")}: $3.2M (64%)`,
-        `${t("reports.remaining")}: $1.8M (36%)`,
-        `${t("reports.patientsCovered")}: 12,458`,
+      generatePdf(`${t("reports.generateNew")} — ${new Date().toLocaleDateString()}`, [
+        `${t("dashboard.totalPatients")}: ${totalPatients}`,
+        `${t("analytics.kidney")}: ${kidneyCount}`,
+        `${t("analytics.liver")}: ${liverCount}`,
+        `${t("dashboard.highRisk")}: ${highRisk}`,
+        `${t("dashboard.mediumRisk")}: ${mediumRisk}`,
+        `${t("reports.labResults") || "Lab natijalar"}: ${labCount}`,
+        `${t("medications.totalMedications")}: ${activeMeds}`,
         "",
-        ...monthlyData.map(
-          (d) => `${d.month}: ${d.patients} ${t("reports.patients")}, ${d.transplants} ${t("reports.transplants")}`
-        ),
-        "",
-        ...budgetData.map((b) => `${b.name}: ${b.value}% ($${(b.amount / 1000000).toFixed(2)}M)`),
+        ...monthlyData.map(d => `${d.month}: ${d.patients} bemor`),
       ]);
       setGenerating(null);
       toast({ title: t("reports.generated") });
     }, 800);
   };
-  const budgetStats = [
-    { label: t("reports.totalBudget"), value: "$5.0M", subtext: t("reports.annualAllocation"), icon: DollarSign, color: "text-primary" },
-    { label: t("reports.spentYTD"), value: "$3.2M", subtext: "64%", icon: TrendingUp, color: "text-success" },
-    { label: t("reports.remaining"), value: "$1.8M", subtext: "36%", icon: PieChart, color: "text-warning" },
-    { label: t("reports.patientsCovered"), value: "12,458", subtext: "$256/pt", icon: Users, color: "text-accent" },
-  ];
 
   return (
     <DashboardLayout>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {budgetStats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+        {isLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) :
+          budgetStats.map((stat) => (
+            <Card key={stat.label}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground/70">{stat.subtext}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  <p className="text-xs text-muted-foreground/70">{stat.subtext}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        }
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold">{t("reports.patientTrends")}</CardTitle>
-              <Select defaultValue="2024"><SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="2024">2024</SelectItem><SelectItem value="2023">2023</SelectItem></SelectContent></Select>
-            </div>
+            <CardTitle className="text-base font-semibold">{t("reports.patientTrends")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                  <Bar dataKey="patients" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name={t("reports.patients")} />
-                  <Bar dataKey="transplants" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name={t("reports.transplants")} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {isLoading ? <SkeletonChart /> : (
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData}>
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                    <Bar dataKey="kidney" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name={t("analytics.kidney")} />
+                    <Bar dataKey="liver" fill="hsl(var(--liver))" radius={[4, 4, 0, 0]} name={t("analytics.liver")} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t("reports.budgetAllocation")}</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t("dashboard.riskDistribution")}</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex items-center gap-6">
-              <div className="h-48 w-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPie>
-                    <Pie data={budgetData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
-                      {budgetData.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} formatter={(value: number) => [`${value}%`, ""]} />
-                  </RechartsPie>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex-1 space-y-3">
-                {budgetData.map((item, index) => (
-                  <div key={item.name} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                    <div className="flex-1">
-                      <div className="flex justify-between text-sm"><span className="text-foreground">{item.name}</span><span className="text-muted-foreground">{item.value}%</span></div>
-                      <p className="text-xs text-muted-foreground">${(item.amount / 1000000).toFixed(2)}M</p>
+            {isLoading ? <SkeletonChart /> : (
+              <div className="flex items-center gap-6">
+                <div className="h-48 w-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPie>
+                      <Pie data={riskDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                        {riskDistribution.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                    </RechartsPie>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-3">
+                  {riskDistribution.map((item, index) => (
+                    <div key={item.name} className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm"><span className="text-foreground">{item.name}</span><span className="text-muted-foreground">{item.value}</span></div>
+                        <p className="text-xs text-muted-foreground">{totalPatients > 0 ? Math.round(item.value / totalPatients * 100) : 0}%</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <Card className="mb-6">
-        <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t("reports.departmentUtilization")}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {budgetData.map((dept) => (
-              <div key={dept.name} className="p-3 rounded-lg bg-muted/50">
-                <div className="flex justify-between items-center mb-2"><span className="text-sm font-medium text-foreground">{dept.name}</span><span className="text-xs text-muted-foreground">{Math.round(dept.value * 1.4)}%</span></div>
-                <Progress value={dept.value * 1.4} className="h-2 mb-1" />
-                <p className="text-xs text-muted-foreground">${((dept.amount * dept.value * 1.4) / 10000000).toFixed(2)}M / ${(dept.amount / 1000000).toFixed(2)}M</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader className="pb-4">
@@ -271,7 +238,7 @@ export default function Reports() {
               <div key={report.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><FileText className="w-5 h-5 text-primary" /></div>
-                  <div><p className="font-medium text-foreground">{report.name}</p><p className="text-xs text-muted-foreground">{report.date} • {report.type} • {report.size}</p></div>
+                  <div><p className="font-medium text-foreground">{report.name}</p><p className="text-xs text-muted-foreground">{report.type}</p></div>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => handleDownload(report)} disabled={generating === report.id}>
                   {generating === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}

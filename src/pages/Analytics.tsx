@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Download, FileText, Table as TableIcon, Filter, TrendingUp, Building2, Printer } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Download, Table as TableIcon, Filter, TrendingUp, Building2, Printer, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,16 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPatientStats } from "@/services/statsService";
 import { uzbekistanRegions } from "@/data/uzbekistanRegions";
-
-const yearlyData = [
-  { year: "2019", kidney: 145, liver: 42 },
-  { year: "2020", kidney: 132, liver: 38 },
-  { year: "2021", kidney: 168, liver: 52 },
-  { year: "2022", kidney: 195, liver: 68 },
-  { year: "2023", kidney: 234, liver: 85 },
-  { year: "2024", kidney: 178, liver: 62 },
-];
+import { SkeletonChart, SkeletonTable } from "@/components/ui/skeleton-card";
 
 export default function Analytics() {
   const { t } = useLanguage();
@@ -25,34 +19,61 @@ export default function Analytics() {
   const [regionFilter, setRegionFilter] = useState("all");
   const [organFilter, setOrganFilter] = useState("all");
 
-  const centerData = [
-    { name: t("analytics.vakhidovCenter"), region: "Toshkent shahri", totalTransplants: 1245, kidney: 892, liver: 315, survivalRate1y: 96.2, survivalRate3y: 91.4 },
-    { name: t("analytics.nephrologyCenter"), region: "Toshkent shahri", totalTransplants: 856, kidney: 678, liver: 156, survivalRate1y: 94.8, survivalRate3y: 88.9 },
-    { name: t("analytics.nationalMedicalCenter"), region: "Toshkent shahri", totalTransplants: 423, kidney: 389, liver: 34, survivalRate1y: 93.5, survivalRate3y: 86.2 },
-    { name: t("analytics.childrenNationalCenter"), region: "Toshkent shahri", totalTransplants: 312, kidney: 245, liver: 67, survivalRate1y: 92.1, survivalRate3y: 85.7 },
-    { name: "Samarqand viloyat tibbiyot markazi", region: "Samarqand viloyati", totalTransplants: 198, kidney: 165, liver: 33, survivalRate1y: 91.3, survivalRate3y: 84.5 },
-    { name: "Andijon viloyat shifoxonasi", region: "Andijon viloyati", totalTransplants: 87, kidney: 72, liver: 15, survivalRate1y: 90.8, survivalRate3y: 83.2 },
-    { name: "Farg'ona tibbiyot markazi", region: "Farg'ona viloyati", totalTransplants: 76, kidney: 64, liver: 12, survivalRate1y: 89.5, survivalRate3y: 82.1 },
-    { name: "Buxoro viloyat shifoxonasi", region: "Buxoro viloyati", totalTransplants: 54, kidney: 45, liver: 9, survivalRate1y: 91.0, survivalRate3y: 84.0 },
-    { name: "Namangan tibbiyot markazi", region: "Namangan viloyati", totalTransplants: 63, kidney: 52, liver: 11, survivalRate1y: 90.2, survivalRate3y: 83.8 },
-    { name: "Qashqadaryo viloyat shifoxonasi", region: "Qashqadaryo viloyati", totalTransplants: 41, kidney: 35, liver: 6, survivalRate1y: 88.7, survivalRate3y: 81.5 },
-    { name: "Surxondaryo tibbiyot markazi", region: "Surxondaryo viloyati", totalTransplants: 32, kidney: 28, liver: 4, survivalRate1y: 89.1, survivalRate3y: 82.0 },
-    { name: "Xorazm viloyat shifoxonasi", region: "Xorazm viloyati", totalTransplants: 29, kidney: 24, liver: 5, survivalRate1y: 90.5, survivalRate3y: 83.0 },
-    { name: "Navoiy viloyat shifoxonasi", region: "Navoiy viloyati", totalTransplants: 22, kidney: 19, liver: 3, survivalRate1y: 88.9, survivalRate3y: 81.2 },
-    { name: "Jizzax viloyat shifoxonasi", region: "Jizzax viloyati", totalTransplants: 18, kidney: 15, liver: 3, survivalRate1y: 89.3, survivalRate3y: 82.5 },
-    { name: "Sirdaryo viloyat shifoxonasi", region: "Sirdaryo viloyati", totalTransplants: 14, kidney: 12, liver: 2, survivalRate1y: 88.5, survivalRate3y: 80.9 },
-    { name: "Toshkent viloyat shifoxonasi", region: "Toshkent viloyati", totalTransplants: 95, kidney: 78, liver: 17, survivalRate1y: 92.8, survivalRate3y: 86.0 },
-    { name: "Nukus tibbiyot markazi", region: "Qoraqalpog'iston Respublikasi", totalTransplants: 25, kidney: 21, liver: 4, survivalRate1y: 87.6, survivalRate3y: 80.1 },
-  ];
+  const { data: patients = [], isLoading } = useQuery({
+    queryKey: ["patient-stats"],
+    queryFn: fetchPatientStats,
+  });
 
-  const filteredCenters = centerData.filter((c) => {
-    if (regionFilter !== "all" && c.region !== regionFilter) return false;
+  // Build yearly transplant data from real patients
+  const yearlyData = useMemo(() => {
+    const yearMap: Record<string, { kidney: number; liver: number }> = {};
+    patients.forEach((p) => {
+      const year = p.transplant_date ? new Date(p.transplant_date).getFullYear().toString() : p.created_at ? new Date(p.created_at).getFullYear().toString() : null;
+      if (!year) return;
+      if (!yearMap[year]) yearMap[year] = { kidney: 0, liver: 0 };
+      if (p.organ_type === "kidney") yearMap[year].kidney++;
+      else if (p.organ_type === "liver") yearMap[year].liver++;
+    });
+    return Object.entries(yearMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([year, counts]) => ({ year, ...counts }));
+  }, [patients]);
+
+  // Build region-based data
+  const regionData = useMemo(() => {
+    const regionMap: Record<string, { total: number; kidney: number; liver: number; high: number; medium: number; low: number }> = {};
+    patients.forEach((p) => {
+      const region = p.region || t("analytics.unknown");
+      if (!regionMap[region]) regionMap[region] = { total: 0, kidney: 0, liver: 0, high: 0, medium: 0, low: 0 };
+      regionMap[region].total++;
+      if (p.organ_type === "kidney") regionMap[region].kidney++;
+      else if (p.organ_type === "liver") regionMap[region].liver++;
+      if (p.risk_level === "high") regionMap[region].high++;
+      else if (p.risk_level === "medium") regionMap[region].medium++;
+      else regionMap[region].low++;
+    });
+    return Object.entries(regionMap)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .map(([name, data]) => ({ name, ...data }));
+  }, [patients, t]);
+
+  const filteredRegions = regionData.filter((r) => {
+    if (regionFilter !== "all" && r.name !== regionFilter) return false;
     return true;
   });
 
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    patients.forEach((p) => {
+      const year = p.transplant_date ? new Date(p.transplant_date).getFullYear().toString() : p.created_at ? new Date(p.created_at).getFullYear().toString() : null;
+      if (year) years.add(year);
+    });
+    return Array.from(years).sort().reverse();
+  }, [patients]);
+
   const handleExportCSV = () => {
-    const headers = [t("analytics.centerName"), t("analytics.region"), t("analytics.total"), t("analytics.kidney"), t("analytics.liver"), t("analytics.oneYearSurvival"), t("analytics.threeYearSurvival")];
-    const rows = filteredCenters.map(c => [c.name, c.region, c.totalTransplants, c.kidney, c.liver, `${c.survivalRate1y}%`, `${c.survivalRate3y}%`]);
+    const headers = [t("analytics.region"), t("analytics.total"), t("analytics.kidney"), t("analytics.liver"), t("dashboard.highRisk"), t("dashboard.mediumRisk"), t("patients.lowRisk")];
+    const rows = filteredRegions.map(r => [r.name, r.total, r.kidney, r.liver, r.high, r.medium, r.low]);
     const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -74,6 +95,14 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : patients.length}</p><p className="text-xs text-muted-foreground">{t("dashboard.totalPatients")}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : patients.filter(p => p.organ_type === "kidney").length}</p><p className="text-xs text-muted-foreground">{t("analytics.kidney")}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : patients.filter(p => p.organ_type === "liver").length}</p><p className="text-xs text-muted-foreground">{t("analytics.liver")}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : regionData.length}</p><p className="text-xs text-muted-foreground">{t("analytics.allRegions")}</p></CardContent></Card>
+      </div>
+
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -82,7 +111,7 @@ export default function Analytics() {
               <SelectTrigger className="w-32"><SelectValue placeholder={t("analytics.allYears")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("analytics.allYears")}</SelectItem>
-                <SelectItem value="2024">2024</SelectItem><SelectItem value="2023">2023</SelectItem><SelectItem value="2022">2022</SelectItem>
+                {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={regionFilter} onValueChange={setRegionFilter}>
@@ -111,37 +140,45 @@ export default function Analytics() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t("analytics.transplantsByYear")}</CardTitle></CardHeader>
           <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={yearlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-                  <Bar dataKey="kidney" name={t("analytics.kidney")} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="liver" name={t("analytics.liver")} fill="hsl(var(--liver))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {isLoading ? <SkeletonChart /> : yearlyData.length === 0 ? (
+              <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">{t("dashboard.noPatients")}</div>
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+                    <Bar dataKey="kidney" name={t("analytics.kidney")} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="liver" name={t("analytics.liver")} fill="hsl(var(--liver))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t("analytics.survivalTrends")}</CardTitle></CardHeader>
           <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={yearlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} domain={[0, 250]} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-                  <Line type="monotone" dataKey="kidney" name={t("analytics.kidney")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
-                  <Line type="monotone" dataKey="liver" name={t("analytics.liver")} stroke="hsl(var(--liver))" strokeWidth={2} dot={{ fill: "hsl(var(--liver))" }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {isLoading ? <SkeletonChart /> : yearlyData.length === 0 ? (
+              <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">{t("dashboard.noPatients")}</div>
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+                    <Line type="monotone" dataKey="kidney" name={t("analytics.kidney")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
+                    <Line type="monotone" dataKey="liver" name={t("analytics.liver")} stroke="hsl(var(--liver))" strokeWidth={2} dot={{ fill: "hsl(var(--liver))" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -154,34 +191,38 @@ export default function Analytics() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("analytics.centerName")}</TableHead>
-                  <TableHead>{t("analytics.region")}</TableHead>
-                  <TableHead className="text-right">{t("analytics.total")}</TableHead>
-                  <TableHead className="text-right">{t("analytics.kidney")}</TableHead>
-                  <TableHead className="text-right">{t("analytics.liver")}</TableHead>
-                  <TableHead className="text-right">{t("analytics.oneYearSurvival")}</TableHead>
-                  <TableHead className="text-right">{t("analytics.threeYearSurvival")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCenters.map((center, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{center.name}</TableCell>
-                    <TableCell><Badge variant="outline">{center.region}</Badge></TableCell>
-                    <TableCell className="text-right font-semibold">{center.totalTransplants}</TableCell>
-                    <TableCell className="text-right">{center.kidney}</TableCell>
-                    <TableCell className="text-right">{center.liver}</TableCell>
-                    <TableCell className="text-right"><span className="text-success font-medium">{center.survivalRate1y}%</span></TableCell>
-                    <TableCell className="text-right"><span className="text-primary font-medium">{center.survivalRate3y}%</span></TableCell>
+          {isLoading ? <SkeletonTable rows={6} cols={7} /> : filteredRegions.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">{t("dashboard.noPatients")}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("analytics.region")}</TableHead>
+                    <TableHead className="text-right">{t("analytics.total")}</TableHead>
+                    <TableHead className="text-right">{t("analytics.kidney")}</TableHead>
+                    <TableHead className="text-right">{t("analytics.liver")}</TableHead>
+                    <TableHead className="text-right">{t("dashboard.highRisk")}</TableHead>
+                    <TableHead className="text-right">{t("dashboard.mediumRisk")}</TableHead>
+                    <TableHead className="text-right">{t("patients.lowRisk")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredRegions.map((region, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{region.name}</TableCell>
+                      <TableCell className="text-right font-semibold">{region.total}</TableCell>
+                      <TableCell className="text-right">{region.kidney}</TableCell>
+                      <TableCell className="text-right">{region.liver}</TableCell>
+                      <TableCell className="text-right"><span className="text-destructive font-medium">{region.high}</span></TableCell>
+                      <TableCell className="text-right"><span className="text-warning font-medium">{region.medium}</span></TableCell>
+                      <TableCell className="text-right"><span className="text-success font-medium">{region.low}</span></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </DashboardLayout>

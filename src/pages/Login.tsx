@@ -38,7 +38,7 @@ export default function Login() {
         toast({ title: t("login.accountCreated"), description: t("login.checkEmail") });
       } else {
         await signIn(email, password);
-        logAudit({ action: "patient_login", metadata: { email } });
+        logAudit({ action: "user_login", metadata: { email } });
         navigate("/select-role");
       }
     } catch (err: any) {
