@@ -373,7 +373,8 @@ const translations: Record<Language, Record<string, string>> = {
     "med.unknownMed": "Unknown medication",
     "med.myMedications": "My Medications",
     "patients.lowRisk": "Low Risk",
-  },
+    "med.perMonth": "mo",
+    "upload.labUploadedEvent": "Lab report uploaded via OCR",
   ru: {
     "app.name": "TransplantCare",
     "nav.addPatient": "Добавить пациента",
