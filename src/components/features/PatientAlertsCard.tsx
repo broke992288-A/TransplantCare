@@ -74,7 +74,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-medium">{alert.title}</span>
               <Badge className={severityClass[alert.severity] ?? severityClass.info}>
-                {alert.severity.toUpperCase()}
+                {alert.severity === "critical" ? t("alerts.critical") : alert.severity === "warning" ? t("alerts.warning") : t("alerts.info")}
               </Badge>
             </div>
             {alert.message && <p className="text-xs text-muted-foreground">{alert.message}</p>}

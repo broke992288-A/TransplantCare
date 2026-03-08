@@ -66,7 +66,7 @@ export default function DoctorDashboard() {
           {patients.length === 0 ? <p className="text-muted-foreground text-sm">{t("dashboard.noPatients")}</p> : (
             <Table><TableHeader><TableRow><TableHead>{t("dashboard.patient")}</TableHead><TableHead>{t("dashboard.organ")}</TableHead><TableHead>{t("dashboard.daysPostTx")}</TableHead><TableHead>{t("dashboard.risk")}</TableHead></TableRow></TableHeader>
             <TableBody>{patients.map((p) => (
-              <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}><TableCell className="font-medium">{p.full_name}</TableCell><TableCell className="capitalize">{p.organ_type}</TableCell><TableCell>{daysSince(p.created_at)}</TableCell><TableCell>{riskBadge(p.risk_level)}</TableCell></TableRow>
+              <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}><TableCell className="font-medium">{p.full_name}</TableCell><TableCell>{t(`organ.${p.organ_type}`)}</TableCell><TableCell>{daysSince(p.created_at)}</TableCell><TableCell>{riskBadge(p.risk_level)}</TableCell></TableRow>
             ))}</TableBody></Table>
           )}
         </CardContent></Card>
