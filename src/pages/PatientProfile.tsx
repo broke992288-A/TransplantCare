@@ -113,6 +113,33 @@ export default function PatientProfile() {
             )}
           </TabsContent>
 
+          {/* Medications */}
+          <TabsContent value="medications">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Pill className="h-5 w-5 text-primary" /> {t("med.myMedications")}</CardTitle></CardHeader>
+              <CardContent>
+                {medications.filter(m => m.is_active).length === 0 ? (
+                  <p className="text-muted-foreground text-sm">{t("med.noMedications")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {medications.filter(m => m.is_active).map((med) => (
+                      <div key={med.id} className="rounded-lg border p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">{med.medication_name}</p>
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{med.dosage}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t(`med.${med.frequency}`)} · {t("med.startDate")}: {new Date(med.start_date).toLocaleDateString()}
+                        </p>
+                        {med.notes && <p className="text-xs text-muted-foreground mt-0.5">{med.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Lab Results */}
           <TabsContent value="results">
             <LabResultsTable labs={allLabs} />
