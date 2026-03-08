@@ -70,8 +70,8 @@ export default function PatientProfile() {
             <div>
               <h1 className="text-xl font-bold">{patient.full_name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <Badge className={riskColorClass(patient.risk_level)}>{patient.risk_level.toUpperCase()}</Badge>
-                <span className="text-sm text-muted-foreground capitalize">{patient.organ_type} {t("profile.transplant").toLowerCase()}</span>
+                <Badge className={riskColorClass(patient.risk_level)}>{t(`risk.${patient.risk_level}`)}</Badge>
+                <span className="text-sm text-muted-foreground">{t(`organ.${patient.organ_type}`)} {t("profile.transplant").toLowerCase()}</span>
               </div>
             </div>
           </div>
