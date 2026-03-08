@@ -8,6 +8,7 @@ import { useRealtimeInvalidation } from "@/hooks/useRealtimeInvalidation";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { ErrorBoundary } from "@/components/features/ErrorBoundary";
+import { RouteErrorBoundary } from "@/components/features/RouteErrorBoundary";
 import { handleError } from "@/utils/errorHandler";
 import Login from "./pages/Login";
 import SelectRole from "./pages/SelectRole";
@@ -24,6 +25,7 @@ import Alerts from "./pages/Alerts";
 import Medications from "./pages/Medications";
 import PatientMedications from "./pages/PatientMedications";
 import Patients from "./pages/Patients";
+import DemoSetup from "./pages/DemoSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -75,6 +77,11 @@ function RealtimeProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Wrap each route content in a route-level error boundary */
+function RouteWrap({ children }: { children: React.ReactNode }) {
+  return <RouteErrorBoundary>{children}</RouteErrorBoundary>;
+}
+
 const App = () => (
   <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
@@ -89,17 +96,18 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-role" element={<SelectRole />} />
-              <Route path="/doctor-dashboard" element={<DoctorOrAdminRoute><DoctorDashboard /></DoctorOrAdminRoute>} />
-              <Route path="/add-patient" element={<DoctorOrAdminRoute><AddPatient /></DoctorOrAdminRoute>} />
-              <Route path="/patient/:id" element={<DoctorOrAdminRoute><PatientDetail /></DoctorOrAdminRoute>} />
-              <Route path="/patients" element={<DoctorOrAdminRoute><Patients /></DoctorOrAdminRoute>} />
-              <Route path="/analytics" element={<DoctorOrAdminRoute><Analytics /></DoctorOrAdminRoute>} />
-              <Route path="/reports" element={<DoctorOrAdminRoute><Reports /></DoctorOrAdminRoute>} />
-              <Route path="/alerts" element={<DoctorOrAdminRoute><Alerts /></DoctorOrAdminRoute>} />
-              <Route path="/medications" element={<DoctorOrAdminRoute><Medications /></DoctorOrAdminRoute>} />
-              <Route path="/patient/:id/medications" element={<DoctorOrAdminRoute><PatientMedications /></DoctorOrAdminRoute>} />
-              <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><PatientProfile /></ProtectedRoute>} />
-              <Route path="/compare" element={<DoctorOrAdminRoute><Compare /></DoctorOrAdminRoute>} />
+              <Route path="/doctor-dashboard" element={<DoctorOrAdminRoute><RouteWrap><DoctorDashboard /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/add-patient" element={<DoctorOrAdminRoute><RouteWrap><AddPatient /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/patient/:id" element={<DoctorOrAdminRoute><RouteWrap><PatientDetail /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/patients" element={<DoctorOrAdminRoute><RouteWrap><Patients /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/analytics" element={<DoctorOrAdminRoute><RouteWrap><Analytics /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/reports" element={<DoctorOrAdminRoute><RouteWrap><Reports /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/alerts" element={<DoctorOrAdminRoute><RouteWrap><Alerts /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/medications" element={<DoctorOrAdminRoute><RouteWrap><Medications /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/patient/:id/medications" element={<DoctorOrAdminRoute><RouteWrap><PatientMedications /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/demo-setup" element={<DoctorOrAdminRoute><RouteWrap><DemoSetup /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><RouteWrap><PatientProfile /></RouteWrap></ProtectedRoute>} />
+              <Route path="/compare" element={<DoctorOrAdminRoute><RouteWrap><Compare /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
