@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Clock, FlaskConical, AlertTriangle, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, FlaskConical, AlertTriangle, Shield, Trash2, Pill } from "lucide-react";
+import { Link } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AddLabDialog from "@/components/features/AddLabDialog";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
@@ -73,6 +74,9 @@ export default function PatientDetail() {
             <Badge className={riskColorClass(patient.risk_level)}>{patient.risk_level.toUpperCase()}</Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Link to={`/patient/${id}/medications`}>
+              <Button variant="outline" size="sm"><Pill className="h-4 w-4 mr-1" />{t("med.title")}</Button>
+            </Link>
             <EditPatientDialog patient={patient} onUpdated={invalidateAll} />
             <AlertDialog>
             <AlertDialogTrigger asChild>

@@ -166,6 +166,113 @@ export type Database = {
           },
         ]
       }
+      medication_changes: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          medication_id: string
+          new_dosage: string
+          new_frequency: string | null
+          old_dosage: string
+          old_frequency: string | null
+          patient_id: string
+          reason: string | null
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          medication_id: string
+          new_dosage: string
+          new_frequency?: string | null
+          old_dosage: string
+          old_frequency?: string | null
+          patient_id: string
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          medication_id?: string
+          new_dosage?: string
+          new_frequency?: string | null
+          old_dosage?: string
+          old_frequency?: string | null
+          patient_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_changes_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medication_changes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medications: {
+        Row: {
+          created_at: string
+          dosage: string
+          end_date: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          medication_name: string
+          notes: string | null
+          patient_id: string
+          prescribed_by: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          medication_name: string
+          notes?: string | null
+          patient_id: string
+          prescribed_by?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          medication_name?: string
+          notes?: string | null
+          patient_id?: string
+          prescribed_by?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_alerts: {
         Row: {
           alert_type: string

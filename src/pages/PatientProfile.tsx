@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, FlaskConical, TrendingUp, Shield, Clock, Phone, Calendar } from "lucide-react";
+import { User, FlaskConical, TrendingUp, Shield, Clock, Phone, Calendar, Pill } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";
@@ -14,6 +14,7 @@ import LabResultsTable from "@/components/features/LabResultsTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
+import { usePatientMedications } from "@/hooks/useMedications";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PatientProfile() {
@@ -22,6 +23,7 @@ export default function PatientProfile() {
   const { data: allLabs = [] } = usePatientHomeLabs(patient?.id);
   const { data: timeline = [] } = usePatientHomeEvents(patient?.id);
   const { data: riskSnapshots = [] } = useRiskSnapshots(patient?.id);
+  const { data: medications = [] } = usePatientMedications(patient?.id);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("overview");
 
@@ -69,9 +71,12 @@ export default function PatientProfile() {
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
               <User className="h-3.5 w-3.5" /> {t("profile.overview")}
+            </TabsTrigger>
+            <TabsTrigger value="medications" className="gap-1.5 text-xs sm:text-sm">
+              <Pill className="h-3.5 w-3.5" /> {t("med.title")}
             </TabsTrigger>
             <TabsTrigger value="results" className="gap-1.5 text-xs sm:text-sm">
               <FlaskConical className="h-3.5 w-3.5" /> {t("profile.labResults")}
@@ -106,6 +111,33 @@ export default function PatientProfile() {
                 {t("profile.highRiskWarning")}
               </div>
             )}
+          </TabsContent>
+
+          {/* Medications */}
+          <TabsContent value="medications">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Pill className="h-5 w-5 text-primary" /> {t("med.myMedications")}</CardTitle></CardHeader>
+              <CardContent>
+                {medications.filter(m => m.is_active).length === 0 ? (
+                  <p className="text-muted-foreground text-sm">{t("med.noMedications")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {medications.filter(m => m.is_active).map((med) => (
+                      <div key={med.id} className="rounded-lg border p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">{med.medication_name}</p>
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{med.dosage}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t(`med.${med.frequency}`)} · {t("med.startDate")}: {new Date(med.start_date).toLocaleDateString()}
+                        </p>
+                        {med.notes && <p className="text-xs text-muted-foreground mt-0.5">{med.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Lab Results */}
