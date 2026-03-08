@@ -47,8 +47,8 @@ export default function Medications() {
 
   const stockStats = [
     { label: t("medications.totalMedications"), value: uniqueMedNames.toString(), icon: Package, color: "text-primary" },
-    { label: t("medications.activeLabel") || "Faol buyurtmalar", value: totalActive.toString(), icon: Pill, color: "text-success" },
-    { label: t("medications.inactiveLabel") || "Tugatilgan", value: totalInactive.toString(), icon: AlertTriangle, color: "text-warning" },
+    { label: t("medications.activeLabel"), value: totalActive.toString(), icon: Pill, color: "text-success" },
+    { label: t("medications.inactiveLabel"), value: totalInactive.toString(), icon: AlertTriangle, color: "text-warning" },
     { label: t("dashboard.totalPatients"), value: uniquePatients.toString(), icon: Package, color: "text-accent" },
   ];
 
