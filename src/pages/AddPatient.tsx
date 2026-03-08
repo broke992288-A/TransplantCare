@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { insertPatient } from "@/services/patientService";
 import { insertLabResult } from "@/services/labService";
 import { insertEvents } from "@/services/eventService";
 import { calculateRisk } from "@/utils/risk";
+import { uzbekistanRegions } from "@/data/uzbekistanRegions";
 import type { OrganType } from "@/types/patient";
 
 export default function AddPatient() {
@@ -31,11 +32,20 @@ export default function AddPatient() {
     full_name: "", date_of_birth: "", gender: "male", transplant_number: "1", transplant_date: "",
     rejection_type: "", tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "",
     dialysis_history: "no", return_dialysis_date: "", creatinine: "", egfr: "", proteinuria: "",
-    potassium: "", biopsy_result: "",
+    potassium: "", biopsy_result: "", region: "", district: "",
   });
 
   const set = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
   const selectOrgan = (o: OrganType) => { setOrgan(o); setStep(2); };
+
+  const selectedRegionData = useMemo(
+    () => uzbekistanRegions.find((r) => r.name === form.region),
+    [form.region]
+  );
+
+  const handleRegionChange = (v: string) => {
+    setForm((prev) => ({ ...prev, region: v, district: "" }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +62,8 @@ export default function AddPatient() {
         dialysis_history: organ === "kidney" ? form.dialysis_history === "yes" : false,
         return_dialysis_date: organ === "kidney" && form.dialysis_history === "yes" && form.return_dialysis_date ? form.return_dialysis_date : null,
         biopsy_result: form.biopsy_result || null,
+        region: form.region || null,
+        district: form.district || null,
       });
 
       const labData: any = { patient_id: patient.id };
@@ -137,6 +149,28 @@ export default function AddPatient() {
                     <SelectItem value="male">{t("add.male")}</SelectItem>
                     <SelectItem value="female">{t("add.female")}</SelectItem>
                     <SelectItem value="other">{t("add.other")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("add.region")} *</Label>
+                <Select value={form.region} onValueChange={handleRegionChange}>
+                  <SelectTrigger><SelectValue placeholder={t("add.selectPlaceholder")} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {uzbekistanRegions.map((r) => (
+                      <SelectItem key={r.name} value={r.name}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("add.district")} *</Label>
+                <Select value={form.district} onValueChange={(v) => set("district", v)} disabled={!form.region}>
+                  <SelectTrigger><SelectValue placeholder={t("add.selectPlaceholder")} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {selectedRegionData?.districts.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

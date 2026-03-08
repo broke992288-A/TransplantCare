@@ -366,12 +366,14 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           dialysis_history: boolean | null
+          district: string | null
           full_name: string
           gender: string | null
           id: string
           linked_user_id: string | null
           organ_type: string
           phone: string | null
+          region: string | null
           rejection_type: string | null
           return_dialysis_date: string | null
           risk_level: string
@@ -385,12 +387,14 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           dialysis_history?: boolean | null
+          district?: string | null
           full_name: string
           gender?: string | null
           id?: string
           linked_user_id?: string | null
           organ_type: string
           phone?: string | null
+          region?: string | null
           rejection_type?: string | null
           return_dialysis_date?: string | null
           risk_level?: string
@@ -404,12 +408,14 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           dialysis_history?: boolean | null
+          district?: string | null
           full_name?: string
           gender?: string | null
           id?: string
           linked_user_id?: string | null
           organ_type?: string
           phone?: string | null
+          region?: string | null
           rejection_type?: string | null
           return_dialysis_date?: string | null
           risk_level?: string
