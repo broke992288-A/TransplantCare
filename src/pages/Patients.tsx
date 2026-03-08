@@ -90,8 +90,8 @@ export default function Patients() {
                   {filteredPatients.map((p) => (
                     <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}>
                       <TableCell className="font-medium">{p.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{getAge(p.date_of_birth)}/{p.gender ?? "—"}</TableCell>
-                      <TableCell><Badge variant="outline" className="capitalize">{p.organ_type}</Badge></TableCell>
+                      <TableCell className="text-muted-foreground">{getAge(p.date_of_birth)}/{p.gender ? t(`gender.${p.gender}`) : "—"}</TableCell>
+                      <TableCell><Badge variant="outline">{t(`organ.${p.organ_type}`)}</Badge></TableCell>
                       <TableCell className="text-muted-foreground">{p.transplant_date ?? "—"}</TableCell>
                       <TableCell>{getRiskBadge(p.risk_level)}</TableCell>
                     </TableRow>
