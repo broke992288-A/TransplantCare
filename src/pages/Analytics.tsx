@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { useLanguage } from "@/hooks/useLanguage";
+import { uzbekistanRegions } from "@/data/uzbekistanRegions";
 
 const yearlyData = [
   { year: "2019", kidney: 145, liver: 42 },
@@ -25,15 +26,33 @@ export default function Analytics() {
   const [organFilter, setOrganFilter] = useState("all");
 
   const centerData = [
-    { name: t("analytics.vakhidovCenter"), region: t("analytics.tashkent"), totalTransplants: 1245, kidney: 892, liver: 315, survivalRate1y: 96.2, survivalRate3y: 91.4 },
-    { name: t("analytics.nephrologyCenter"), region: t("analytics.tashkent"), totalTransplants: 856, kidney: 678, liver: 156, survivalRate1y: 94.8, survivalRate3y: 88.9 },
-    { name: t("analytics.nationalMedicalCenter"), region: t("analytics.tashkent"), totalTransplants: 423, kidney: 389, liver: 34, survivalRate1y: 93.5, survivalRate3y: 86.2 },
-    { name: t("analytics.childrenNationalCenter"), region: t("analytics.tashkent"), totalTransplants: 312, kidney: 245, liver: 67, survivalRate1y: 92.1, survivalRate3y: 85.7 },
+    { name: t("analytics.vakhidovCenter"), region: "Toshkent shahri", totalTransplants: 1245, kidney: 892, liver: 315, survivalRate1y: 96.2, survivalRate3y: 91.4 },
+    { name: t("analytics.nephrologyCenter"), region: "Toshkent shahri", totalTransplants: 856, kidney: 678, liver: 156, survivalRate1y: 94.8, survivalRate3y: 88.9 },
+    { name: t("analytics.nationalMedicalCenter"), region: "Toshkent shahri", totalTransplants: 423, kidney: 389, liver: 34, survivalRate1y: 93.5, survivalRate3y: 86.2 },
+    { name: t("analytics.childrenNationalCenter"), region: "Toshkent shahri", totalTransplants: 312, kidney: 245, liver: 67, survivalRate1y: 92.1, survivalRate3y: 85.7 },
+    { name: "Samarqand viloyat tibbiyot markazi", region: "Samarqand viloyati", totalTransplants: 198, kidney: 165, liver: 33, survivalRate1y: 91.3, survivalRate3y: 84.5 },
+    { name: "Andijon viloyat shifoxonasi", region: "Andijon viloyati", totalTransplants: 87, kidney: 72, liver: 15, survivalRate1y: 90.8, survivalRate3y: 83.2 },
+    { name: "Farg'ona tibbiyot markazi", region: "Farg'ona viloyati", totalTransplants: 76, kidney: 64, liver: 12, survivalRate1y: 89.5, survivalRate3y: 82.1 },
+    { name: "Buxoro viloyat shifoxonasi", region: "Buxoro viloyati", totalTransplants: 54, kidney: 45, liver: 9, survivalRate1y: 91.0, survivalRate3y: 84.0 },
+    { name: "Namangan tibbiyot markazi", region: "Namangan viloyati", totalTransplants: 63, kidney: 52, liver: 11, survivalRate1y: 90.2, survivalRate3y: 83.8 },
+    { name: "Qashqadaryo viloyat shifoxonasi", region: "Qashqadaryo viloyati", totalTransplants: 41, kidney: 35, liver: 6, survivalRate1y: 88.7, survivalRate3y: 81.5 },
+    { name: "Surxondaryo tibbiyot markazi", region: "Surxondaryo viloyati", totalTransplants: 32, kidney: 28, liver: 4, survivalRate1y: 89.1, survivalRate3y: 82.0 },
+    { name: "Xorazm viloyat shifoxonasi", region: "Xorazm viloyati", totalTransplants: 29, kidney: 24, liver: 5, survivalRate1y: 90.5, survivalRate3y: 83.0 },
+    { name: "Navoiy viloyat shifoxonasi", region: "Navoiy viloyati", totalTransplants: 22, kidney: 19, liver: 3, survivalRate1y: 88.9, survivalRate3y: 81.2 },
+    { name: "Jizzax viloyat shifoxonasi", region: "Jizzax viloyati", totalTransplants: 18, kidney: 15, liver: 3, survivalRate1y: 89.3, survivalRate3y: 82.5 },
+    { name: "Sirdaryo viloyat shifoxonasi", region: "Sirdaryo viloyati", totalTransplants: 14, kidney: 12, liver: 2, survivalRate1y: 88.5, survivalRate3y: 80.9 },
+    { name: "Toshkent viloyat shifoxonasi", region: "Toshkent viloyati", totalTransplants: 95, kidney: 78, liver: 17, survivalRate1y: 92.8, survivalRate3y: 86.0 },
+    { name: "Nukus tibbiyot markazi", region: "Qoraqalpog'iston Respublikasi", totalTransplants: 25, kidney: 21, liver: 4, survivalRate1y: 87.6, survivalRate3y: 80.1 },
   ];
+
+  const filteredCenters = centerData.filter((c) => {
+    if (regionFilter !== "all" && c.region !== regionFilter) return false;
+    return true;
+  });
 
   const handleExportCSV = () => {
     const headers = [t("analytics.centerName"), t("analytics.region"), t("analytics.total"), t("analytics.kidney"), t("analytics.liver"), t("analytics.oneYearSurvival"), t("analytics.threeYearSurvival")];
-    const rows = centerData.map(c => [c.name, c.region, c.totalTransplants, c.kidney, c.liver, `${c.survivalRate1y}%`, `${c.survivalRate3y}%`]);
+    const rows = filteredCenters.map(c => [c.name, c.region, c.totalTransplants, c.kidney, c.liver, `${c.survivalRate1y}%`, `${c.survivalRate3y}%`]);
     const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -67,11 +86,12 @@ export default function Analytics() {
               </SelectContent>
             </Select>
             <Select value={regionFilter} onValueChange={setRegionFilter}>
-              <SelectTrigger className="w-40"><SelectValue placeholder={t("analytics.allRegions")} /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger className="w-56"><SelectValue placeholder={t("analytics.allRegions")} /></SelectTrigger>
+              <SelectContent className="max-h-60">
                 <SelectItem value="all">{t("analytics.allRegions")}</SelectItem>
-                <SelectItem value="tashkent">{t("analytics.tashkent")}</SelectItem>
-                <SelectItem value="samarkand">{t("analytics.samarkand")}</SelectItem>
+                {uzbekistanRegions.map((r) => (
+                  <SelectItem key={r.name} value={r.name}>{r.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={organFilter} onValueChange={setOrganFilter}>
@@ -148,7 +168,7 @@ export default function Analytics() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {centerData.map((center, i) => (
+                {filteredCenters.map((center, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">{center.name}</TableCell>
                     <TableCell><Badge variant="outline">{center.region}</Badge></TableCell>
