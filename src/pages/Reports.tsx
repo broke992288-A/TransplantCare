@@ -1,4 +1,5 @@
-import { FileText, Download, Calendar, TrendingUp, Users, DollarSign, PieChart } from "lucide-react";
+import { useState } from "react";
+import { FileText, Download, Calendar, TrendingUp, Users, DollarSign, PieChart, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell } from "recharts";
 import { useLanguage } from "@/hooks/useLanguage";
-
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 function useMonthlyData(t: (key: string) => string) {
   return [
     { month: t("month.jan"), patients: 245, transplants: 12 },
