@@ -74,6 +74,9 @@ export default function PatientDetail() {
             <Badge className={riskColorClass(patient.risk_level)}>{patient.risk_level.toUpperCase()}</Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Link to={`/patient/${id}/medications`}>
+              <Button variant="outline" size="sm"><Pill className="h-4 w-4 mr-1" />{t("med.title")}</Button>
+            </Link>
             <EditPatientDialog patient={patient} onUpdated={invalidateAll} />
             <AlertDialog>
             <AlertDialogTrigger asChild>
