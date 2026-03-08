@@ -82,10 +82,13 @@ export default function Patients() {
             {loading ? (
               <SkeletonTable rows={8} cols={5} />
             ) : patients.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground text-sm">{searchQuery ? t("medications.noResults") || "Natija topilmadi" : t("dashboard.noPatients")}</p>
-              </div>
+              <EmptyState
+                icon={Users}
+                title={searchQuery ? (t("medications.noResults") || "Natija topilmadi") : t("dashboard.noPatients")}
+                description={searchQuery ? "Қидирув сўзини ўзгартириб кўринг" : "Янги бемор қўшиш учун тугмани босинг"}
+                actionLabel={!searchQuery ? t("patients.newTransplant") : undefined}
+                onAction={!searchQuery ? () => navigate("/add-patient") : undefined}
+              />
             ) : (
               <>
                 <Table>
