@@ -1084,6 +1084,8 @@ const translations: Record<Language, Record<string, string>> = {
     "reports.departmentUtilization": "Bo'limlar bo'yicha foydalanish",
     "reports.availableReports": "Mavjud hisobotlar",
     "reports.generateNew": "Yangi hisobot",
+    "reports.downloaded": "Hisobot yuklab olindi",
+    "reports.generated": "Hisobot yaratildi",
     "reports.monthlyPatientRegistry": "Oylik bemor reestri",
     "reports.quarterlyTransplantStats": "Choraklik statistika",
     "reports.medicationUsageReport": "Dori foydalanish hisoboti",
