@@ -1,6 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchDoctorPatients, fetchAllPatients, fetchLinkedPatient } from "@/services/patientService";
+import {
+  fetchDoctorPatients,
+  fetchAllPatients,
+  fetchLinkedPatient,
+  fetchPaginatedPatients,
+  type PatientFilters,
+} from "@/services/patientService";
 import { fetchLatestLabsByPatientIds } from "@/services/labService";
 
 export function useDoctorPatients() {
@@ -31,6 +37,17 @@ export function useAllPatients() {
     queryKey: ["all-patients"],
     queryFn: fetchAllPatients,
     enabled: !!user,
+  });
+}
+
+/** Server-side paginated patient list */
+export function usePaginatedPatients(page: number, pageSize: number, filters?: PatientFilters) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["paginated-patients", page, pageSize, filters],
+    queryFn: () => fetchPaginatedPatients(page, pageSize, filters),
+    enabled: !!user,
+    placeholderData: keepPreviousData,
   });
 }
 
