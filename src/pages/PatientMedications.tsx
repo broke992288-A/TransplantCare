@@ -25,6 +25,7 @@ export default function PatientMedications() {
   const { data: medications = [], isLoading: medsLoading } = usePatientMedications(id);
   const { data: changes = [] } = useMedicationChanges(id);
   const deleteMed = useDeleteMedication(id);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("active");
