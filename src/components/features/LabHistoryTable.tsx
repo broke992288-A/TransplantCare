@@ -10,7 +10,7 @@ import {
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { REFERENCE_RANGES } from "./LabResultsTable";
-import { updateLabDate, deleteLabResult } from "@/services/labService";
+import { updateLabDate, updateLabResult, deleteLabResult } from "@/services/labService";
 import { Pencil, Trash2, Check, X } from "lucide-react";
 import type { LabResult } from "@/types/patient";
 
@@ -68,7 +68,7 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
   const { t } = useLanguage();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDate, setEditDate] = useState("");
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -89,18 +89,58 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
   }
 
   const startEdit = (lab: LabResult) => {
+    const values: Record<string, string> = {
+      date: new Date(lab.recorded_at).toISOString().split("T")[0],
+    };
+    headers.forEach(h => {
+      const val = (lab as any)[h.key];
+      values[h.key] = val != null ? String(val) : "";
+    });
+    setEditValues(values);
     setEditingId(lab.id);
-    setEditDate(new Date(lab.recorded_at).toISOString().split("T")[0]);
   };
 
-  const saveDate = async () => {
-    if (!editingId || !editDate) return;
+  const updateEditValue = (key: string, value: string) => {
+    setEditValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
     setLoading(true);
     try {
-      await updateLabDate(editingId, editDate);
-      toast({ title: t("detail.labDateUpdated") });
+      // Find original lab to compare
+      const original = labs.find(l => l.id === editingId);
+      if (!original) return;
+
+      const updates: Record<string, any> = {};
+
+      // Check date change
+      const origDate = new Date(original.recorded_at).toISOString().split("T")[0];
+      if (editValues.date && editValues.date !== origDate) {
+        updates.recorded_at = new Date(editValues.date).toISOString();
+      }
+
+      // Check lab value changes
+      headers.forEach(h => {
+        const newStr = editValues[h.key]?.trim() ?? "";
+        const origVal = (original as any)[h.key];
+        const newVal = newStr === "" ? null : parseFloat(newStr);
+
+        if (newStr === "" && origVal == null) return; // both null, no change
+        if (newStr !== "" && isNaN(newVal!)) return; // invalid number, skip
+
+        if (origVal !== newVal) {
+          updates[h.key] = newVal;
+        }
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await updateLabResult(editingId, updates);
+        toast({ title: t("detail.labUpdated") || "Таҳлил янгиланди" });
+        onLabChanged?.();
+      }
+
       setEditingId(null);
-      onLabChanged?.();
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
@@ -138,63 +178,83 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((lab) => (
-                <TableRow key={lab.id}>
-                  <TableCell className="whitespace-nowrap font-medium sticky left-0 bg-background z-10">
-                    {editingId === lab.id ? (
-                      <div className="flex items-center gap-1">
+              {sorted.map((lab) => {
+                const isEditing = editingId === lab.id;
+                return (
+                  <TableRow key={lab.id}>
+                    <TableCell className="whitespace-nowrap font-medium sticky left-0 bg-background z-10">
+                      {isEditing ? (
                         <Input
                           type="date"
-                          value={editDate}
-                          onChange={(e) => setEditDate(e.target.value)}
+                          value={editValues.date || ""}
+                          onChange={(e) => updateEditValue("date", e.target.value)}
                           className="h-7 w-36 text-xs"
                         />
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={saveDate} disabled={loading}>
-                          <Check className="h-3.5 w-3.5 text-primary" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(null)}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      new Date(lab.recorded_at).toLocaleDateString()
-                    )}
-                  </TableCell>
-                  {headers.map((h) => {
-                    const val = (lab as any)[h.key];
-                    const colorClass = val != null ? getCellColor(h.key, val) : "";
-                    return (
-                      <TableCell key={h.key} className={`text-center ${colorClass}`}>
-                        {val != null ? String(val) : "—"}
-                      </TableCell>
-                    );
-                  })}
-                  {editable && (
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          title={t("detail.editDate")}
-                          onClick={() => startEdit(lab)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          title={t("detail.deleteLab")}
-                          onClick={() => setDeleteId(lab.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      ) : (
+                        new Date(lab.recorded_at).toLocaleDateString()
+                      )}
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
+                    {headers.map((h) => {
+                      if (isEditing) {
+                        return (
+                          <TableCell key={h.key} className="text-center p-1">
+                            <Input
+                              type="number"
+                              step="any"
+                              value={editValues[h.key] ?? ""}
+                              onChange={(e) => updateEditValue(h.key, e.target.value)}
+                              className="h-7 w-20 text-xs text-center mx-auto"
+                              placeholder="—"
+                            />
+                          </TableCell>
+                        );
+                      }
+                      const val = (lab as any)[h.key];
+                      const colorClass = val != null ? getCellColor(h.key, val) : "";
+                      return (
+                        <TableCell key={h.key} className={`text-center ${colorClass}`}>
+                          {val != null ? String(val) : "—"}
+                        </TableCell>
+                      );
+                    })}
+                    {editable && (
+                      <TableCell className="text-center">
+                        {isEditing ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit} disabled={loading}>
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              title={t("detail.editDate")}
+                              onClick={() => startEdit(lab)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              title={t("detail.deleteLab")}
+                              onClick={() => setDeleteId(lab.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           <ScrollBar orientation="horizontal" />
