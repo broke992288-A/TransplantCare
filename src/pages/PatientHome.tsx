@@ -149,7 +149,7 @@ function LabItemTrend({ label, value, prev }: { label: string; value: number | n
         <p className="text-lg font-semibold">{value}</p>
       </div>
       {trend === "up" && <TrendingUp className="h-4 w-4 text-destructive" />}
-      {trend === "down" && <TrendingDown className="h-4 w-4 text-green-600" />}
+      {trend === "down" && <TrendingDown className="h-4 w-4 text-success" />}
       {trend === "same" && <Minus className="h-4 w-4 text-muted-foreground" />}
     </div>
   );
