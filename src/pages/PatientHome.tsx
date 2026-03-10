@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FlaskConical, TrendingUp, TrendingDown, Minus, Phone, Calendar, User } from "lucide-react";
+import { Clock, FlaskConical, TrendingUp, TrendingDown, Minus, Phone, Calendar, User, Info } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";
