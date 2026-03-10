@@ -123,6 +123,11 @@ export default function PatientDetail() {
             <InfoRow label={t("add.gender")} value={patient.gender ? t(`gender.${patient.gender}`) : "—"} />
             <InfoRow label={t("detail.dob")} value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : "—"} />
             <InfoRow label={t("detail.added")} value={new Date(patient.created_at).toLocaleDateString()} />
+            {patient.blood_type && <InfoRow label={t("add.bloodType")} value={patient.blood_type} />}
+            {patient.donor_blood_type && <InfoRow label={t("add.donorBloodType")} value={patient.donor_blood_type} />}
+            {patient.blood_type && patient.donor_blood_type && patient.blood_type !== patient.donor_blood_type && (
+              <InfoRow label={t("add.titerTherapy")} value={patient.titer_therapy ? t("add.yes") : t("add.no")} />
+            )}
           </CardContent>
         </Card>
 
