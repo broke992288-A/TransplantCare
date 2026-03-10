@@ -1,7 +1,17 @@
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useToast } from "@/hooks/use-toast";
 import { REFERENCE_RANGES } from "./LabResultsTable";
+import { updateLabDate, deleteLabResult } from "@/services/labService";
+import { Pencil, Trash2, Check, X } from "lucide-react";
 import type { LabResult } from "@/types/patient";
 
 const ALL_HEADERS = [
@@ -50,15 +60,22 @@ interface Props {
   labs: LabResult[];
   organType?: string;
   showAll?: boolean;
+  editable?: boolean;
+  onLabChanged?: () => void;
 }
 
-export default function LabHistoryTable({ labs, organType, showAll = false }: Props) {
+export default function LabHistoryTable({ labs, organType, showAll = false, editable = false, onLabChanged }: Props) {
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   if (labs.length === 0) return null;
 
   const sorted = [...labs].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
 
-  // Filter headers: if showAll, show all columns that have at least one value across all labs
   let headers = ALL_HEADERS;
   if (!showAll && organType) {
     const liverKeys = ["tacrolimus_level", "alt", "ast", "total_bilirubin", "direct_bilirubin"];
@@ -68,45 +85,136 @@ export default function LabHistoryTable({ labs, organType, showAll = false }: Pr
   }
 
   if (showAll) {
-    // Only show columns that have at least one non-null value
-    headers = headers.filter(h =>
-      sorted.some(lab => (lab as any)[h.key] != null)
-    );
+    headers = headers.filter(h => sorted.some(lab => (lab as any)[h.key] != null));
   }
 
+  const startEdit = (lab: LabResult) => {
+    setEditingId(lab.id);
+    setEditDate(new Date(lab.recorded_at).toISOString().split("T")[0]);
+  };
+
+  const saveDate = async () => {
+    if (!editingId || !editDate) return;
+    setLoading(true);
+    try {
+      await updateLabDate(editingId, editDate);
+      toast({ title: t("detail.labDateUpdated") });
+      setEditingId(null);
+      onLabChanged?.();
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setLoading(true);
+    try {
+      await deleteLabResult(deleteId);
+      toast({ title: t("detail.labDeleted") });
+      setDeleteId(null);
+      onLabChanged?.();
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="rounded-lg border overflow-hidden">
-      <ScrollArea className="w-full">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="whitespace-nowrap sticky left-0 bg-background z-10 min-w-[100px]">{t("detail.date")}</TableHead>
-              {headers.map((h) => (
-                <TableHead key={h.key} className="whitespace-nowrap text-center min-w-[80px]">{h.label}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((lab) => (
-              <TableRow key={lab.id}>
-                <TableCell className="whitespace-nowrap font-medium sticky left-0 bg-background z-10">
-                  {new Date(lab.recorded_at).toLocaleDateString()}
-                </TableCell>
-                {headers.map((h) => {
-                  const val = (lab as any)[h.key];
-                  const colorClass = val != null ? getCellColor(h.key, val) : "";
-                  return (
-                    <TableCell key={h.key} className={`text-center ${colorClass}`}>
-                      {val != null ? String(val) : "—"}
-                    </TableCell>
-                  );
-                })}
+    <>
+      <div className="rounded-lg border overflow-hidden">
+        <ScrollArea className="w-full">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap sticky left-0 bg-background z-10 min-w-[100px]">{t("detail.date")}</TableHead>
+                {headers.map((h) => (
+                  <TableHead key={h.key} className="whitespace-nowrap text-center min-w-[80px]">{h.label}</TableHead>
+                ))}
+                {editable && <TableHead className="whitespace-nowrap text-center min-w-[80px]" />}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
-    </div>
+            </TableHeader>
+            <TableBody>
+              {sorted.map((lab) => (
+                <TableRow key={lab.id}>
+                  <TableCell className="whitespace-nowrap font-medium sticky left-0 bg-background z-10">
+                    {editingId === lab.id ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="h-7 w-36 text-xs"
+                        />
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={saveDate} disabled={loading}>
+                          <Check className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(null)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      new Date(lab.recorded_at).toLocaleDateString()
+                    )}
+                  </TableCell>
+                  {headers.map((h) => {
+                    const val = (lab as any)[h.key];
+                    const colorClass = val != null ? getCellColor(h.key, val) : "";
+                    return (
+                      <TableCell key={h.key} className={`text-center ${colorClass}`}>
+                        {val != null ? String(val) : "—"}
+                      </TableCell>
+                    );
+                  })}
+                  {editable && (
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          title={t("detail.editDate")}
+                          onClick={() => startEdit(lab)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          title={t("detail.deleteLab")}
+                          onClick={() => setDeleteId(lab.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("detail.confirmDeleteLab")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("detail.confirmDeleteLabDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={loading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t("detail.deleteLab")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
