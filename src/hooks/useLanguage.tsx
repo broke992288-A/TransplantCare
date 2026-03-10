@@ -1213,6 +1213,8 @@ const translations: Record<Language, Record<string, string>> = {
     "detail.riskApproved": "Xavf tasdiqlandi",
     "detail.provideReason": "Xavf darajasi va sababini kiriting",
     "detail.riskOverridden": "Xavf o'zgartirildi",
+    "detail.recalculateRisk": "Xavfni qayta hisoblash",
+    "detail.riskRecalculated": "Xavf qayta hisoblandi",
     "detail.addLab": "Tahlil qo'shish",
     "detail.addNewLab": "Yangi tahlil natijalari qo'shish",
     "detail.saveLab": "Natijalarni saqlash",
