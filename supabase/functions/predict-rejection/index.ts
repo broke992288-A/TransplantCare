@@ -60,7 +60,7 @@ RULES:
 - If blood type incompatibility exists WITHOUT titer therapy, this is a MAJOR risk factor for AMR
 - If blood type incompatibility exists WITH titer therapy, consider residual AMR risk as a moderate factor
 
-${langInstruction}
+IMPORTANT: ALWAYS write ALL text fields (message, reasons, timeframe) in English. This ensures consistency across translations.
 
 You MUST respond using the predict_rejection tool.`;
 
