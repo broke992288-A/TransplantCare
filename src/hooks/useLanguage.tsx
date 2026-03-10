@@ -879,6 +879,8 @@ const translations: Record<Language, Record<string, string>> = {
     "alerts.view": "Просмотр",
     "alerts.noAlerts": "Нет оповещений",
     "alerts.markRead": "Прочитано",
+    "alerts.markAllRead": "Отметить все прочитанными",
+    "alerts.allMarkedRead": "Все оповещения отмечены",
     "alerts.criticalLabResult": "Критический анализ",
     "alerts.medicationStockCritical": "Критический запас лекарств",
     "alerts.missedCheckin": "Пропущен приём",
