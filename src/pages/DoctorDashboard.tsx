@@ -66,6 +66,9 @@ export default function DoctorDashboard() {
           <PatientPriorityPanel patients={patients} labs={labs} />
         )}
 
+        {/* Overdue Labs Panel */}
+        {!loading && patients.length > 0 && <OverdueLabsPanel />}
+
         {/* Summary cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {loading

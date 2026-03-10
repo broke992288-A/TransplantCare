@@ -114,6 +114,7 @@ export default function PatientDetail() {
 
         <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
         <PatientAlertsCard patientId={patient.id} />
+        <PatientLabScheduleCard patientId={patient.id} />
 
         <Card>
           <CardHeader><CardTitle className="text-lg">{t("detail.patientInfo")}</CardTitle></CardHeader>

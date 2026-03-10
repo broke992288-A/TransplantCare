@@ -51,6 +51,8 @@ export default function PatientHome() {
               </CardContent>
             </Card>
 
+            {patient.id && <PatientLabScheduleCard patientId={patient.id} isPatientView />}
+
             {latestLab && (
               <Card>
                 <CardHeader className="flex flex-row items-center gap-2"><FlaskConical className="h-5 w-5 text-primary" /><CardTitle className="text-lg">{t("lab.latestLabs")}</CardTitle></CardHeader>
