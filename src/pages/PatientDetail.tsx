@@ -33,9 +33,22 @@ export default function PatientDetail() {
   const { t } = useLanguage();
 
   const { patient, labs: allLabs, latestLab, events: timeline, loading, invalidateAll } = usePatientDetail(id);
-  const { data: riskSnapshots = [] } = useRiskSnapshots(id);
-  const latestRisk = riskSnapshots[0] ?? null;
-  const prevRisk = riskSnapshots[1] ?? null;
+  const { data: riskSnapshots = [] } = useRiskSnapshots(id, 20);
+  
+  // Find the snapshot matching the latest lab, not just the most recently created snapshot
+  const latestRisk = (() => {
+    if (!latestLab || riskSnapshots.length === 0) return riskSnapshots[0] ?? null;
+    const matchingSnapshot = riskSnapshots.find(s => s.lab_result_id === latestLab.id);
+    return matchingSnapshot ?? riskSnapshots[0] ?? null;
+  })();
+  
+  // Previous risk = snapshot for the second latest lab
+  const prevRisk = (() => {
+    if (allLabs.length < 2 || riskSnapshots.length < 2) return riskSnapshots[1] ?? null;
+    const secondLab = allLabs[1];
+    const matchingPrev = riskSnapshots.find(s => s.lab_result_id === secondLab.id);
+    return matchingPrev ?? riskSnapshots[1] ?? null;
+  })();
 
   useEffect(() => {
     if (id) logAudit({ action: "doctor_view_patient", entityType: "patient", entityId: id });
