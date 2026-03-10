@@ -1,4 +1,4 @@
-import { AlertTriangle, AlertCircle, Info, CheckCircle, Clock, Bell } from "lucide-react";
+import { AlertTriangle, AlertCircle, Info, CheckCircle, Clock, Bell, CheckCheck } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

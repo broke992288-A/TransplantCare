@@ -4,7 +4,7 @@ import TranslatedText from "@/components/features/TranslatedText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, FlaskConical, TrendingUp, Shield, Clock, Phone, Calendar, Pill } from "lucide-react";
+import { User, FlaskConical, TrendingUp, Shield, Clock, Phone, Calendar, Pill, Stethoscope } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";

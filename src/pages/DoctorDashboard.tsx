@@ -213,7 +213,7 @@ export default function DoctorDashboard() {
                     <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}>
                       <TableCell className="font-medium">{p.full_name}</TableCell>
                       <TableCell>{t(`organ.${p.organ_type}`)}</TableCell>
-                      <TableCell>{daysSince(p.created_at)}</TableCell>
+                      <TableCell>{p.transplant_date ? daysSince(p.transplant_date) : "—"}</TableCell>
                       <TableCell>{riskBadge(p.risk_level)}</TableCell>
                     </TableRow>
                   ))}
