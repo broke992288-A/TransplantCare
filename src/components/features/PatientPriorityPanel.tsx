@@ -74,24 +74,24 @@ export default function PatientPriorityPanel({ patients, labs }: Props) {
           <div className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">
-              {t("dashboard.patientsAttention") || "Bugun e'tibor talab qiladigan bemorlar"}
+              {t("dashboard.patientsAttention")}
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
             {criticalCount > 0 && (
               <Badge className="bg-destructive text-destructive-foreground">
-                {criticalCount} zudlik
+                {criticalCount} {t("dashboard.criticalCount")}
               </Badge>
             )}
             {reviewCount > 0 && (
               <Badge className="bg-warning text-warning-foreground">
-                {reviewCount} ko'rib chiqish
+                {reviewCount} {t("dashboard.reviewCount")}
               </Badge>
             )}
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          ⚕️ Ustuvorlik ballari AI yordamida hisoblanadi va klinik qarorlarni qo'llab-quvvatlash uchun mo'ljallangan.
+          ⚕️ {t("dashboard.priorityDisclaimer")}
         </p>
       </CardHeader>
       <CardContent>
