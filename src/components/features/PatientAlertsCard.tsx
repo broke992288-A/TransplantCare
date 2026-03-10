@@ -6,6 +6,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { usePatientAlerts, useInvalidatePatientAlerts } from "@/hooks/usePatientAlerts";
 import { markAlertRead, markAllAlertsRead } from "@/services/patientAlertService";
 import { useToast } from "@/hooks/use-toast";
+import TranslatedText from "@/components/features/TranslatedText";
 
 interface PatientAlertsCardProps {
   patientId: string;
