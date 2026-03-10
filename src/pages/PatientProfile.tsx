@@ -167,7 +167,7 @@ export default function PatientProfile() {
 
           {/* Risk */}
           <TabsContent value="risk" className="space-y-4">
-            <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
+            <PatientRiskCard snapshot={latestRisk} />
             <PatientAlertsCard patientId={patient.id} />
           </TabsContent>
 
