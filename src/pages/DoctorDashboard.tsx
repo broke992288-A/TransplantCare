@@ -13,6 +13,7 @@ import { SkeletonCard, SkeletonTable, SkeletonChart } from "@/components/ui/skel
 import { EmptyState } from "@/components/ui/empty-state";
 import PredictionPanel from "@/components/features/PredictionPanel";
 import PatientPriorityPanel from "@/components/features/PatientPriorityPanel";
+import OverdueLabsPanel from "@/components/features/OverdueLabsPanel";
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "—";
