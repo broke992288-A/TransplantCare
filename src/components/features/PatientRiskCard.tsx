@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, HeartPulse, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { Shield, HeartPulse, CheckCircle, Stethoscope, Info } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
 
@@ -53,11 +53,11 @@ export default function PatientRiskCard({ snapshot, loading }: PatientRiskCardPr
       emoji: "⚠️",
     },
     high: {
-      icon: AlertTriangle,
-      iconColor: "text-destructive",
-      bgColor: "bg-destructive/10",
-      borderColor: "border-destructive/30",
-      emoji: "🔴",
+      icon: Stethoscope,
+      iconColor: "text-orange-500",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      emoji: "🩺",
     },
   }[level] ?? {
     icon: Info,
