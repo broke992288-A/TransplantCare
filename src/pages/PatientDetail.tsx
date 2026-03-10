@@ -37,19 +37,43 @@ export default function PatientDetail() {
   const { patient, labs: allLabs, latestLab, events: timeline, loading, invalidateAll } = usePatientDetail(id);
   const { data: riskSnapshots = [] } = useRiskSnapshots(id, 20);
   
-  // Find the snapshot matching the latest lab, not just the most recently created snapshot
-  const latestRisk = (() => {
-    if (!latestLab || riskSnapshots.length === 0) return riskSnapshots[0] ?? null;
-    const matchingSnapshot = riskSnapshots.find(s => s.lab_result_id === latestLab.id);
-    return matchingSnapshot ?? riskSnapshots[0] ?? null;
+  // Find the snapshot matching the latest lab, or compute on-the-fly if missing
+  const latestRisk: RiskSnapshot | null = (() => {
+    if (riskSnapshots.length === 0 && !latestLab) return null;
+    if (latestLab) {
+      const matchingSnapshot = riskSnapshots.find(s => s.lab_result_id === latestLab.id);
+      if (matchingSnapshot) return matchingSnapshot;
+      // No snapshot for the latest lab — compute on-the-fly
+      const prevLab = allLabs.length >= 2 ? allLabs[1] : null;
+      const computed = computeRiskScore(patient?.organ_type ?? "kidney", latestLab, {
+        transplant_number: patient?.transplant_number,
+        dialysis_history: patient?.dialysis_history,
+        transplant_date: patient?.transplant_date,
+      }, prevLab);
+      return {
+        id: "computed",
+        patient_id: latestLab.patient_id,
+        lab_result_id: latestLab.id,
+        score: computed.score,
+        risk_level: computed.level,
+        creatinine: latestLab.creatinine,
+        alt: latestLab.alt,
+        ast: latestLab.ast,
+        total_bilirubin: latestLab.total_bilirubin,
+        tacrolimus_level: latestLab.tacrolimus_level,
+        details: { flags: computed.flags, explanations: computed.explanations },
+        created_at: latestLab.recorded_at ?? latestLab.created_at,
+      } as RiskSnapshot;
+    }
+    return riskSnapshots[0] ?? null;
   })();
   
   // Previous risk = snapshot for the second latest lab
   const prevRisk = (() => {
-    if (allLabs.length < 2 || riskSnapshots.length < 2) return riskSnapshots[1] ?? null;
+    if (allLabs.length < 2 || riskSnapshots.length < 1) return null;
     const secondLab = allLabs[1];
     const matchingPrev = riskSnapshots.find(s => s.lab_result_id === secondLab.id);
-    return matchingPrev ?? riskSnapshots[1] ?? null;
+    return matchingPrev ?? riskSnapshots[0] ?? null;
   })();
 
   useEffect(() => {
