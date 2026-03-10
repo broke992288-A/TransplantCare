@@ -108,6 +108,26 @@ export async function upsertLabResult(labData: Record<string, any>): Promise<any
     return existing;
   }
 
-  // No existing record — insert new
+// No existing record — insert new
   return insertLabResult(labData);
+}
+
+/** Update a lab result's recorded_at date */
+export async function updateLabDate(labId: string, newDate: string) {
+  const { data, error } = await supabase
+    .from("lab_results")
+    .update({ recorded_at: new Date(newDate).toISOString() })
+    .eq("id", labId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** Delete a lab result by ID */
+export async function deleteLabResult(labId: string) {
+  // First delete related risk_snapshots
+  await supabase.from("risk_snapshots").delete().eq("lab_result_id", labId);
+  const { error } = await supabase.from("lab_results").delete().eq("id", labId);
+  if (error) throw error;
 }
