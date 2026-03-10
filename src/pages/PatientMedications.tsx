@@ -120,7 +120,10 @@ export default function PatientMedications() {
                       <TableBody>
                         {filteredActive.map((med) => (
                           <TableRow key={med.id}>
-                            <TableCell className="font-medium">{med.medication_name}</TableCell>
+                            <TableCell className="font-medium">
+                              {med.medication_name}
+                              <Badge variant="outline" className="ml-2 text-[10px]">{t(GROUP_LABEL_KEYS[getMedicationGroup(med.medication_name)])}</Badge>
+                            </TableCell>
                             <TableCell>
                               <Badge variant="secondary">{med.dosage}</Badge>
                             </TableCell>
