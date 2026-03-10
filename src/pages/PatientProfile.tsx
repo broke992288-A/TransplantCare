@@ -122,7 +122,8 @@ export default function PatientProfile() {
             </Card>
             <PatientRiskCard snapshot={latestRisk} />
             {patient.risk_level === "high" && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+              <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-900/30 dark:bg-orange-950/20 p-4 text-sm flex items-start gap-2">
+                <Stethoscope className="h-4 w-4 mt-0.5 shrink-0 text-orange-500" />
                 {t("profile.highRiskWarning")}
               </div>
             )}
