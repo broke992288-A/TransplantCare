@@ -152,7 +152,7 @@ export default function DoctorDashboard() {
                           </TableCell>
                           <TableCell>{keyLab}</TableCell>
                           <TableCell>{riskBadge(p.risk_level)}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{timeAgo(lastEval)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{timeAgo(lastEval, t)}</TableCell>
                         </TableRow>
                       );
                     })}
