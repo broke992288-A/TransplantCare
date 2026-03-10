@@ -53,11 +53,14 @@ export async function markAlertRead(alertId: string) {
   if (error) throw error;
 }
 
-export async function markAllAlertsRead(patientId: string) {
-  const { error } = await supabase
+export async function markAllAlertsRead(patientId?: string) {
+  let query = supabase
     .from("patient_alerts")
     .update({ is_read: true } as any)
-    .eq("patient_id", patientId)
     .eq("is_read", false);
+  if (patientId) {
+    query = query.eq("patient_id", patientId);
+  }
+  const { error } = await query;
   if (error) throw error;
 }
