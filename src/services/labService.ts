@@ -124,6 +124,18 @@ export async function updateLabDate(labId: string, newDate: string) {
   return data;
 }
 
+/** Update a lab result with partial data (any fields) */
+export async function updateLabResult(labId: string, updates: Record<string, any>) {
+  const { data, error } = await supabase
+    .from("lab_results")
+    .update(updates)
+    .eq("id", labId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 /** Delete a lab result by ID */
 export async function deleteLabResult(labId: string) {
   // First delete related risk_snapshots
