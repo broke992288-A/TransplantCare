@@ -147,7 +147,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
                     <p className="leading-snug">{exp.message}</p>
                     {exp.change_pct !== undefined && (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {exp.change_pct > 0 ? "↑" : "↓"} {Math.abs(exp.change_pct).toFixed(0)}% {t("risk.sinceLastTest") || "since last test"}
+                        {exp.change_pct > 0 ? "↑" : "↓"} {Math.abs(exp.change_pct).toFixed(0)}% {t("risk.sinceLastTest")}
                       </p>
                     )}
                   </div>
