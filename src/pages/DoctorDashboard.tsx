@@ -15,14 +15,14 @@ import PredictionPanel from "@/components/features/PredictionPanel";
 import PatientPriorityPanel from "@/components/features/PatientPriorityPanel";
 import OverdueLabsPanel from "@/components/features/OverdueLabsPanel";
 
-function timeAgo(dateStr: string | null): string {
+function timeAgo(dateStr: string | null, t: (k: string) => string): string {
   if (!dateStr) return "—";
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins} ${t("time.minAgo")}`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return `${hours} ${t("time.hourAgo")}`;
+  return `${Math.floor(hours / 24)} ${t("time.dayAgo")}`;
 }
 
 export default function DoctorDashboard() {
