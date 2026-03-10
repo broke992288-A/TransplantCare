@@ -87,6 +87,21 @@ export default function PatientDetail() {
   const [overrideLevel, setOverrideLevel] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
   const [overriding, setOverriding] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+
+  const handleRecalculate = async () => {
+    if (!id) return;
+    setRecalculating(true);
+    try {
+      const res = await triggerRiskRecalculation(id);
+      toast({ title: t("detail.riskRecalculated"), description: `${res.snapshots_created ?? 0} snapshot(s)` });
+      invalidateAll();
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const handleOverride = async () => {
     if (!user || !id || !overrideLevel || !overrideReason.trim()) {
