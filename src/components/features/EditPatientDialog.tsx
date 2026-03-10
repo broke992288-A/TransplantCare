@@ -82,6 +82,9 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
         setReturnDialysisDate(patient.return_dialysis_date || "");
         setRejectionType(patient.rejection_type || "");
         setBiopsyResult(patient.biopsy_result || "");
+        setBloodType(patient.blood_type || "");
+        setDonorBloodType(patient.donor_blood_type || "");
+        setTiterTherapy(patient.titer_therapy || false);
       }
       setOpen(v);
     }}>
