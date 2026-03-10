@@ -11,6 +11,8 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useChangeDosage } from "@/hooks/useMedications";
 import type { Medication } from "@/services/medicationService";
+import SourceLanguageSelect from "@/components/features/SourceLanguageSelect";
+import { encodeSourceLang } from "@/utils/langPrefix";
 
 interface Props {
   medication: Medication;
