@@ -101,8 +101,22 @@ export default function Alerts() {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="text-lg font-semibold">{t("alerts.alertCenter")}</CardTitle>
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" onClick={async () => {
+                try {
+                  await markAllAlertsRead();
+                  queryClient.invalidateQueries({ queryKey: ["all-alerts"] });
+                  queryClient.invalidateQueries({ queryKey: ["unread-alert-count"] });
+                  toast({ title: t("alerts.allMarkedRead") });
+                } catch (err: any) {
+                  toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+                }
+              }}>
+                <CheckCheck className="h-4 w-4 mr-1" /> {t("alerts.markAllRead")}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
