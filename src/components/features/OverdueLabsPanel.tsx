@@ -2,20 +2,19 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, AlertTriangle, Info } from "lucide-react";
+import { CalendarClock, Info } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useOverdueLabSchedules } from "@/hooks/useLabSchedule";
 import { SkeletonTable } from "@/components/ui/skeleton-card";
-import { EmptyState } from "@/components/ui/empty-state";
 
-function statusBadge(status: string) {
+function StatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
   switch (status) {
     case "overdue":
-      return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Overdue</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive border-destructive/30">{t("schedule.overdue")}</Badge>;
     case "due_soon":
-      return <Badge className="bg-warning/10 text-warning border-warning/30">Due soon</Badge>;
+      return <Badge className="bg-warning/10 text-warning border-warning/30">{t("schedule.dueSoon")}</Badge>;
     default:
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">On schedule</Badge>;
+      return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">{t("schedule.onSchedule")}</Badge>;
   }
 }
 
@@ -24,9 +23,7 @@ export default function OverdueLabsPanel() {
   const { t } = useLanguage();
   const { data: schedules, isLoading } = useOverdueLabSchedules();
 
-  // Filter to only overdue and due_soon
   const actionable = (schedules ?? []).filter((s) => s.status === "overdue" || s.status === "due_soon");
-  // Deduplicate: show only the most urgent per patient
   const byPatient = new Map<string, typeof actionable[0]>();
   actionable.forEach((s) => {
     const existing = byPatient.get(s.patient_id);
@@ -78,7 +75,7 @@ export default function OverdueLabsPanel() {
                     <TableCell className="text-sm">
                       {new Date(item.scheduled_date).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>{statusBadge(item.status)}</TableCell>
+                    <TableCell><StatusBadge status={item.status} t={t} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

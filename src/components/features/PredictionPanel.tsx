@@ -106,9 +106,9 @@ export default function PredictionPanel({ patientId, patientName, organType, cur
           </div>
         )}
 
-        {/* Disclaimer */}
+        {/* Disclaimer — use translated version */}
         <p className="text-xs text-muted-foreground italic border-t pt-2">
-          ⚕️ {prediction.disclaimer}
+          ⚕️ {t("prediction.disclaimer")}
         </p>
       </CardContent>
     </Card>

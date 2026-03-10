@@ -24,21 +24,56 @@ export interface PriorityInput {
 export interface PriorityResult {
   score: number;
   category: "critical" | "review" | "stable";
+  reasonKeys: { key: string; value?: string | number }[];
   reasons: string[];
 }
 
-export function calculatePriorityScore(input: PriorityInput): PriorityResult {
+/** Translation-aware reason builder */
+function buildReasons(
+  reasonKeys: { key: string; value?: string | number }[],
+  t?: (key: string) => string
+): string[] {
+  if (!t) {
+    return reasonKeys.map(r => {
+      const label = REASON_FALLBACKS[r.key] ?? r.key;
+      return r.value !== undefined ? `${label}: ${r.value}` : label;
+    });
+  }
+  return reasonKeys.map(r => {
+    const translated = t(`priority.${r.key}`);
+    const label = translated !== `priority.${r.key}` ? translated : (REASON_FALLBACKS[r.key] ?? r.key);
+    return r.value !== undefined ? `${label}: ${r.value}` : label;
+  });
+}
+
+const REASON_FALLBACKS: Record<string, string> = {
+  highRisk: "Yuqori xavf darajasi (>80)",
+  mediumRisk: "O'rtacha xavf darajasi",
+  highLevel: "Yuqori xavf darajasi",
+  newLab: "Yangi tahlil yuklandi (24 soat ichida)",
+  notReviewed: "Ko'rib chiqilmagan",
+  neverReviewed: "Hech qachon ko'rib chiqilmagan",
+  creatinineHigh: "Kreatinin yuqori",
+  egfrLow: "eGFR past",
+  potassiumAbnormal: "Kaliy og'ishi",
+  altHigh: "ALT yuqori",
+  astHigh: "AST yuqori",
+  tacrolimusAbnormal: "Tacrolimus og'ishi",
+  bilirubinHigh: "Bilirubin yuqori",
+};
+
+export function calculatePriorityScore(input: PriorityInput, t?: (key: string) => string): PriorityResult {
   let score = 0;
-  const reasons: string[] = [];
+  const reasonKeys: { key: string; value?: string | number }[] = [];
 
   // 1. Current Risk Score (up to 40 points)
   const riskScore = input.riskScore ?? 0;
   if (riskScore > 80) {
     score += 40;
-    reasons.push("Yuqori xavf darajasi (>80)");
+    reasonKeys.push({ key: "highRisk" });
   } else if (riskScore > 60) {
     score += 25;
-    reasons.push("O'rtacha xavf darajasi");
+    reasonKeys.push({ key: "mediumRisk" });
   } else if (riskScore > 40) {
     score += 12;
   }
@@ -46,8 +81,8 @@ export function calculatePriorityScore(input: PriorityInput): PriorityResult {
   // 2. Risk level as prediction proxy (up to 20 points)
   if (input.riskLevel === "high") {
     score += 20;
-    if (!reasons.some(r => r.includes("xavf"))) {
-      reasons.push("Yuqori xavf darajasi");
+    if (!reasonKeys.some(r => r.key === "highRisk")) {
+      reasonKeys.push({ key: "highLevel" });
     }
   } else if (input.riskLevel === "medium") {
     score += 10;
@@ -58,7 +93,7 @@ export function calculatePriorityScore(input: PriorityInput): PriorityResult {
     const hoursAgo = (Date.now() - new Date(input.latestLabDate).getTime()) / 3600000;
     if (hoursAgo <= 24) {
       score += 10;
-      reasons.push("Yangi tahlil yuklandi (24 soat ichida)");
+      reasonKeys.push({ key: "newLab" });
     } else if (hoursAgo <= 72) {
       score += 5;
     }
@@ -69,17 +104,16 @@ export function calculatePriorityScore(input: PriorityInput): PriorityResult {
     const daysSinceReview = (Date.now() - new Date(input.lastReviewDate).getTime()) / 86400000;
     if (daysSinceReview > 14) {
       score += 15;
-      reasons.push(`${Math.floor(daysSinceReview)} kun ko'rib chiqilmagan`);
+      reasonKeys.push({ key: "notReviewed", value: Math.floor(daysSinceReview) });
     } else if (daysSinceReview > 10) {
       score += 10;
-      reasons.push(`${Math.floor(daysSinceReview)} kun ko'rib chiqilmagan`);
+      reasonKeys.push({ key: "notReviewed", value: Math.floor(daysSinceReview) });
     } else if (daysSinceReview > 7) {
       score += 5;
     }
   } else {
-    // Never reviewed
     score += 15;
-    reasons.push("Hech qachon ko'rib chiqilmagan");
+    reasonKeys.push({ key: "neverReviewed" });
   }
 
   // 5. Critical lab values (up to 15 points)
@@ -88,37 +122,36 @@ export function calculatePriorityScore(input: PriorityInput): PriorityResult {
     if (input.organType === "kidney") {
       if (lab.creatinine && lab.creatinine > 2.0) {
         score += 8;
-        reasons.push(`Kreatinin yuqori: ${lab.creatinine}`);
+        reasonKeys.push({ key: "creatinineHigh", value: lab.creatinine });
       }
       if (lab.egfr && lab.egfr < 30) {
         score += 7;
-        reasons.push(`eGFR past: ${lab.egfr}`);
+        reasonKeys.push({ key: "egfrLow", value: lab.egfr });
       }
       if (lab.potassium && (lab.potassium > 5.5 || lab.potassium < 3.0)) {
         score += 7;
-        reasons.push(`Kaliy og'ishi: ${lab.potassium}`);
+        reasonKeys.push({ key: "potassiumAbnormal", value: lab.potassium });
       }
     } else if (input.organType === "liver") {
       if (lab.alt && lab.alt > 80) {
         score += 5;
-        reasons.push(`ALT yuqori: ${lab.alt}`);
+        reasonKeys.push({ key: "altHigh", value: lab.alt });
       }
       if (lab.ast && lab.ast > 80) {
         score += 5;
-        reasons.push(`AST yuqori: ${lab.ast}`);
+        reasonKeys.push({ key: "astHigh", value: lab.ast });
       }
       if (lab.tacrolimus_level && (lab.tacrolimus_level < 4 || lab.tacrolimus_level > 20)) {
         score += 7;
-        reasons.push(`Tacrolimus og'ishi: ${lab.tacrolimus_level}`);
+        reasonKeys.push({ key: "tacrolimusAbnormal", value: lab.tacrolimus_level });
       }
       if (lab.total_bilirubin && lab.total_bilirubin > 2.0) {
         score += 5;
-        reasons.push(`Bilirubin yuqori: ${lab.total_bilirubin}`);
+        reasonKeys.push({ key: "bilirubinHigh", value: lab.total_bilirubin });
       }
     }
   }
 
-  // Clamp to 0–100
   score = Math.min(100, Math.max(0, score));
 
   const category: PriorityResult["category"] =
@@ -126,10 +159,17 @@ export function calculatePriorityScore(input: PriorityInput): PriorityResult {
     score >= 50 ? "review" :
     "stable";
 
-  return { score, category, reasons };
+  const reasons = buildReasons(reasonKeys, t);
+
+  return { score, category, reasonKeys, reasons };
 }
 
-export function priorityCategoryLabel(cat: "critical" | "review" | "stable") {
+export function priorityCategoryLabel(cat: "critical" | "review" | "stable", t?: (key: string) => string) {
+  if (t) {
+    const key = `priority.cat_${cat}`;
+    const translated = t(key);
+    if (translated !== key) return translated;
+  }
   switch (cat) {
     case "critical": return "Zudlik bilan e'tibor";
     case "review": return "Ko'rib chiqish kerak";

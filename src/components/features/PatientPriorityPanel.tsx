@@ -7,7 +7,6 @@ import { useLanguage } from "@/hooks/useLanguage";
 import {
   calculatePriorityScore,
   priorityCategoryLabel,
-  priorityCategoryColor,
   type PriorityInput,
   type PriorityResult,
 } from "@/utils/priorityScore";
@@ -56,14 +55,13 @@ export default function PatientPriorityPanel({ patients, labs }: Props) {
         organType: patient.organ_type,
         latestLab: lab,
       };
-      return { patient, priority: calculatePriorityScore(input) };
+      return { patient, priority: calculatePriorityScore(input, t) };
     })
     .sort((a, b) => b.priority.score - a.priority.score);
 
   const criticalCount = prioritized.filter(p => p.priority.category === "critical").length;
   const reviewCount = prioritized.filter(p => p.priority.category === "review").length;
 
-  // Only show patients that need attention (critical + review), plus top stable ones
   const attentionPatients = prioritized.filter(p => p.priority.category !== "stable");
   const displayPatients = attentionPatients.length > 0 ? attentionPatients : prioritized.slice(0, 5);
 
@@ -145,7 +143,7 @@ export default function PatientPriorityPanel({ patients, labs }: Props) {
                   <TableCell>
                     <Badge variant="outline" className="gap-1">
                       {getCategoryIcon(priority.category)}
-                      {priorityCategoryLabel(priority.category)}
+                      {priorityCategoryLabel(priority.category, t)}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[250px]">

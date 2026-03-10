@@ -128,7 +128,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
         {explanations.length > 0 ? (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("risk.explanation") || "Why this risk level"}
+              {t("risk.explanation")}
             </p>
             <div className="space-y-2">
               {explanations.map((exp, i) => (
@@ -147,7 +147,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
                     <p className="leading-snug">{exp.message}</p>
                     {exp.change_pct !== undefined && (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {exp.change_pct > 0 ? "↑" : "↓"} {Math.abs(exp.change_pct).toFixed(0)}% {t("risk.sinceLastTest") || "since last test"}
+                        {exp.change_pct > 0 ? "↑" : "↓"} {Math.abs(exp.change_pct).toFixed(0)}% {t("risk.sinceLastTest")}
                       </p>
                     )}
                   </div>
@@ -171,7 +171,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
         ) : null}
 
         <p className="text-xs text-muted-foreground">
-          {t("risk.lastEvaluation") || "Last evaluation"}: {new Date(snapshot.created_at).toLocaleString()}
+          {t("risk.lastEvaluation")}: {new Date(snapshot.created_at).toLocaleString()}
         </p>
       </CardContent>
     </Card>
