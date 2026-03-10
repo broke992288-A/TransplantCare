@@ -63,10 +63,13 @@ export const kidneyLabSchema = z.object({
     .number({ invalid_type_error: "Рақам киритинг" })
     .min(0.1, "Креатинин камида 0.1 бўлиши керак")
     .max(30, "Креатинин 30 дан ошмаслиги керак"),
-  egfr: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0, "eGFR манфий бўлиши мумкин эмас")
-    .max(200, "eGFR 200 дан ошмаслиги керак"),
+  egfr: z.union([
+    z.literal("").transform(() => undefined),
+    z.coerce
+      .number({ invalid_type_error: "Рақам киритинг" })
+      .min(0, "eGFR манфий бўлиши мумкин эмас")
+      .max(200, "eGFR 200 дан ошмаслиги керак"),
+  ]).optional(),
   proteinuria: z.coerce
     .number({ invalid_type_error: "Рақам киритинг" })
     .min(0, "Протеинурия манфий бўлиши мумкин эмас")
