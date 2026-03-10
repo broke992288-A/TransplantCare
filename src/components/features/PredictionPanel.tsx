@@ -3,14 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, BrainCircuit, TrendingUp, Clock, ShieldAlert, CheckCircle2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { usePrediction } from "@/hooks/usePrediction";
-import type { PredictionResult } from "@/services/predictionService";
 
 interface PredictionPanelProps {
   patientId: string;
   patientName: string;
   organType: string;
   currentRisk: string;
-  labs: any[];
 }
 
 function riskBadgeClass(level: string) {
@@ -25,9 +23,9 @@ function riskIcon(level: string) {
   return <CheckCircle2 className="h-5 w-5 text-success" />;
 }
 
-export default function PredictionPanel({ patientId, patientName, organType, currentRisk, labs }: PredictionPanelProps) {
+export default function PredictionPanel({ patientId, patientName, organType, currentRisk }: PredictionPanelProps) {
   const { t } = useLanguage();
-  const { data: prediction, isLoading, error } = usePrediction(patientId, organType, labs);
+  const { data: prediction, isLoading, error } = usePrediction(patientId, organType);
 
   if (isLoading) {
     return (
