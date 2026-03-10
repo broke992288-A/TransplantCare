@@ -1593,7 +1593,7 @@ const translations: Record<Language, Record<string, string>> = {
     "patientRisk.recommendation": "Men nima qilishim kerak?",
     "patientRisk.rec.low": "Dorilaringizni muntazam qabul qiling va rejalashtirilgan tekshiruvga boring.",
     "patientRisk.rec.medium": "Dorilaringizni o'z vaqtida qabul qiling va o'zingizni yomon his qilsangiz shifokorga murojaat qiling.",
-    "patientRisk.rec.high": "Imkon qadar tezroq shifokoringizga murojaat qiling yoki klinikaga boring. Dori qabul qilishni to'xtatmang.",
+    "patientRisk.rec.high": "Yaqin kunlarda shifokoringizga tashrif buyuring. Dorilaringizni odatdagidek qabul qilishda davom eting.",
     "patientRisk.lastCheck": "Oxirgi tekshiruv",
     "dashboard.predictions": "Rad etish bashoratlari",
     "dashboard.noHighRiskDesc": "Hozirda yuqori xavfli bemorlar yo'q",
