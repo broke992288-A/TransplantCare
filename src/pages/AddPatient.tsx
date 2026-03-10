@@ -36,6 +36,7 @@ export default function AddPatient() {
     rejection_type: "", tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "",
     dialysis_history: "no", return_dialysis_date: "", creatinine: "", egfr: "", proteinuria: "",
     potassium: "", biopsy_result: "", region: "", district: "",
+    blood_type: "", donor_blood_type: "", titer_therapy: "no",
   });
 
   const set = (key: string, value: string) => {
