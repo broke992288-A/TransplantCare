@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { patient_id, organ_type, labs, language = "en" } = await req.json();
+    const { patient_id, organ_type, labs, language = "en", patient_data } = await req.json();
 
     const langInstruction = language === "uz"
       ? "IMPORTANT: Write the message, reasons, and timeframe fields in Uzbek (O'zbek tili). Use medical terminology in Uzbek."
