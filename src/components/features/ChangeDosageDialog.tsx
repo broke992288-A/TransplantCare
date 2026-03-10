@@ -48,7 +48,7 @@ export default function ChangeDosageDialog({ medication }: Props) {
         newDosage: newDosage.trim(),
         oldFrequency: medication.frequency,
         newFrequency: newFrequency !== medication.frequency ? newFrequency : undefined,
-        reason: reason.trim() || undefined,
+        reason: reason.trim() ? encodeSourceLang(reason.trim(), reasonLang) : undefined,
       });
       toast({ title: t("med.dosageChanged") });
       setOpen(false);
