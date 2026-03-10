@@ -19,10 +19,23 @@ export function usePrediction(
           disclaimer: "This prediction is AI-assisted and should be reviewed by a healthcare professional.",
         };
       }
-      return fetchPrediction(patientId!, organType!, labs);
+      try {
+        return await fetchPrediction(patientId!, organType!, labs);
+      } catch (err) {
+        console.warn("Prediction fetch failed, returning fallback:", err);
+        return {
+          prediction_risk: "low" as const,
+          score: 0,
+          message: "Unable to generate prediction at this time.",
+          reasons: [],
+          disclaimer: "This prediction is AI-assisted and should be reviewed by a healthcare professional.",
+          error: "Service temporarily unavailable",
+        };
+      }
     },
     enabled: !!patientId && !!organType,
     staleTime: 10 * 60 * 1000,
     retry: 1,
+    meta: { suppressError: true },
   });
 }
