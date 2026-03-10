@@ -28,6 +28,7 @@ export default function ChangeDosageDialog({ medication }: Props) {
   const [newDosage, setNewDosage] = useState(medication.dosage);
   const [newFrequency, setNewFrequency] = useState(medication.frequency);
   const [reason, setReason] = useState("");
+  const [reasonLang, setReasonLang] = useState<string>(lang);
 
   const handleSave = async () => {
     if (!newDosage.trim()) {
