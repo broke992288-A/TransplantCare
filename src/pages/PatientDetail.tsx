@@ -187,7 +187,7 @@ export default function PatientDetail() {
               <CardTitle className="text-lg">{t("detail.labHistory")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <LabHistoryTable labs={allLabs} organType={patient.organ_type} />
+              <LabHistoryTable labs={allLabs} organType={patient.organ_type} editable onLabChanged={invalidateLabs} />
             </CardContent>
           </Card>
         )}
