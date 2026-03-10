@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { upsertLabResult, fetchLabsByPatientId } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
-import { computeRiskScore, insertRiskSnapshot } from "@/services/riskSnapshotService";
+import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
 import { preprocessLabImage } from "@/utils/imagePreprocess";
 import { Badge } from "@/components/ui/badge";
@@ -345,7 +345,23 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
       let totalFilled = 0;
 
-      for (const group of mergedGroups) {
+      // Sort merged groups by date ascending so risk calculation gets correct prevLab
+      const sortedGroups = [...mergedGroups].sort((a, b) => {
+        if (a.date === "unknown") return -1;
+        if (b.date === "unknown") return 1;
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+
+      // Track previously saved lab for trend analysis
+      let lastSavedLab: any = null;
+
+      // Fetch the most recent existing lab before the earliest new one (for first iteration's prevLab)
+      try {
+        const existingLabs = await fetchLabsByPatientId(patientId, 1);
+        lastSavedLab = existingLabs.length > 0 ? existingLabs[0] : null;
+      } catch { /* ignore */ }
+
+      for (const group of sortedGroups) {
         const labData: Record<string, any> = { patient_id: patientId };
         if (reportUrl) labData.report_file_url = reportUrl;
 
@@ -367,15 +383,8 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
           // --- Compute risk score for each saved lab ---
           if (organType) {
             try {
-              // Fetch previous lab for trend analysis
-              let prevLab = null;
-              try {
-                const prevLabs = await fetchLabsByPatientId(patientId, 2);
-                prevLab = prevLabs.length > 1 ? prevLabs[1] : null;
-              } catch { /* ignore */ }
-
-              const { score, level, flags, explanations } = computeRiskScore(
-                organType, savedLab as any, patientData ?? {}, prevLab
+              const { score, level, flags, explanations } = await computeRiskScoreAsync(
+                organType, savedLab as any, { ...patientData, transplant_date: undefined }, lastSavedLab
               );
 
               const snapshot = await insertRiskSnapshot({
@@ -413,6 +422,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               console.error("Risk calculation error:", riskErr);
             }
           }
+
+          // Update prevLab for next iteration
+          lastSavedLab = savedLab;
         }
       }
 
