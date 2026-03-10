@@ -374,8 +374,8 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 prevLab = prevLabs.length > 1 ? prevLabs[1] : null;
               } catch { /* ignore */ }
 
-              const { score, level, flags, explanations } = computeRiskScore(
-                organType, savedLab as any, patientData ?? {}, prevLab
+              const { score, level, flags, explanations } = await computeRiskScoreAsync(
+                organType, savedLab as any, { ...patientData, transplant_date: undefined }, prevLab
               );
 
               const snapshot = await insertRiskSnapshot({
