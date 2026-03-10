@@ -164,8 +164,8 @@ export default function PatientDetail() {
         </div>
 
         {patient.risk_level === "high" && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 flex items-center gap-3">
+            <Stethoscope className="h-5 w-5 text-warning" />
             <span className="font-medium">{t("detail.underReview")}</span>
           </div>
         )}
