@@ -49,6 +49,8 @@ RULES:
 - Consider rate of change, not just absolute values
 - A consistent worsening trend across 3+ tests is more concerning than a single abnormal value
 
+${langInstruction}
+
 You MUST respond using the predict_rejection tool.`;
 
     const userPrompt = `Patient organ: ${organ_type} transplant
