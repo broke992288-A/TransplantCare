@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function AddMedicationDialog({ patientId }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const addMed = useAddMedication(patientId);
