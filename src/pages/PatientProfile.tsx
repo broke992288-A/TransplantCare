@@ -15,7 +15,7 @@ import LabUploadDialog from "@/components/features/LabUploadDialog";
 import LabResultsTable from "@/components/features/LabResultsTable";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
-import RiskScoreCard from "@/components/features/RiskScoreCard";
+import PatientRiskCard from "@/components/features/PatientRiskCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
 import { usePatientMedications } from "@/hooks/useMedications";
 import { useQueryClient } from "@tanstack/react-query";
