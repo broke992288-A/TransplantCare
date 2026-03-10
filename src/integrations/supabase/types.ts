@@ -556,6 +556,7 @@ export type Database = {
       }
       risk_snapshots: {
         Row: {
+          algorithm_version: string | null
           alt: number | null
           ast: number | null
           created_at: string
@@ -568,8 +569,10 @@ export type Database = {
           score: number
           tacrolimus_level: number | null
           total_bilirubin: number | null
+          trend_flags: Json | null
         }
         Insert: {
+          algorithm_version?: string | null
           alt?: number | null
           ast?: number | null
           created_at?: string
@@ -582,8 +585,10 @@ export type Database = {
           score?: number
           tacrolimus_level?: number | null
           total_bilirubin?: number | null
+          trend_flags?: Json | null
         }
         Update: {
+          algorithm_version?: string | null
           alt?: number | null
           ast?: number | null
           created_at?: string
@@ -596,6 +601,7 @@ export type Database = {
           score?: number
           tacrolimus_level?: number | null
           total_bilirubin?: number | null
+          trend_flags?: Json | null
         }
         Relationships: [
           {

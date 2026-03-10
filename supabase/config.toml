@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.predict-rejection]
 verify_jwt = false
+
+[functions.recalculate-risk]
+verify_jwt = false

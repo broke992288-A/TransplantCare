@@ -1,4 +1,5 @@
 import DemoDataGenerator from "@/components/features/DemoDataGenerator";
+import RiskRecalculationCard from "@/components/features/RiskRecalculationCard";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -11,7 +12,10 @@ export default function DemoSetup() {
           <h1 className="text-2xl font-bold">Demo Setup</h1>
           <p className="text-muted-foreground">Тизимни тест қилиш учун демо маълумотлар яратинг</p>
         </div>
-        <DemoDataGenerator />
+        <div className="grid gap-6 md:grid-cols-2">
+          <DemoDataGenerator />
+          <RiskRecalculationCard />
+        </div>
       </div>
     </DashboardLayout>
   );

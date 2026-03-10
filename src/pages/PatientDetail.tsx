@@ -62,6 +62,8 @@ export default function PatientDetail() {
         total_bilirubin: latestLab.total_bilirubin,
         tacrolimus_level: latestLab.tacrolimus_level,
         details: { flags: computed.flags, explanations: computed.explanations },
+        trend_flags: computed.flags.filter((f: string) => f.includes("increase") || f.includes("drop") || f.includes("declined")),
+        algorithm_version: "v2.0-kdigo2024",
         created_at: latestLab.recorded_at ?? latestLab.created_at,
       } as RiskSnapshot;
     }
