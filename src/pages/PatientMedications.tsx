@@ -17,6 +17,7 @@ import ChangeDosageDialog from "@/components/features/ChangeDosageDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { getMedicationGroup, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
 
 export default function PatientMedications() {
   const { t } = useLanguage();
@@ -119,7 +120,10 @@ export default function PatientMedications() {
                       <TableBody>
                         {filteredActive.map((med) => (
                           <TableRow key={med.id}>
-                            <TableCell className="font-medium">{med.medication_name}</TableCell>
+                            <TableCell className="font-medium">
+                              {med.medication_name}
+                              <Badge variant="outline" className="ml-2 text-[10px]">{t(GROUP_LABEL_KEYS[getMedicationGroup(med.medication_name)])}</Badge>
+                            </TableCell>
                             <TableCell>
                               <Badge variant="secondary">{med.dosage}</Badge>
                             </TableCell>

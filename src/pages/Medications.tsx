@@ -1,15 +1,15 @@
 import { useState, useMemo } from "react";
-import { Package, AlertTriangle, TrendingDown, TrendingUp, Search, Filter, Pill } from "lucide-react";
+import { Package, AlertTriangle, Search, Pill } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllMedicationsAggregated } from "@/services/statsService";
 import { SkeletonCard, SkeletonTable } from "@/components/ui/skeleton-card";
+import { getMedicationGroup, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
 
 export default function Medications() {
   const { t } = useLanguage();
@@ -20,12 +20,19 @@ export default function Medications() {
     queryFn: fetchAllMedicationsAggregated,
   });
 
-  // Aggregate medications by name
+  // Aggregate medications by name with group
   const aggregated = useMemo(() => {
-    const map: Record<string, { name: string; active: number; inactive: number; total: number; dosages: Set<string>; frequencies: Set<string>; patients: Set<string> }> = {};
+    const map: Record<string, { name: string; group: string; active: number; inactive: number; total: number; dosages: Set<string>; frequencies: Set<string>; patients: Set<string> }> = {};
     rawMeds.forEach((m) => {
       const key = m.medication_name.toLowerCase().trim();
-      if (!map[key]) map[key] = { name: m.medication_name, active: 0, inactive: 0, total: 0, dosages: new Set(), frequencies: new Set(), patients: new Set() };
+      if (!map[key]) {
+        map[key] = {
+          name: m.medication_name,
+          group: getMedicationGroup(m.medication_name),
+          active: 0, inactive: 0, total: 0,
+          dosages: new Set(), frequencies: new Set(), patients: new Set(),
+        };
+      }
       map[key].total++;
       if (m.is_active) map[key].active++;
       else map[key].inactive++;
@@ -40,6 +47,16 @@ export default function Medications() {
     m.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Group filtered by medication group
+  const grouped = useMemo(() => {
+    const groups: Record<string, typeof filtered> = {};
+    filtered.forEach(m => {
+      if (!groups[m.group]) groups[m.group] = [];
+      groups[m.group].push(m);
+    });
+    return groups;
+  }, [filtered]);
+
   const totalActive = rawMeds.filter(m => m.is_active).length;
   const totalInactive = rawMeds.filter(m => !m.is_active).length;
   const uniqueMedNames = aggregated.length;
@@ -51,6 +68,8 @@ export default function Medications() {
     { label: t("medications.inactiveLabel"), value: totalInactive.toString(), icon: AlertTriangle, color: "text-warning" },
     { label: t("dashboard.totalPatients"), value: uniquePatients.toString(), icon: Package, color: "text-accent" },
   ];
+
+  const groupOrder = ["cni", "antimetabolite", "mtor", "corticosteroid", "other"];
 
   return (
     <DashboardLayout>
@@ -85,33 +104,42 @@ export default function Medications() {
               <p className="text-muted-foreground text-sm">{search ? t("medications.noResults") : t("dashboard.noPatients")}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("medications.medication")}</TableHead>
-                    <TableHead className="text-right">{t("dashboard.totalPatients")}</TableHead>
-                     <TableHead className="text-right">{t("medications.activeLabel")}</TableHead>
-                     <TableHead>{t("medications.dosages")}</TableHead>
-                     <TableHead>{t("medications.frequency")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((med) => (
-                    <TableRow key={med.name}>
-                      <TableCell className="font-medium">{med.name}</TableCell>
-                      <TableCell className="text-right">{med.patients.size}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge className={med.active > 0 ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                          {med.active} / {med.total}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{Array.from(med.dosages).slice(0, 3).join(", ")}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{Array.from(med.frequencies).slice(0, 2).join(", ")}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-6">
+              {groupOrder.filter(g => grouped[g]?.length).map((groupKey) => (
+                <div key={groupKey}>
+                  <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">{t(GROUP_LABEL_KEYS[groupKey])}</Badge>
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("medications.medication")}</TableHead>
+                          <TableHead className="text-right">{t("dashboard.totalPatients")}</TableHead>
+                          <TableHead className="text-right">{t("medications.activeLabel")}</TableHead>
+                          <TableHead>{t("medications.dosages")}</TableHead>
+                          <TableHead>{t("medications.frequency")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {grouped[groupKey]!.map((med) => (
+                          <TableRow key={med.name}>
+                            <TableCell className="font-medium">{med.name}</TableCell>
+                            <TableCell className="text-right">{med.patients.size}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge className={med.active > 0 ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                                {med.active} / {med.total}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{Array.from(med.dosages).slice(0, 3).join(", ")}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{Array.from(med.frequencies).slice(0, 2).join(", ")}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

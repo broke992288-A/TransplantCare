@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -12,10 +12,13 @@ import { ValidatedInput, FormField } from "@/components/ui/form-field";
 import { medicationSchema } from "@/lib/validations";
 import SourceLanguageSelect from "@/components/features/SourceLanguageSelect";
 import { encodeSourceLang } from "@/utils/langPrefix";
+import { MEDICATION_GROUPS, getMedicationDosages, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
 
 interface Props {
   patientId: string;
 }
+
+const CUSTOM_VALUE = "__custom__";
 
 export default function AddMedicationDialog({ patientId }: Props) {
   const { t, lang } = useLanguage();
@@ -25,20 +28,36 @@ export default function AddMedicationDialog({ patientId }: Props) {
   const [open, setOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [name, setName] = useState("");
-  const [dosage, setDosage] = useState("");
+  const [selectedMed, setSelectedMed] = useState("");
+  const [customName, setCustomName] = useState("");
+  const [selectedDosage, setSelectedDosage] = useState("");
+  const [customDosage, setCustomDosage] = useState("");
   const [frequency, setFrequency] = useState("daily");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [notesLang, setNotesLang] = useState<string>(lang);
 
+  const isCustomMed = selectedMed === CUSTOM_VALUE;
+  const medName = isCustomMed ? customName : selectedMed;
+  const dosageOptions = useMemo(() => getMedicationDosages(selectedMed), [selectedMed]);
+  const isCustomDosage = selectedDosage === CUSTOM_VALUE || dosageOptions.length === 0;
+  const dosage = isCustomDosage ? customDosage : selectedDosage;
+
   const clearField = (field: string) => {
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
   };
 
+  const handleMedChange = (v: string) => {
+    setSelectedMed(v);
+    setSelectedDosage("");
+    setCustomDosage("");
+    setCustomName("");
+    clearField("medication_name");
+  };
+
   const handleSave = async () => {
     const result = medicationSchema.safeParse({
-      medication_name: name,
+      medication_name: medName,
       dosage,
       frequency,
       start_date: startDate,
@@ -58,7 +77,7 @@ export default function AddMedicationDialog({ patientId }: Props) {
     try {
       await addMed.mutateAsync({
         patient_id: patientId,
-        medication_name: name.trim(),
+        medication_name: medName.trim(),
         dosage: dosage.trim(),
         frequency,
         start_date: startDate,
@@ -67,7 +86,7 @@ export default function AddMedicationDialog({ patientId }: Props) {
       });
       toast({ title: t("med.added") });
       setOpen(false);
-      setName(""); setDosage(""); setNotes(""); setErrors({});
+      setSelectedMed(""); setCustomName(""); setSelectedDosage(""); setCustomDosage(""); setNotes(""); setErrors({});
     } catch (err: any) {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
@@ -83,23 +102,74 @@ export default function AddMedicationDialog({ patientId }: Props) {
           <DialogTitle>{t("med.addMedication")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          <ValidatedInput
-            label={t("med.medicationName")}
-            required
-            error={errors.medication_name}
-            value={name}
-            onChange={(e) => { setName(e.target.value); clearField("medication_name"); }}
-            placeholder="Tacrolimus, Prednisone..."
-          />
-          <div className="grid grid-cols-2 gap-3">
+          {/* Medication select with groups */}
+          <FormField label={t("med.medicationName")} required error={errors.medication_name}>
+            <Select value={selectedMed} onValueChange={handleMedChange}>
+              <SelectTrigger><SelectValue placeholder={t("med.selectMedication")} /></SelectTrigger>
+              <SelectContent>
+                {MEDICATION_GROUPS.map((group) => (
+                  <SelectGroup key={group.groupKey}>
+                    <SelectLabel className="text-xs font-bold text-primary">{t(GROUP_LABEL_KEYS[group.groupKey])}</SelectLabel>
+                    {group.medications.map((med) => (
+                      <SelectItem key={med.name} value={med.name}>
+                        {med.name} <span className="text-muted-foreground text-xs ml-1">({med.genericName})</span>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+                <SelectGroup>
+                  <SelectItem value={CUSTOM_VALUE}>{t("med.customMedication")}</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          {isCustomMed && (
             <ValidatedInput
-              label={t("med.dosage")}
+              label={t("med.medicationName")}
               required
-              error={errors.dosage}
-              value={dosage}
-              onChange={(e) => { setDosage(e.target.value); clearField("dosage"); }}
-              placeholder="5 mg"
+              error={errors.medication_name}
+              value={customName}
+              onChange={(e) => { setCustomName(e.target.value); clearField("medication_name"); }}
+              placeholder="Tacrolimus, Prednisone..."
             />
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Dosage: preset or custom */}
+            {dosageOptions.length > 0 && !isCustomMed ? (
+              <FormField label={t("med.dosage")} required error={errors.dosage}>
+                <Select value={selectedDosage} onValueChange={(v) => { setSelectedDosage(v); setCustomDosage(""); clearField("dosage"); }}>
+                  <SelectTrigger><SelectValue placeholder={t("med.selectDosage")} /></SelectTrigger>
+                  <SelectContent>
+                    {dosageOptions.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM_VALUE}>{t("med.customDosage")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+            ) : (
+              <ValidatedInput
+                label={t("med.dosage")}
+                required
+                error={errors.dosage}
+                value={customDosage}
+                onChange={(e) => { setCustomDosage(e.target.value); clearField("dosage"); }}
+                placeholder="5 mg"
+              />
+            )}
+
+            {isCustomDosage && dosageOptions.length > 0 && !isCustomMed && (
+              <ValidatedInput
+                label={t("med.customDosage")}
+                required
+                value={customDosage}
+                onChange={(e) => { setCustomDosage(e.target.value); clearField("dosage"); }}
+                placeholder="5 mg"
+              />
+            )}
+
             <FormField label={t("med.frequency")} error={errors.frequency}>
               <Select value={frequency} onValueChange={(v) => { setFrequency(v); clearField("frequency"); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -113,6 +183,7 @@ export default function AddMedicationDialog({ patientId }: Props) {
               </Select>
             </FormField>
           </div>
+
           <ValidatedInput
             label={t("med.startDate")}
             required
