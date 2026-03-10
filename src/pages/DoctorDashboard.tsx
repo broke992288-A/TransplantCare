@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, AlertTriangle, Activity, Plus, ShieldAlert, UserPlus, Clock } from "lucide-react";
+import { Users, AlertTriangle, Activity, Plus, ShieldAlert, UserPlus, Clock, BrainCircuit } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -11,6 +11,7 @@ import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
 import { riskColorClass, daysSince } from "@/utils/risk";
 import { SkeletonCard, SkeletonTable, SkeletonChart } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import PredictionPanel from "@/components/features/PredictionPanel";
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -151,6 +152,27 @@ export default function DoctorDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Prediction Panels for high/medium risk patients */}
+        {!loading && (highRisk.length > 0 || mediumRisk.length > 0) && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <BrainCircuit className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">{t("dashboard.predictions")}</h2>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {[...highRisk, ...mediumRisk].slice(0, 4).map((p) => (
+                <PredictionPanel
+                  key={p.id}
+                  patientId={p.id}
+                  patientName={p.full_name}
+                  organType={p.organ_type}
+                  currentRisk={p.risk_level}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* All patients table */}
         <Card>

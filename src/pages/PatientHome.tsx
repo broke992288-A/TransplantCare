@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FlaskConical, TrendingUp, TrendingDown, Minus, Phone, Calendar, User } from "lucide-react";
+import { Clock, FlaskConical, TrendingUp, TrendingDown, Minus, Phone, Calendar, User, Info } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";
@@ -38,6 +38,12 @@ export default function PatientHome() {
                   <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />{t("profile.transplant")}</span><span className="font-medium">{new Date(patient.transplant_date).toLocaleDateString()}</span></div>
                 )}
                 <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.riskLevel")}</span><Badge className={riskColorClass(patient.risk_level)}>{t(`risk.${patient.risk_level}`)}</Badge></div>
+                {(patient.risk_level === "high" || patient.risk_level === "medium") && (
+                  <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm flex items-start gap-2">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    {t("prediction.patientNotice")}
+                  </div>
+                )}
                 {patient.risk_level === "high" && (
                   <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">{t("home.highRiskWarning")}</div>
                 )}
