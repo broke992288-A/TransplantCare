@@ -26,6 +26,8 @@ import { riskColorClass } from "@/utils/risk";
 import { logAudit } from "@/services/auditService";
 import { computeRiskScore } from "@/services/riskSnapshotService";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
+import { triggerRiskRecalculation } from "@/services/riskRecalculationService";
+import { RefreshCw, Loader2 } from "lucide-react";
 
 export default function PatientDetail() {
   const { id } = useParams<{ id: string }>();
