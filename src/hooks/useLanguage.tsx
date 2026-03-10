@@ -1065,7 +1065,7 @@ const translations: Record<Language, Record<string, string>> = {
     "patientRisk.recommendation": "Что мне делать?",
     "patientRisk.rec.low": "Продолжайте принимать лекарства по расписанию и посетите плановый осмотр.",
     "patientRisk.rec.medium": "Принимайте лекарства вовремя и обратитесь к врачу, если почувствуете себя плохо.",
-    "patientRisk.rec.high": "Свяжитесь с врачом или посетите клинику как можно скорее. Не пропускайте приём лекарств.",
+    "patientRisk.rec.high": "Яқин кунларда шифокорингизга ташриф буюринг. Дориларингизни одатдагидек қабул қилишда давом этинг.",
     "patientRisk.lastCheck": "Последняя проверка",
     "dashboard.predictions": "Прогнозы отторжения",
     "dashboard.noHighRiskDesc": "Нет пациентов высокого риска",
