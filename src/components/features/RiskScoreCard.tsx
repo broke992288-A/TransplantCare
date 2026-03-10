@@ -171,7 +171,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
         ) : null}
 
         <p className="text-xs text-muted-foreground">
-          {t("risk.lastEvaluation") || "Last evaluation"}: {new Date(snapshot.created_at).toLocaleString()}
+          {t("risk.lastEvaluation")}: {new Date(snapshot.created_at).toLocaleString()}
         </p>
       </CardContent>
     </Card>
