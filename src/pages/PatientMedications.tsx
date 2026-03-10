@@ -17,6 +17,7 @@ import ChangeDosageDialog from "@/components/features/ChangeDosageDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { getMedicationGroup, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
 
 export default function PatientMedications() {
   const { t } = useLanguage();
