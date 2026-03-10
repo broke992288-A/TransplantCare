@@ -166,6 +166,51 @@ export type Database = {
           },
         ]
       }
+      lab_schedules: {
+        Row: {
+          completed_lab_id: string | null
+          created_at: string
+          id: string
+          patient_id: string
+          scheduled_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_lab_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id: string
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_lab_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id?: string
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_schedules_completed_lab_id_fkey"
+            columns: ["completed_lab_id"]
+            isOneToOne: false
+            referencedRelation: "lab_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_schedules_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medication_changes: {
         Row: {
           changed_by: string
@@ -517,6 +562,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_lab_schedule: {
+        Args: { _patient_id: string; _transplant_date: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
