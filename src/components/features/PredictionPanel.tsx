@@ -9,6 +9,7 @@ interface PredictionPanelProps {
   patientName: string;
   organType: string;
   currentRisk: string;
+  patientData?: { blood_type?: string | null; donor_blood_type?: string | null; titer_therapy?: boolean | null };
 }
 
 function riskBadgeClass(level: string) {
