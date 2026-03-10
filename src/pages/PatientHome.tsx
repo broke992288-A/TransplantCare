@@ -46,7 +46,7 @@ export default function PatientHome() {
                   </div>
                 )}
                 {patient.risk_level === "high" && (
-                  <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">{t("home.highRiskWarning")}</div>
+                  <div className="mt-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">{t("home.highRiskWarning")}</div>
                 )}
               </CardContent>
             </Card>
