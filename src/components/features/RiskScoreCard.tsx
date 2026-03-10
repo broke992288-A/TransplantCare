@@ -181,6 +181,18 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
           </div>
         ) : null}
 
+        {/* Guideline references */}
+        {explanations.some((e) => e.guideline) && (
+          <div className="border-t pt-2">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t("risk.guidelines") || "Clinical Guidelines"}</p>
+            <div className="flex flex-wrap gap-1">
+              {[...new Set(explanations.filter((e) => e.guideline).map((e) => e.guideline))].map((g, i) => (
+                <span key={i} className="text-xs bg-muted px-1.5 py-0.5 rounded">{g}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-muted-foreground">
           {t("risk.lastEvaluation")}: {new Date(snapshot.created_at).toLocaleString()}
         </p>

@@ -47,6 +47,75 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_thresholds: {
+        Row: {
+          created_at: string
+          critical_max: number | null
+          critical_min: number | null
+          evidence_level: string | null
+          guideline_source: string
+          guideline_year: number
+          id: string
+          normal_max: number | null
+          normal_min: number | null
+          organ_type: string
+          parameter: string
+          reference_url: string | null
+          risk_points_critical: number
+          risk_points_warning: number
+          trend_direction: string | null
+          trend_threshold_pct: number | null
+          unit: string
+          updated_at: string
+          warning_max: number | null
+          warning_min: number | null
+        }
+        Insert: {
+          created_at?: string
+          critical_max?: number | null
+          critical_min?: number | null
+          evidence_level?: string | null
+          guideline_source?: string
+          guideline_year?: number
+          id?: string
+          normal_max?: number | null
+          normal_min?: number | null
+          organ_type: string
+          parameter: string
+          reference_url?: string | null
+          risk_points_critical?: number
+          risk_points_warning?: number
+          trend_direction?: string | null
+          trend_threshold_pct?: number | null
+          unit?: string
+          updated_at?: string
+          warning_max?: number | null
+          warning_min?: number | null
+        }
+        Update: {
+          created_at?: string
+          critical_max?: number | null
+          critical_min?: number | null
+          evidence_level?: string | null
+          guideline_source?: string
+          guideline_year?: number
+          id?: string
+          normal_max?: number | null
+          normal_min?: number | null
+          organ_type?: string
+          parameter?: string
+          reference_url?: string | null
+          risk_points_critical?: number
+          risk_points_warning?: number
+          trend_direction?: string | null
+          trend_threshold_pct?: number | null
+          unit?: string
+          updated_at?: string
+          warning_max?: number | null
+          warning_min?: number | null
+        }
+        Relationships: []
+      }
       lab_results: {
         Row: {
           albumin: number | null

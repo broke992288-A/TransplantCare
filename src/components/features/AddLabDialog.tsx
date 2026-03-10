@@ -6,16 +6,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { insertLabResult, fetchLabsByPatientId } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
-import { computeRiskScore, insertRiskSnapshot } from "@/services/riskSnapshotService";
+import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
 import { ValidatedInput } from "@/components/ui/form-field";
 import { liverLabSchema, kidneyLabSchema } from "@/lib/validations";
+import { normalizeLabValues } from "@/utils/unitConversion";
+import { autoCalculateEgfr } from "@/utils/egfrCalculator";
 
 interface AddLabDialogProps {
   patientId: string;
   organType: string;
   onLabAdded: () => void;
-  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null };
+  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null; date_of_birth?: string | null; gender?: string | null };
 }
 
 export default function AddLabDialog({ patientId, organType, onLabAdded, patientData }: AddLabDialogProps) {
@@ -71,19 +73,36 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
         labData.proteinuria = parseFloat(form.proteinuria) || null;
         labData.potassium = parseFloat(form.potassium) || null;
       }
+
+      // Auto unit conversion for Central Asia labs
+      const { normalized, conversions } = normalizeLabValues(labData);
+      if (conversions.length > 0) {
+        Object.assign(labData, normalized);
+        const convMsg = conversions.map((c) => `${c.parameter}: ${c.original} ${c.fromUnit} → ${c.converted} ${c.toUnit}`).join(", ");
+        toast({ title: t("common.info"), description: `Auto-converted: ${convMsg}` });
+      }
+
+      // Auto-calculate eGFR if not provided (kidney)
+      if (organType === "kidney" && !labData.egfr && labData.creatinine) {
+        const autoEgfr = autoCalculateEgfr(labData.creatinine, patientData?.date_of_birth, patientData?.gender);
+        if (autoEgfr !== null) {
+          labData.egfr = autoEgfr;
+          toast({ title: "eGFR", description: `Auto-calculated: ${autoEgfr} mL/min/1.73m² (CKD-EPI 2021)` });
+        }
+      }
+
       const savedLab = await insertLabResult(labData);
 
       // Fetch previous lab for trend analysis
       let prevLab = null;
       try {
         const prevLabs = await fetchLabsByPatientId(patientId, 2);
-        // prevLabs[0] is the one we just inserted, prevLabs[1] is the previous
         prevLab = prevLabs.length > 1 ? prevLabs[1] : null;
       } catch { /* ignore */ }
 
-      // Compute risk score with trend analysis
+      // Compute risk score using DB thresholds
       try {
-        const { score, level, flags, explanations } = computeRiskScore(
+        const { score, level, flags, explanations } = await computeRiskScoreAsync(
           organType, savedLab as any, patientData ?? {}, prevLab
         );
         const snapshot = await insertRiskSnapshot({
@@ -99,7 +118,6 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
           details: { flags, explanations },
         });
 
-        // Create alert if risk is high or medium
         if (level === "high") {
           await insertPatientAlert({
             patient_id: patientId,
@@ -151,7 +169,7 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
           ) : (
             <>
               <ValidatedInput label={t("add.creatinine")} required error={errors.creatinine} type="number" step="0.1" value={form.creatinine} onChange={(e) => set("creatinine", e.target.value)} />
-              <ValidatedInput label={t("add.egfr")} required error={errors.egfr} type="number" value={form.egfr} onChange={(e) => set("egfr", e.target.value)} />
+              <ValidatedInput label={`${t("add.egfr")} (auto)`} error={errors.egfr} type="number" value={form.egfr} onChange={(e) => set("egfr", e.target.value)} placeholder="Auto-calculated if empty" />
               <ValidatedInput label={t("add.proteinuria")} required error={errors.proteinuria} type="number" step="0.1" value={form.proteinuria} onChange={(e) => set("proteinuria", e.target.value)} />
               <ValidatedInput label={t("add.potassium")} required error={errors.potassium} type="number" step="0.1" value={form.potassium} onChange={(e) => set("potassium", e.target.value)} />
             </>
