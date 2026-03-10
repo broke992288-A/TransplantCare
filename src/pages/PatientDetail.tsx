@@ -14,6 +14,7 @@ import LabHistoryTable from "@/components/features/LabHistoryTable";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
+import PatientLabScheduleCard from "@/components/features/PatientLabScheduleCard";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
