@@ -537,7 +537,7 @@ const translations: Record<Language, Record<string, string>> = {
     "patientRisk.recommendation": "What should I do?",
     "patientRisk.rec.low": "Continue your regular medication schedule and attend your next planned check-up.",
     "patientRisk.rec.medium": "Take your medications on time and contact your doctor if you feel unwell.",
-    "patientRisk.rec.high": "Contact your doctor or visit the clinic as soon as possible. Do not skip any medications.",
+    "patientRisk.rec.high": "Please visit your doctor for a check-up soon. Continue taking your medications as usual.",
     "patientRisk.lastCheck": "Last check",
     "dashboard.predictions": "Rejection Predictions",
     "dashboard.noHighRiskDesc": "No high-risk patients currently",
