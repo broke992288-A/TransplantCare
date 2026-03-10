@@ -120,7 +120,7 @@ export default function PatientProfile() {
                 {patient.transplant_date && <InfoRow label={t("profile.transplantDate")} value={new Date(patient.transplant_date).toLocaleDateString()} icon={<Calendar className="h-3 w-3" />} />}
               </CardContent>
             </Card>
-            <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
+            <PatientRiskCard snapshot={latestRisk} />
             {patient.risk_level === "high" && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
                 {t("profile.highRiskWarning")}
