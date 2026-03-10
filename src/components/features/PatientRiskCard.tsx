@@ -54,9 +54,9 @@ export default function PatientRiskCard({ snapshot, loading }: PatientRiskCardPr
     },
     high: {
       icon: Stethoscope,
-      iconColor: "text-orange-500",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
+      iconColor: "text-warning",
+      bgColor: "bg-warning/10",
+      borderColor: "border-warning/30",
       emoji: "🩺",
     },
   }[level] ?? {

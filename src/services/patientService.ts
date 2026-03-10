@@ -49,7 +49,7 @@ export async function fetchPaginatedPatients(
 export async function fetchDoctorPatients(doctorId: string) {
   const { data, error } = await supabase
     .from("patients")
-    .select("id, full_name, organ_type, risk_level, risk_score, last_risk_evaluation, created_at")
+    .select("id, full_name, organ_type, risk_level, risk_score, last_risk_evaluation, created_at, transplant_date")
     .eq("assigned_doctor_id", doctorId);
   if (error) throw error;
   return data ?? [];

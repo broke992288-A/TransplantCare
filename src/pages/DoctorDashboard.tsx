@@ -50,7 +50,7 @@ export default function DoctorDashboard() {
     { label: t("dashboard.totalPatients"), value: patients.length, icon: Users, color: "text-primary" },
     { label: t("dashboard.highRisk"), value: highRisk.length, icon: AlertTriangle, color: "text-destructive" },
     { label: t("dashboard.mediumRisk"), value: mediumRisk.length, icon: ShieldAlert, color: "text-warning" },
-    { label: t("dashboard.activeAlerts"), value: highRisk.length, icon: Activity, color: "text-accent" },
+    { label: t("dashboard.activeAlerts"), value: highRisk.length + mediumRisk.length, icon: Activity, color: "text-accent" },
   ];
 
   return (
@@ -213,7 +213,7 @@ export default function DoctorDashboard() {
                     <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}>
                       <TableCell className="font-medium">{p.full_name}</TableCell>
                       <TableCell>{t(`organ.${p.organ_type}`)}</TableCell>
-                      <TableCell>{daysSince(p.created_at)}</TableCell>
+                      <TableCell>{p.transplant_date ? daysSince(p.transplant_date) : "—"}</TableCell>
                       <TableCell>{riskBadge(p.risk_level)}</TableCell>
                     </TableRow>
                   ))}

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Clock, FlaskConical, AlertTriangle, Shield, Trash2, Pill } from "lucide-react";
+import { ArrowLeft, Clock, FlaskConical, Shield, Trash2, Pill, Stethoscope } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AddLabDialog from "@/components/features/AddLabDialog";
@@ -164,8 +164,8 @@ export default function PatientDetail() {
         </div>
 
         {patient.risk_level === "high" && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 flex items-center gap-3">
+            <Stethoscope className="h-5 w-5 text-warning" />
             <span className="font-medium">{t("detail.underReview")}</span>
           </div>
         )}

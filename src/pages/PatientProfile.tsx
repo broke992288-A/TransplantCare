@@ -4,7 +4,7 @@ import TranslatedText from "@/components/features/TranslatedText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, FlaskConical, TrendingUp, Shield, Clock, Phone, Calendar, Pill } from "lucide-react";
+import { User, FlaskConical, TrendingUp, Shield, Clock, Phone, Calendar, Pill, Stethoscope } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";
@@ -122,7 +122,8 @@ export default function PatientProfile() {
             </Card>
             <PatientRiskCard snapshot={latestRisk} />
             {patient.risk_level === "high" && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+              <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm flex items-start gap-2">
+                <Stethoscope className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
                 {t("profile.highRiskWarning")}
               </div>
             )}
