@@ -15,7 +15,7 @@ import LabUploadDialog from "@/components/features/LabUploadDialog";
 import LabResultsTable from "@/components/features/LabResultsTable";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
-import RiskScoreCard from "@/components/features/RiskScoreCard";
+import PatientRiskCard from "@/components/features/PatientRiskCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
 import { usePatientMedications } from "@/hooks/useMedications";
 import { useQueryClient } from "@tanstack/react-query";
@@ -120,7 +120,7 @@ export default function PatientProfile() {
                 {patient.transplant_date && <InfoRow label={t("profile.transplantDate")} value={new Date(patient.transplant_date).toLocaleDateString()} icon={<Calendar className="h-3 w-3" />} />}
               </CardContent>
             </Card>
-            <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
+            <PatientRiskCard snapshot={latestRisk} />
             {patient.risk_level === "high" && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
                 {t("profile.highRiskWarning")}
@@ -167,7 +167,7 @@ export default function PatientProfile() {
 
           {/* Risk */}
           <TabsContent value="risk" className="space-y-4">
-            <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
+            <PatientRiskCard snapshot={latestRisk} />
             <PatientAlertsCard patientId={patient.id} />
           </TabsContent>
 
