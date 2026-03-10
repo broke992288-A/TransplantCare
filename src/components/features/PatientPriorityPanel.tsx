@@ -74,42 +74,42 @@ export default function PatientPriorityPanel({ patients, labs }: Props) {
           <div className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">
-              {t("dashboard.patientsAttention") || "Bugun e'tibor talab qiladigan bemorlar"}
+              {t("dashboard.patientsAttention")}
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
             {criticalCount > 0 && (
               <Badge className="bg-destructive text-destructive-foreground">
-                {criticalCount} zudlik
+                {criticalCount} {t("dashboard.criticalCount")}
               </Badge>
             )}
             {reviewCount > 0 && (
               <Badge className="bg-warning text-warning-foreground">
-                {reviewCount} ko'rib chiqish
+                {reviewCount} {t("dashboard.reviewCount")}
               </Badge>
             )}
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          ⚕️ Ustuvorlik ballari AI yordamida hisoblanadi va klinik qarorlarni qo'llab-quvvatlash uchun mo'ljallangan.
+          ⚕️ {t("dashboard.priorityDisclaimer")}
         </p>
       </CardHeader>
       <CardContent>
         {displayPatients.length === 0 ? (
           <EmptyState
             icon={CheckCircle}
-            title="Barcha bemorlar barqaror"
-            description="Hozirda zudlik talab qiladigan bemor yo'q"
+            title={t("dashboard.allStable")}
+            description={t("dashboard.noUrgent")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("dashboard.patient") || "Bemor"}</TableHead>
-                <TableHead className="text-center">Ustuvorlik</TableHead>
-                <TableHead>{t("dashboard.risk") || "Xavf"}</TableHead>
-                <TableHead>Holat</TableHead>
-                <TableHead>Sabablar</TableHead>
+                <TableHead>{t("dashboard.patient")}</TableHead>
+                <TableHead className="text-center">{t("dashboard.priority")}</TableHead>
+                <TableHead>{t("dashboard.risk")}</TableHead>
+                <TableHead>{t("dashboard.status")}</TableHead>
+                <TableHead>{t("dashboard.reasons")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
