@@ -78,7 +78,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
                 {alert.severity === "critical" ? t("alerts.critical") : alert.severity === "warning" ? t("alerts.warning") : t("alerts.info")}
               </Badge>
             </div>
-            {alert.message && <p className="text-xs text-muted-foreground">{alert.message}</p>}
+            {alert.message && <p className="text-xs text-muted-foreground"><TranslatedText text={alert.message} /></p>}
             <p className="text-xs text-muted-foreground mt-1">
               {new Date(alert.created_at).toLocaleString()}
             </p>
