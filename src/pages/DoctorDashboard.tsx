@@ -50,7 +50,7 @@ export default function DoctorDashboard() {
     { label: t("dashboard.totalPatients"), value: patients.length, icon: Users, color: "text-primary" },
     { label: t("dashboard.highRisk"), value: highRisk.length, icon: AlertTriangle, color: "text-destructive" },
     { label: t("dashboard.mediumRisk"), value: mediumRisk.length, icon: ShieldAlert, color: "text-warning" },
-    { label: t("dashboard.activeAlerts"), value: highRisk.length, icon: Activity, color: "text-accent" },
+    { label: t("dashboard.activeAlerts"), value: highRisk.length + mediumRisk.length, icon: Activity, color: "text-accent" },
   ];
 
   return (
