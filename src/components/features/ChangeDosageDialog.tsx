@@ -11,13 +11,15 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useChangeDosage } from "@/hooks/useMedications";
 import type { Medication } from "@/services/medicationService";
+import SourceLanguageSelect from "@/components/features/SourceLanguageSelect";
+import { encodeSourceLang } from "@/utils/langPrefix";
 
 interface Props {
   medication: Medication;
 }
 
 export default function ChangeDosageDialog({ medication }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const changeDosage = useChangeDosage(medication.patient_id);
@@ -26,6 +28,7 @@ export default function ChangeDosageDialog({ medication }: Props) {
   const [newDosage, setNewDosage] = useState(medication.dosage);
   const [newFrequency, setNewFrequency] = useState(medication.frequency);
   const [reason, setReason] = useState("");
+  const [reasonLang, setReasonLang] = useState<string>(lang);
 
   const handleSave = async () => {
     if (!newDosage.trim()) {
@@ -45,7 +48,7 @@ export default function ChangeDosageDialog({ medication }: Props) {
         newDosage: newDosage.trim(),
         oldFrequency: medication.frequency,
         newFrequency: newFrequency !== medication.frequency ? newFrequency : undefined,
-        reason: reason.trim() || undefined,
+        reason: reason.trim() ? encodeSourceLang(reason.trim(), reasonLang) : undefined,
       });
       toast({ title: t("med.dosageChanged") });
       setOpen(false);
@@ -91,9 +94,12 @@ export default function ChangeDosageDialog({ medication }: Props) {
               </Select>
             </div>
           </div>
-          <div>
-            <Label>{t("med.reason")}</Label>
-            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder={t("med.reasonPlaceholder")} />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <Label>{t("med.reason")}</Label>
+              <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder={t("med.reasonPlaceholder")} />
+            </div>
+            <SourceLanguageSelect value={reasonLang} onChange={setReasonLang} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>

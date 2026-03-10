@@ -443,6 +443,9 @@ const translations: Record<Language, Record<string, string>> = {
     "error.networkError": "Network error. Check your connection.",
     "error.unexpected": "An unexpected error occurred. Please try again.",
     "error.unknown": "Unknown error occurred.",
+    "translate.writtenIn": "Written in",
+    "translate.translating": "Translating...",
+    "translate.noteLanguage": "Note language",
   },
   ru: {
     "app.name": "TransplantCare",
@@ -853,6 +856,9 @@ const translations: Record<Language, Record<string, string>> = {
     "error.noInternet": "Нет подключения к интернету. Попробуйте снова.",
     "error.networkError": "Сетевая ошибка. Проверьте подключение.",
     "error.unexpected": "Произошла непредвиденная ошибка.",
+    "translate.writtenIn": "Написано на",
+    "translate.translating": "Переводим...",
+    "translate.noteLanguage": "Язык заметки",
     "error.unknown": "Неизвестная ошибка.",
   },
   uz: {
@@ -1265,6 +1271,9 @@ const translations: Record<Language, Record<string, string>> = {
     "error.networkError": "Tarmoq xatosi. Internet aloqasini tekshiring.",
     "error.unexpected": "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.",
     "error.unknown": "Noma'lum xatolik yuz berdi.",
+    "translate.writtenIn": "Yozilgan til",
+    "translate.translating": "Tarjima qilinmoqda...",
+    "translate.noteLanguage": "Eslatma tili",
   },
 };
 

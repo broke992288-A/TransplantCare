@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import TranslatedText from "@/components/features/TranslatedText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -140,7 +141,7 @@ export default function PatientProfile() {
                         <p className="text-xs text-muted-foreground mt-1">
                           {t(`med.${med.frequency}`)} · {t("med.startDate")}: {new Date(med.start_date).toLocaleDateString()}
                         </p>
-                        {med.notes && <p className="text-xs text-muted-foreground mt-0.5">{med.notes}</p>}
+                        {med.notes && <p className="text-xs text-muted-foreground mt-0.5"><TranslatedText text={med.notes} /></p>}
                       </div>
                     ))}
                   </div>

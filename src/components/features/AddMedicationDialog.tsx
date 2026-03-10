@@ -10,13 +10,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAddMedication } from "@/hooks/useMedications";
 import { ValidatedInput, FormField } from "@/components/ui/form-field";
 import { medicationSchema } from "@/lib/validations";
+import SourceLanguageSelect from "@/components/features/SourceLanguageSelect";
+import { encodeSourceLang } from "@/utils/langPrefix";
 
 interface Props {
   patientId: string;
 }
 
 export default function AddMedicationDialog({ patientId }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const addMed = useAddMedication(patientId);
@@ -28,6 +30,7 @@ export default function AddMedicationDialog({ patientId }: Props) {
   const [frequency, setFrequency] = useState("daily");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
+  const [notesLang, setNotesLang] = useState<string>(lang);
 
   const clearField = (field: string) => {
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
@@ -60,7 +63,7 @@ export default function AddMedicationDialog({ patientId }: Props) {
         frequency,
         start_date: startDate,
         prescribed_by: user?.id ?? null,
-        notes: notes.trim() || null,
+        notes: notes.trim() ? encodeSourceLang(notes.trim(), notesLang) : null,
       });
       toast({ title: t("med.added") });
       setOpen(false);
@@ -118,9 +121,14 @@ export default function AddMedicationDialog({ patientId }: Props) {
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); clearField("start_date"); }}
           />
-          <FormField label={`${t("med.notes")} (${t("common.optional")})`} error={errors.notes}>
-            <Textarea value={notes} onChange={(e) => { setNotes(e.target.value); clearField("notes"); }} rows={2} />
-          </FormField>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <FormField label={`${t("med.notes")} (${t("common.optional")})`} error={errors.notes}>
+                <Textarea value={notes} onChange={(e) => { setNotes(e.target.value); clearField("notes"); }} rows={2} />
+              </FormField>
+            </div>
+            <SourceLanguageSelect value={notesLang} onChange={setNotesLang} />
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={handleSave} disabled={addMed.isPending}>

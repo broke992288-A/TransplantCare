@@ -2,3 +2,6 @@ project_id = "uszimflqyqmhlxbizcre"
 
 [functions.ocr-lab-report]
 verify_jwt = false
+
+[functions.translate-text]
+verify_jwt = false
