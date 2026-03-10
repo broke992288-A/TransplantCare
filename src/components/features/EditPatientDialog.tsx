@@ -33,6 +33,9 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
   const [returnDialysisDate, setReturnDialysisDate] = useState(patient.return_dialysis_date || "");
   const [rejectionType, setRejectionType] = useState(patient.rejection_type || "");
   const [biopsyResult, setBiopsyResult] = useState(patient.biopsy_result || "");
+  const [bloodType, setBloodType] = useState(patient.blood_type || "");
+  const [donorBloodType, setDonorBloodType] = useState(patient.donor_blood_type || "");
+  const [titerTherapy, setTiterTherapy] = useState(patient.titer_therapy || false);
 
   const handleSave = async () => {
     if (!fullName.trim()) {
@@ -53,6 +56,9 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
         return_dialysis_date: returnDialysisDate || null,
         rejection_type: rejectionType || null,
         biopsy_result: biopsyResult || null,
+        blood_type: bloodType || null,
+        donor_blood_type: donorBloodType || null,
+        titer_therapy: titerTherapy,
       });
       toast({ title: t("edit.patientUpdated") });
       setOpen(false);
@@ -76,6 +82,9 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
         setReturnDialysisDate(patient.return_dialysis_date || "");
         setRejectionType(patient.rejection_type || "");
         setBiopsyResult(patient.biopsy_result || "");
+        setBloodType(patient.blood_type || "");
+        setDonorBloodType(patient.donor_blood_type || "");
+        setTiterTherapy(patient.titer_therapy || false);
       }
       setOpen(v);
     }}>
@@ -163,6 +172,38 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
             <Label>{t("add.biopsyResult")}</Label>
             <Input value={biopsyResult} onChange={(e) => setBiopsyResult(e.target.value)} />
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{t("add.bloodType")}</Label>
+              <Select value={bloodType} onValueChange={setBloodType}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bt) => (
+                    <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t("add.donorBloodType")}</Label>
+              <Select value={donorBloodType} onValueChange={setDonorBloodType}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bt) => (
+                    <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {donorBloodType && bloodType && donorBloodType !== bloodType && (
+            <div className="flex items-center gap-3">
+              <Switch checked={titerTherapy} onCheckedChange={setTiterTherapy} />
+              <Label>{t("add.titerTherapy")}</Label>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>

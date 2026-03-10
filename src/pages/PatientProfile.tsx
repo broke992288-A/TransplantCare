@@ -111,6 +111,11 @@ export default function PatientProfile() {
                 <InfoRow label={t("profile.organType")} value={t(`organ.${patient.organ_type}`)} />
                 <InfoRow label={t("profile.gender")} value={patient.gender ? t(`gender.${patient.gender}`) : "—"} />
                 <InfoRow label={t("profile.dob")} value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : "—"} />
+                {patient.blood_type && <InfoRow label={t("add.bloodType")} value={patient.blood_type} />}
+                {patient.donor_blood_type && <InfoRow label={t("add.donorBloodType")} value={patient.donor_blood_type} />}
+                {patient.blood_type && patient.donor_blood_type && patient.blood_type !== patient.donor_blood_type && (
+                  <InfoRow label={t("add.titerTherapy")} value={patient.titer_therapy ? t("add.yes") : t("add.no")} />
+                )}
                 {patient.phone && <InfoRow label={t("common.phone")} value={patient.phone} icon={<Phone className="h-3 w-3" />} />}
                 {patient.transplant_date && <InfoRow label={t("profile.transplantDate")} value={new Date(patient.transplant_date).toLocaleDateString()} icon={<Calendar className="h-3 w-3" />} />}
               </CardContent>

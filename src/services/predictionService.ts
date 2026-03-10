@@ -14,10 +14,11 @@ export async function fetchPrediction(
   patientId: string,
   organType: string,
   labs: any[],
-  language: string = "en"
+  language: string = "en",
+  patientData?: { blood_type?: string | null; donor_blood_type?: string | null; titer_therapy?: boolean | null },
 ): Promise<PredictionResult> {
   const { data, error } = await supabase.functions.invoke("predict-rejection", {
-    body: { patient_id: patientId, organ_type: organType, labs, language },
+    body: { patient_id: patientId, organ_type: organType, labs, language, patient_data: patientData },
   });
 
   if (error) throw error;

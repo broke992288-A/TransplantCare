@@ -408,10 +408,12 @@ export type Database = {
         Row: {
           assigned_doctor_id: string | null
           biopsy_result: string | null
+          blood_type: string | null
           created_at: string
           date_of_birth: string | null
           dialysis_history: boolean | null
           district: string | null
+          donor_blood_type: string | null
           full_name: string
           gender: string | null
           id: string
@@ -424,6 +426,7 @@ export type Database = {
           return_dialysis_date: string | null
           risk_level: string
           risk_score: number | null
+          titer_therapy: boolean | null
           transplant_date: string | null
           transplant_number: number | null
           updated_at: string
@@ -431,10 +434,12 @@ export type Database = {
         Insert: {
           assigned_doctor_id?: string | null
           biopsy_result?: string | null
+          blood_type?: string | null
           created_at?: string
           date_of_birth?: string | null
           dialysis_history?: boolean | null
           district?: string | null
+          donor_blood_type?: string | null
           full_name: string
           gender?: string | null
           id?: string
@@ -447,6 +452,7 @@ export type Database = {
           return_dialysis_date?: string | null
           risk_level?: string
           risk_score?: number | null
+          titer_therapy?: boolean | null
           transplant_date?: string | null
           transplant_number?: number | null
           updated_at?: string
@@ -454,10 +460,12 @@ export type Database = {
         Update: {
           assigned_doctor_id?: string | null
           biopsy_result?: string | null
+          blood_type?: string | null
           created_at?: string
           date_of_birth?: string | null
           dialysis_history?: boolean | null
           district?: string | null
+          donor_blood_type?: string | null
           full_name?: string
           gender?: string | null
           id?: string
@@ -470,6 +478,7 @@ export type Database = {
           return_dialysis_date?: string | null
           risk_level?: string
           risk_score?: number | null
+          titer_therapy?: boolean | null
           transplant_date?: string | null
           transplant_number?: number | null
           updated_at?: string

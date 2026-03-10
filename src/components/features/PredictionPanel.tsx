@@ -9,6 +9,7 @@ interface PredictionPanelProps {
   patientName: string;
   organType: string;
   currentRisk: string;
+  patientData?: { blood_type?: string | null; donor_blood_type?: string | null; titer_therapy?: boolean | null };
 }
 
 function riskBadgeClass(level: string) {
@@ -23,9 +24,9 @@ function riskIcon(level: string) {
   return <CheckCircle2 className="h-5 w-5 text-success" />;
 }
 
-export default function PredictionPanel({ patientId, patientName, organType, currentRisk }: PredictionPanelProps) {
+export default function PredictionPanel({ patientId, patientName, organType, currentRisk, patientData }: PredictionPanelProps) {
   const { t } = useLanguage();
-  const { data: prediction, isLoading, error } = usePrediction(patientId, organType);
+  const { data: prediction, isLoading, error } = usePrediction(patientId, organType, patientData);
 
   if (isLoading) {
     return (

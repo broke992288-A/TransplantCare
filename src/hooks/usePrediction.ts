@@ -6,6 +6,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 export function usePrediction(
   patientId: string | undefined,
   organType: string | undefined,
+  patientData?: { blood_type?: string | null; donor_blood_type?: string | null; titer_therapy?: boolean | null },
 ) {
   const { lang } = useLanguage();
 
@@ -23,7 +24,7 @@ export function usePrediction(
         };
       }
       try {
-        return await fetchPrediction(patientId!, organType!, labs, lang);
+        return await fetchPrediction(patientId!, organType!, labs, lang, patientData);
       } catch (err) {
         console.warn("Prediction fetch failed, returning fallback:", err);
         return {

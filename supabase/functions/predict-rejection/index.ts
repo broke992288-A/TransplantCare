@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { patient_id, organ_type, labs, language = "en" } = await req.json();
+    const { patient_id, organ_type, labs, language = "en", patient_data } = await req.json();
 
     const langInstruction = language === "uz"
       ? "IMPORTANT: Write the message, reasons, and timeframe fields in Uzbek (O'zbek tili). Use medical terminology in Uzbek."
@@ -40,6 +40,21 @@ serve(async (req) => {
       }
     }).join("\n");
 
+    // Build blood type context
+    let bloodContext = "";
+    if (patient_data?.blood_type && patient_data?.donor_blood_type) {
+      const mismatch = patient_data.blood_type !== patient_data.donor_blood_type;
+      bloodContext = `\nPatient blood type: ${patient_data.blood_type}, Donor blood type: ${patient_data.donor_blood_type}.`;
+      if (mismatch) {
+        bloodContext += ` BLOOD TYPE INCOMPATIBILITY DETECTED.`;
+        if (patient_data.titer_therapy) {
+          bloodContext += ` Titer reduction therapy was performed. Consider residual antibody-mediated rejection (AMR) risk.`;
+        } else {
+          bloodContext += ` NO titer reduction therapy was performed. This significantly increases the risk of antibody-mediated rejection (AMR).`;
+        }
+      }
+    }
+
     const systemPrompt = `You are a transplant rejection prediction system. Analyze laboratory trends for a ${organ_type} transplant patient and predict the risk of graft rejection in the next 7-14 days.
 
 RULES:
@@ -48,12 +63,14 @@ RULES:
 - For KIDNEY: Watch for rising creatinine, declining eGFR, increasing proteinuria, abnormal potassium
 - Consider rate of change, not just absolute values
 - A consistent worsening trend across 3+ tests is more concerning than a single abnormal value
+- If blood type incompatibility exists WITHOUT titer therapy, this is a MAJOR risk factor for AMR
+- If blood type incompatibility exists WITH titer therapy, consider residual AMR risk as a moderate factor
 
 ${langInstruction}
 
 You MUST respond using the predict_rejection tool.`;
 
-    const userPrompt = `Patient organ: ${organ_type} transplant
+    const userPrompt = `Patient organ: ${organ_type} transplant${bloodContext}
 Lab history (most recent first):
 ${labSummary}
 
