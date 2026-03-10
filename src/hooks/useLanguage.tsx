@@ -443,6 +443,9 @@ const translations: Record<Language, Record<string, string>> = {
     "error.networkError": "Network error. Check your connection.",
     "error.unexpected": "An unexpected error occurred. Please try again.",
     "error.unknown": "Unknown error occurred.",
+    "translate.writtenIn": "Written in",
+    "translate.translating": "Translating...",
+    "translate.noteLanguage": "Note language",
   },
   ru: {
     "app.name": "TransplantCare",
