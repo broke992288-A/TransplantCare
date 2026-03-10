@@ -129,7 +129,6 @@ export default function AddMedicationDialog({ patientId }: Props) {
             </div>
             <SourceLanguageSelect value={notesLang} onChange={setNotesLang} />
           </div>
-          </FormField>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={handleSave} disabled={addMed.isPending}>
