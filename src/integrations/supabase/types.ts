@@ -668,6 +668,56 @@ export type Database = {
           },
         ]
       }
+      transplant_episodes: {
+        Row: {
+          created_at: string
+          donor_blood_type: string | null
+          donor_type: string | null
+          episode_number: number
+          id: string
+          notes: string | null
+          organ_type: string
+          patient_id: string
+          status: string
+          transplant_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          donor_blood_type?: string | null
+          donor_type?: string | null
+          episode_number?: number
+          id?: string
+          notes?: string | null
+          organ_type: string
+          patient_id: string
+          status?: string
+          transplant_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          donor_blood_type?: string | null
+          donor_type?: string | null
+          episode_number?: number
+          id?: string
+          notes?: string | null
+          organ_type?: string
+          patient_id?: string
+          status?: string
+          transplant_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transplant_episodes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -704,6 +754,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      insert_lab_and_recalculate: {
+        Args: {
+          _algorithm_version?: string
+          _lab_data: Json
+          _risk_details?: Json
+          _risk_level?: string
+          _risk_score?: number
+          _trend_flags?: Json
+        }
+        Returns: Json
       }
       normalize_phone: { Args: { _phone: string }; Returns: string }
       register_patient_self: {
