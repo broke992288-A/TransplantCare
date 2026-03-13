@@ -4,26 +4,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { RefreshCw, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { triggerRiskRecalculation, type RecalculationResult } from "@/services/riskRecalculationService";
+import { triggerFullRecalculation } from "@/services/riskRecalculationService";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function RiskRecalculationCard() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<RecalculationResult | null>(null);
+  const [progress, setProgress] = useState({ processed: 0, total: 0 });
+  const [result, setResult] = useState<{ totalProcessed: number; totalSnapshots: number; totalAlerts: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleRecalculate = async () => {
     setRunning(true);
     setResult(null);
     setError(null);
+    setProgress({ processed: 0, total: 0 });
     try {
-      const res = await triggerRiskRecalculation();
+      const res = await triggerFullRecalculation((processed, total) => {
+        setProgress({ processed, total });
+      });
       setResult(res);
       toast({
         title: "Хавф балли қайта ҳисобланди ✅",
-        description: `${res.patients_processed} бемор, ${res.snapshots_created} snapshot, ${res.alerts_generated} алерт`,
+        description: `${res.totalProcessed} бемор, ${res.totalSnapshots} snapshot, ${res.totalAlerts} алерт`,
       });
       qc.invalidateQueries();
     } catch (err: any) {
@@ -44,7 +48,7 @@ export default function RiskRecalculationCard() {
           <div>
             <CardTitle className="text-base">Хавф баллини қайта ҳисоблаш</CardTitle>
             <CardDescription>
-              Барча тарихий таҳлилларни янги клиник алгоритмлар билан қайта ишлайди
+              Барча тарихий таҳлилларни янги клиник алгоритмлар билан қайта ишлайди (20 та бемор пакетида)
             </CardDescription>
           </div>
         </div>
@@ -52,19 +56,23 @@ export default function RiskRecalculationCard() {
       <CardContent className="space-y-4">
         {running && (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Қайта ҳисобланмоқда...</p>
-            <Progress value={undefined} className="h-2 animate-pulse" />
+            <p className="text-sm text-muted-foreground">
+              Қайта ҳисобланмоқда... {progress.processed > 0 && `(${progress.processed} бемор ишланди)`}
+            </p>
+            <Progress
+              value={progress.total > 0 ? (progress.processed / progress.total) * 100 : undefined}
+              className="h-2"
+            />
           </div>
         )}
 
-        {result && result.success && (
+        {result && (
           <div className="flex items-start gap-2 rounded-lg bg-success/10 p-3">
             <CheckCircle className="h-5 w-5 text-success mt-0.5 shrink-0" />
             <div className="text-sm">
               <p className="font-medium text-success">Муваффақиятли!</p>
               <p className="text-muted-foreground mt-1">
-                Алгоритм: {result.algorithm_version} • {result.patients_processed} бемор •{" "}
-                {result.snapshots_created} snapshot • {result.alerts_generated} алерт
+                {result.totalProcessed} бемор • {result.totalSnapshots} snapshot • {result.totalAlerts} алерт
               </p>
             </div>
           </div>
