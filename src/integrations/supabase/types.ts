@@ -280,6 +280,54 @@ export type Database = {
           },
         ]
       }
+      medication_adherence: {
+        Row: {
+          created_at: string
+          id: string
+          medication_id: string
+          notes: string | null
+          patient_id: string
+          scheduled_date: string
+          taken: boolean
+          taken_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          medication_id: string
+          notes?: string | null
+          patient_id: string
+          scheduled_date?: string
+          taken?: boolean
+          taken_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          medication_id?: string
+          notes?: string | null
+          patient_id?: string
+          scheduled_date?: string
+          taken?: boolean
+          taken_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_adherence_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medication_adherence_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medication_changes: {
         Row: {
           changed_by: string
