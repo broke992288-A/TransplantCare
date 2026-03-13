@@ -84,19 +84,19 @@ export default function Analytics() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("analytics.title")}</h1>
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">{t("analytics.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("analytics.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />{t("analytics.print")}</Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV}><TableIcon className="w-4 h-4 mr-2" />{t("analytics.exportCSV")}</Button>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />{t("analytics.print")}</Button>
+          <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportCSV}><TableIcon className="w-4 h-4 mr-2" />{t("analytics.exportCSV")}</Button>
         </div>
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : patients.length}</p><p className="text-xs text-muted-foreground">{t("dashboard.totalPatients")}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : patients.filter(p => p.organ_type === "kidney").length}</p><p className="text-xs text-muted-foreground">{t("analytics.kidney")}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-2xl font-bold text-foreground">{isLoading ? "—" : patients.filter(p => p.organ_type === "liver").length}</p><p className="text-xs text-muted-foreground">{t("analytics.liver")}</p></CardContent></Card>
@@ -105,17 +105,17 @@ export default function Analytics() {
 
       <Card className="mb-6">
         <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2"><Filter className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium">{t("analytics.filters")}:</span></div>
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-32"><SelectValue placeholder={t("analytics.allYears")} /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t("analytics.allYears")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("analytics.allYears")}</SelectItem>
                 {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={regionFilter} onValueChange={setRegionFilter}>
-              <SelectTrigger className="w-56"><SelectValue placeholder={t("analytics.allRegions")} /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-56"><SelectValue placeholder={t("analytics.allRegions")} /></SelectTrigger>
               <SelectContent className="max-h-60">
                 <SelectItem value="all">{t("analytics.allRegions")}</SelectItem>
                 {uzbekistanRegions.map((r) => (
@@ -124,14 +124,14 @@ export default function Analytics() {
               </SelectContent>
             </Select>
             <Select value={organFilter} onValueChange={setOrganFilter}>
-              <SelectTrigger className="w-32"><SelectValue placeholder={t("analytics.allOrgans")} /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t("analytics.allOrgans")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("analytics.allOrgans")}</SelectItem>
                 <SelectItem value="kidney">{t("analytics.kidney")}</SelectItem>
                 <SelectItem value="liver">{t("analytics.liver")}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="ghost" size="sm" onClick={() => { setYearFilter("all"); setRegionFilter("all"); setOrganFilter("all"); }}>{t("analytics.reset")}</Button>
+            <Button className="w-full sm:w-auto" variant="ghost" size="sm" onClick={() => { setYearFilter("all"); setRegionFilter("all"); setOrganFilter("all"); }}>{t("analytics.reset")}</Button>
           </div>
         </CardContent>
       </Card>
