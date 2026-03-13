@@ -281,7 +281,7 @@ serve(async (req) => {
             patient_id: patient.id,
             alert_type: "risk_recalculation",
             severity: "critical",
-            title: `Jiddiy og'shish (qayta hisoblash)`,
+            title: `Shifokor bilan maslahatlashish tavsiya etiladi`,
             message: flags.join("; "),
             is_read: true, // historical alerts marked as read
             created_at: lab.recorded_at,

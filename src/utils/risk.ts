@@ -1,34 +1,120 @@
 import type { OrganType, RiskLevel } from "@/types/patient";
 
+/**
+ * Deterministic risk calculation with organ-specific algorithms.
+ * Returns a RiskLevel based on a normalized 0-100 scoring system.
+ *
+ * LIVER MODEL: ALT, AST, Total Bilirubin, Direct Bilirubin, Tacrolimus, Transplant #, Days post-Tx
+ * KIDNEY MODEL: Creatinine, eGFR, Proteinuria, Potassium, Tacrolimus, Dialysis history, Days post-Tx
+ */
 export function calculateRisk(organ: OrganType, data: Record<string, any>): RiskLevel {
-  // Blood type incompatibility with no titer therapy → elevated risk
+  const score = calculateRiskScore(organ, data);
+  return score >= 60 ? "high" : score >= 30 ? "medium" : "low";
+}
+
+/**
+ * Full 0-100 risk score calculator with organ-specific logic.
+ */
+export function calculateRiskScore(organ: OrganType, data: Record<string, any>): number {
+  let score = 0;
+
+  // ── Blood type incompatibility ──
   const bloodMismatch = data.blood_type && data.donor_blood_type && data.blood_type !== data.donor_blood_type;
   const titerDone = data.titer_therapy === "yes" || data.titer_therapy === true;
-  const incompatibleNoTiter = bloodMismatch && !titerDone;
+  if (bloodMismatch && !titerDone) score += 25;
+  else if (bloodMismatch && titerDone) score += 10;
+
+  // ── Early post-transplant period (<90 days) ──
+  if (data.transplant_date) {
+    const daysSinceTx = Math.floor((Date.now() - new Date(data.transplant_date).getTime()) / 86400000);
+    if (daysSinceTx >= 0 && daysSinceTx < 90) {
+      score += 10;
+    }
+  }
+
+  // ── Re-transplant ──
+  const txNum = parseInt(data.transplant_number) || 1;
+  if (txNum >= 2) score += 15;
 
   if (organ === "liver") {
-    const alt = parseFloat(data.alt) || 0;
-    const tac = parseFloat(data.tacrolimus_level) || 0;
-    const txNum = parseInt(data.transplant_number) || 1;
-    if (incompatibleNoTiter) return "high";
-    if (alt > 120) return "high";
-    if (tac < 5) return txNum >= 2 ? "high" : "medium";
-    if (bloodMismatch && titerDone) return txNum >= 2 ? "high" : "medium";
-    if (txNum >= 2) return "medium";
-    return "low";
+    score += liverRiskModel(data);
   } else {
-    const cr = parseFloat(data.creatinine) || 0;
-    const egfr = parseFloat(data.egfr) || 999;
-    const dialysis = data.dialysis_history === "yes" || data.dialysis_history === true;
-    if (incompatibleNoTiter) return "high";
-    if (dialysis) return "high";
-    if (cr > 2.5) return "high";
-    if (egfr < 30) return "high";
-    if (bloodMismatch && titerDone) return cr > 1.5 || egfr < 45 ? "high" : "medium";
-    if (egfr < 45) return "medium";
-    if (cr > 1.5) return "medium";
-    return "low";
+    score += kidneyRiskModel(data);
   }
+
+  return Math.min(score, 100);
+}
+
+// ─── LIVER-SPECIFIC RISK MODEL ───
+function liverRiskModel(data: Record<string, any>): number {
+  let pts = 0;
+  const alt = parseFloat(data.alt) || 0;
+  const ast = parseFloat(data.ast) || 0;
+  const tac = parseFloat(data.tacrolimus_level) || 0;
+  const bili = parseFloat(data.total_bilirubin) || 0;
+  const dbili = parseFloat(data.direct_bilirubin) || 0;
+
+  // ALT thresholds (U/L) — AASLD 2023
+  if (alt > 120) pts += 25;
+  else if (alt > 60) pts += 10;
+
+  // AST thresholds (U/L)
+  if (ast > 120) pts += 20;
+  else if (ast > 60) pts += 8;
+
+  // Total Bilirubin (mg/dL)
+  if (bili > 3.0) pts += 20;
+  else if (bili > 1.5) pts += 10;
+
+  // Direct Bilirubin (mg/dL)
+  if (dbili > 1.5) pts += 10;
+  else if (dbili > 0.5) pts += 5;
+
+  // Tacrolimus (ng/mL) — ISHLT 2023
+  if (tac > 0) {
+    if (tac < 5) pts += 25;      // sub-therapeutic → high rejection risk
+    else if (tac > 15) pts += 15; // toxic range
+  }
+
+  return pts;
+}
+
+// ─── KIDNEY-SPECIFIC RISK MODEL ───
+function kidneyRiskModel(data: Record<string, any>): number {
+  let pts = 0;
+  const cr = parseFloat(data.creatinine) || 0;
+  const egfr = parseFloat(data.egfr) || 999;
+  const prot = parseFloat(data.proteinuria) || 0;
+  const k = parseFloat(data.potassium) || 0;
+  const tac = parseFloat(data.tacrolimus_level) || 0;
+  const dialysis = data.dialysis_history === "yes" || data.dialysis_history === true;
+
+  // Creatinine (mg/dL) — KDIGO 2024
+  if (cr > 2.5) pts += 30;
+  else if (cr > 1.5) pts += 12;
+
+  // eGFR (mL/min/1.73m²)
+  if (egfr < 30) pts += 25;
+  else if (egfr < 45) pts += 12;
+
+  // Proteinuria (g/day)
+  if (prot > 1.0) pts += 15;
+  else if (prot > 0.3) pts += 8;
+
+  // Potassium (mmol/L)
+  if (k > 6.0) pts += 15;
+  else if (k > 5.5 || (k > 0 && k < 3.5)) pts += 8;
+
+  // Tacrolimus (ng/mL)
+  if (tac > 0) {
+    if (tac < 5) pts += 20;
+    else if (tac > 15) pts += 12;
+  }
+
+  // Dialysis history
+  if (dialysis) pts += 20;
+
+  return pts;
 }
 
 export function riskColorClass(level: string) {
