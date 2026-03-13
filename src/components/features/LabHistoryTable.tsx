@@ -235,7 +235,7 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
                       const val = (lab as any)[h.key];
                       const colorClass = val != null ? getCellColor(h.key, val) : "";
                       return (
-                        <TableCell key={h.key} className={`text-center ${colorClass}`}>
+                        <TableCell key={h.key} className={`text-center ${colorClass}`} title={h.label}>
                           {val != null ? String(val) : "—"}
                         </TableCell>
                       );
