@@ -14,7 +14,7 @@ function StatusBadge({ status, t }: { status: string; t: (k: string) => string }
     case "due_soon":
       return <Badge className="bg-warning/10 text-warning border-warning/30">{t("schedule.dueSoon")}</Badge>;
     default:
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">{t("schedule.onSchedule")}</Badge>;
+      return <Badge className="bg-success/10 text-success border-success/30">{t("schedule.onSchedule")}</Badge>;
   }
 }
 
