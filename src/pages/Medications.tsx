@@ -73,14 +73,17 @@ export default function Medications() {
 
   return (
     <DashboardLayout>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:mb-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) :
           stockStats.map((stat) => (
             <Card key={stat.label}>
               <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center"><stat.icon className={`w-5 h-5 ${stat.color}`} /></div>
-                  <div><p className="text-2xl font-bold text-foreground">{stat.value}</p><p className="text-xs text-muted-foreground">{stat.label}</p></div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="w-10 h-10 shrink-0 rounded-lg bg-muted flex items-center justify-center"><stat.icon className={`w-5 h-5 ${stat.color}`} /></div>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold text-foreground sm:text-2xl">{stat.value}</p>
+                    <p className="truncate text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -90,10 +93,13 @@ export default function Medications() {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-lg font-semibold">{t("medications.inventory")}</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder={t("medications.search")} className="pl-9 w-64" value={search} onChange={e => setSearch(e.target.value)} /></div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input placeholder={t("medications.search")} className="w-full pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -110,34 +116,32 @@ export default function Medications() {
                   <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{t(GROUP_LABEL_KEYS[groupKey])}</Badge>
                   </h3>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("medications.medication")}</TableHead>
-                          <TableHead className="text-right">{t("dashboard.totalPatients")}</TableHead>
-                          <TableHead className="text-right">{t("medications.activeLabel")}</TableHead>
-                          <TableHead>{t("medications.dosages")}</TableHead>
-                          <TableHead>{t("medications.frequency")}</TableHead>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("medications.medication")}</TableHead>
+                        <TableHead className="text-right">{t("dashboard.totalPatients")}</TableHead>
+                        <TableHead className="text-right">{t("medications.activeLabel")}</TableHead>
+                        <TableHead>{t("medications.dosages")}</TableHead>
+                        <TableHead>{t("medications.frequency")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {grouped[groupKey]!.map((med) => (
+                        <TableRow key={med.name}>
+                          <TableCell className="font-medium">{med.name}</TableCell>
+                          <TableCell className="text-right">{med.patients.size}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge className={med.active > 0 ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                              {med.active} / {med.total}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground break-words">{Array.from(med.dosages).slice(0, 3).join(", ")}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground break-words">{Array.from(med.frequencies).slice(0, 2).join(", ")}</TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {grouped[groupKey]!.map((med) => (
-                          <TableRow key={med.name}>
-                            <TableCell className="font-medium">{med.name}</TableCell>
-                            <TableCell className="text-right">{med.patients.size}</TableCell>
-                            <TableCell className="text-right">
-                              <Badge className={med.active > 0 ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                                {med.active} / {med.total}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">{Array.from(med.dosages).slice(0, 3).join(", ")}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm">{Array.from(med.frequencies).slice(0, 2).join(", ")}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               ))}
             </div>

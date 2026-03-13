@@ -53,28 +53,28 @@ export default function Patients() {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle className="text-lg font-semibold">
               {t("patients.recipientsList")}
               {!loading && <span className="ml-2 text-sm font-normal text-muted-foreground">({totalCount})</span>}
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => navigate("/add-patient")}><UserPlus className="w-4 h-4 mr-2" />{t("patients.newTransplant")}</Button>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <Button size="sm" className="w-full sm:w-auto" onClick={() => navigate("/add-patient")}><UserPlus className="w-4 h-4 mr-2" />{t("patients.newTransplant")}</Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
-            <div className="relative flex-1 max-w-sm">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-sm sm:flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder={t("patients.search")} value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} className="pl-9" />
             </div>
             <Select value={organFilter} onValueChange={handleOrganChange}>
-              <SelectTrigger className="w-32"><SelectValue placeholder={t("patients.organ")} /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t("patients.organ")} /></SelectTrigger>
               <SelectContent><SelectItem value="all">{t("patients.allOrgans")}</SelectItem><SelectItem value="kidney">{t("analytics.kidney")}</SelectItem><SelectItem value="liver">{t("analytics.liver")}</SelectItem></SelectContent>
             </Select>
             <Select value={riskFilter} onValueChange={handleRiskChange}>
-              <SelectTrigger className="w-32"><SelectValue placeholder={t("dashboard.risk")} /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t("dashboard.risk")} /></SelectTrigger>
               <SelectContent><SelectItem value="all">{t("alerts.all")}</SelectItem><SelectItem value="high">{t("dashboard.highRisk")}</SelectItem><SelectItem value="medium">{t("dashboard.mediumRisk")}</SelectItem><SelectItem value="low">{t("patients.lowRisk")}</SelectItem></SelectContent>
             </Select>
           </div>

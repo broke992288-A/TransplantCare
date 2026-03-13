@@ -86,13 +86,13 @@ export default function Alerts() {
 
   return (
     <DashboardLayout>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {alertStats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center"><stat.icon className={`w-5 h-5 ${stat.color}`} /></div>
-                <div><p className="text-2xl font-bold text-foreground">{stat.value}</p><p className="text-xs text-muted-foreground">{stat.label}</p></div>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg bg-muted flex items-center justify-center"><stat.icon className={`w-5 h-5 ${stat.color}`} /></div>
+                <div className="min-w-0"><p className="text-2xl font-bold text-foreground">{stat.value}</p><p className="truncate text-xs text-muted-foreground">{stat.label}</p></div>
               </div>
             </CardContent>
           </Card>
@@ -101,10 +101,10 @@ export default function Alerts() {
 
       <Card>
         <CardHeader className="pb-4">
-           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-lg font-semibold">{t("alerts.alertCenter")}</CardTitle>
             {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={async () => {
+              <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={async () => {
                 try {
                   await markAllAlertsRead();
                   queryClient.invalidateQueries({ queryKey: ["all-alerts"] });
@@ -129,7 +129,7 @@ export default function Alerts() {
             </div>
           ) : (
             <Tabs defaultValue="all" className="w-full">
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 h-auto w-full flex-wrap justify-start">
                 <TabsTrigger value="all">{t("alerts.all")} ({alerts.length})</TabsTrigger>
                 <TabsTrigger value="critical">{t("alerts.critical")} ({filterAlerts("critical").length})</TabsTrigger>
                 <TabsTrigger value="warning">{t("alerts.warning")} ({filterAlerts("warning").length})</TabsTrigger>

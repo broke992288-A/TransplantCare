@@ -25,14 +25,14 @@ export function TopHeader({ onMenuClick }: TopHeaderProps) {
   };
 
   return (
-    <header className="min-h-14 bg-card border-b border-border flex items-center justify-between px-3 sm:px-4 py-2 gap-2 flex-wrap">
+    <header className="min-h-14 w-full min-w-0 bg-card border-b border-border flex items-center justify-between px-3 sm:px-4 py-2 gap-2 flex-wrap">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
           <Menu className="w-5 h-5" />
         </Button>
         <h1 className="hidden sm:block text-base sm:text-lg font-semibold text-foreground truncate">{t("app.name")}</h1>
       </div>
-      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+      <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
         <LanguageSelector />
         <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/alerts")}>
           <Bell className="w-5 h-5" />
@@ -44,8 +44,8 @@ export function TopHeader({ onMenuClick }: TopHeaderProps) {
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-1.5 sm:px-2">
-              <Avatar className="w-8 h-8">
+            <Button variant="ghost" className="flex max-w-[140px] items-center gap-2 px-1.5 sm:max-w-none sm:px-2">
+              <Avatar className="w-8 h-8 shrink-0">
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">{name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <span className="hidden max-w-28 truncate text-sm font-medium sm:block">{name.split("@")[0]}</span>
