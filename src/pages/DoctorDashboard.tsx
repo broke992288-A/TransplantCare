@@ -39,9 +39,9 @@ export default function DoctorDashboard() {
     .sort((a, b) => ((b as any).risk_score ?? 0) - ((a as any).risk_score ?? 0));
   const mediumRisk = patients.filter((p) => p.risk_level === "medium");
   const pieData = [
-    { name: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(0, 72%, 51%)" },
-    { name: t("dashboard.mediumRisk"), value: mediumRisk.length, color: "hsl(38, 92%, 50%)" },
-    { name: t("patients.lowRisk"), value: patients.length - highRisk.length - mediumRisk.length, color: "hsl(142, 71%, 35%)" },
+    { name: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(var(--destructive))" },
+    { name: t("dashboard.mediumRisk"), value: mediumRisk.length, color: "hsl(var(--warning))" },
+    { name: t("patients.lowRisk"), value: patients.length - highRisk.length - mediumRisk.length, color: "hsl(var(--success))" },
   ].filter((d) => d.value > 0);
 
   const riskBadge = (level: string) => <Badge className={riskColorClass(level)}>{t(`risk.${level}`)}</Badge>;
@@ -55,10 +55,15 @@ export default function DoctorDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">{t("dashboard.title")}</h1><p className="text-muted-foreground">{t("dashboard.subtitle")}</p></div>
-          <Button asChild><Link to="/add-patient"><Plus className="mr-1 h-4 w-4" /> {t("nav.addPatient")}</Link></Button>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold leading-tight sm:text-2xl">{t("dashboard.title")}</h1>
+            <p className="text-sm text-muted-foreground sm:text-base">{t("dashboard.subtitle")}</p>
+          </div>
+          <Button asChild size="sm" className="w-full sm:w-auto">
+            <Link to="/add-patient"><Plus className="mr-1 h-4 w-4" /> {t("nav.addPatient")}</Link>
+          </Button>
         </div>
 
         {/* Patient Priority System */}
@@ -70,7 +75,7 @@ export default function DoctorDashboard() {
         {!loading && patients.length > 0 && <OverdueLabsPanel />}
 
         {/* Summary cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
             : summaryCards.map(({ label, value, icon: Icon, color }) => (
@@ -79,7 +84,7 @@ export default function DoctorDashboard() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
                     <Icon className={`h-5 w-5 ${color}`} />
                   </CardHeader>
-                  <CardContent><div className="text-3xl font-bold">{value}</div></CardContent>
+                  <CardContent><div className="text-2xl font-bold sm:text-3xl">{value}</div></CardContent>
                 </Card>
               ))
           }

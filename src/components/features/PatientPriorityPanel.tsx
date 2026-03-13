@@ -67,15 +67,15 @@ export default function PatientPriorityPanel({ patients, labs }: Props) {
 
   return (
     <Card className="border-2 border-primary/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">
+      <CardHeader className="space-y-2 pb-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
+            <Zap className="h-5 w-5 text-primary shrink-0" />
+            <CardTitle className="text-base leading-tight sm:text-lg">
               {t("dashboard.patientsAttention")}
             </CardTitle>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {criticalCount > 0 && (
               <Badge className="bg-destructive text-destructive-foreground">
                 {criticalCount} {t("dashboard.criticalCount")}

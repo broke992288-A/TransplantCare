@@ -107,7 +107,17 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    min-width: 320px;
+    font-size: clamp(14px, 0.9rem + 0.2vw, 16px);
   }
 }
