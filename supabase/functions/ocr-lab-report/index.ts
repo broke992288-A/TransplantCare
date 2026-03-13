@@ -1,9 +1,53 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// ─── CORS: Restrict to app domains ───
+const ALLOWED_ORIGINS = [
+  "https://id-preview--3d6f8975-c3ff-446b-91f6-07f7ec886943.lovable.app",
+  "https://lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "";
+  const allowed = ALLOWED_ORIGINS.some((o) => origin.startsWith(o) || origin.endsWith(".lovable.app"));
+  return {
+    "Access-Control-Allow-Origin": allowed ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
+
+// ─── Structured Logger ───
+function log(level: string, fn: string, msg: string, meta: Record<string, unknown> = {}) {
+  const entry = { timestamp: new Date().toISOString(), level, function_name: fn, message: msg, ...meta };
+  if (level === "error") console.error(JSON.stringify(entry));
+  else console.log(JSON.stringify(entry));
+}
+
+// ─── JWT Auth ───
+async function authenticateRequest(req: Request, corsHeaders: Record<string, string>): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized: missing token" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const token = authHeader.replace("Bearer ", "");
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) {
+    return new Response(JSON.stringify({ error: "Unauthorized: invalid token" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  return { userId: data.claims.sub as string };
+}
+
+const FN_NAME = "ocr-lab-report";
 
 const LAB_MARKERS = [
   "hb", "tlc", "platelets", "pti", "inr",
@@ -93,7 +137,16 @@ For each extracted value, assign a confidence score (0-100):
 Use the tool "extract_lab_values" to return results. ALWAYS return an array of date_groups, even if there is only one date.`;
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+
+  // JWT Authentication
+  const authResult = await authenticateRequest(req, corsHeaders);
+  if (authResult instanceof Response) return authResult;
+  const { userId } = authResult;
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -101,6 +154,8 @@ serve(async (req) => {
 
     const { imageBase64, fileType } = await req.json();
     if (!imageBase64) throw new Error("No image data provided");
+
+    log("info", FN_NAME, "OCR request received", { requestId, userId, fileType });
 
     const mediaType = fileType === "pdf" ? "application/pdf" :
                       fileType === "png" ? "image/png" : "image/jpeg";
@@ -130,23 +185,18 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "extract_lab_values",
-              description: "Return structured lab values grouped by date. Each date_group contains a date string and markers object.",
+              description: "Return structured lab values grouped by date.",
               parameters: {
                 type: "object",
                 properties: {
-                  report_type: { type: "string", enum: ["table", "freeform", "mixed"], description: "Detected layout type" },
+                  report_type: { type: "string", enum: ["table", "freeform", "mixed"] },
                   date_groups: {
                     type: "array",
-                    description: "Array of result groups, one per date found in the report",
                     items: {
                       type: "object",
                       properties: {
-                        date: { type: "string", description: "Date in YYYY-MM-DD format, or 'unknown' if not detected" },
-                        markers: {
-                          type: "object",
-                          properties: markerProperties,
-                          additionalProperties: false,
-                        },
+                        date: { type: "string", description: "YYYY-MM-DD or 'unknown'" },
+                        markers: { type: "object", properties: markerProperties, additionalProperties: false },
                       },
                       required: ["date", "markers"],
                       additionalProperties: false,
@@ -164,59 +214,36 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required. Please add credits." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      const status = response.status;
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      log("error", FN_NAME, "AI gateway error", { requestId, userId, status, errText });
+      if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (status === 402) return new Response(JSON.stringify({ error: "Payment required." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      throw new Error(`AI gateway error: ${status}`);
     }
 
     const aiData = await response.json();
-
     let extracted: any = {};
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
-      try {
-        extracted = JSON.parse(toolCall.function.arguments);
-      } catch {
-        console.error("Failed to parse tool call arguments:", toolCall.function.arguments);
-        throw new Error("Could not parse lab values from image");
-      }
+      try { extracted = JSON.parse(toolCall.function.arguments); }
+      catch { throw new Error("Could not parse lab values from image"); }
     } else {
       const content = aiData.choices?.[0]?.message?.content ?? "";
-      try {
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) extracted = JSON.parse(jsonMatch[0]);
-      } catch {
-        console.error("Failed to parse AI response:", content);
-        throw new Error("Could not parse lab values from image");
-      }
+      try { const m = content.match(/\{[\s\S]*\}/); if (m) extracted = JSON.parse(m[0]); }
+      catch { throw new Error("Could not parse lab values from image"); }
     }
 
-    // Handle both new multi-date format and legacy single-date format
     let dateGroups = extracted.date_groups;
-    
     if (!dateGroups || !Array.isArray(dateGroups) || dateGroups.length === 0) {
-      // Legacy fallback: wrap single markers object into a date_group
-      const markers = extracted.markers ?? {};
-      dateGroups = [{ date: "unknown", markers }];
+      dateGroups = [{ date: "unknown", markers: extracted.markers ?? {} }];
     }
 
-    // Process each date group
     const processedGroups = dateGroups.map((group: any) => {
       const markers = group.markers ?? {};
       const data: Record<string, number | null> = {};
       const confidence: Record<string, number> = {};
       const originalText: Record<string, string> = {};
-
       for (const key of LAB_MARKERS) {
         const entry = markers[key];
         if (entry && typeof entry === "object") {
@@ -224,36 +251,27 @@ serve(async (req) => {
           confidence[key] = typeof entry.confidence === "number" ? entry.confidence : 0;
           if (entry.original_text) originalText[key] = entry.original_text;
         } else if (typeof entry === "number") {
-          data[key] = entry;
-          confidence[key] = 90;
+          data[key] = entry; confidence[key] = 90;
         } else {
-          data[key] = null;
-          confidence[key] = 0;
+          data[key] = null; confidence[key] = 0;
         }
       }
-
-      return {
-        date: group.date ?? "unknown",
-        data,
-        confidence,
-        originalText,
-      };
+      return { date: group.date ?? "unknown", data, confidence, originalText };
     });
 
+    const duration = Date.now() - startTime;
+    log("info", FN_NAME, "OCR completed", { requestId, userId, duration_ms: duration, groups: processedGroups.length });
+
     return new Response(JSON.stringify({
-      success: true,
-      multiDate: true,
-      dateGroups: processedGroups,
+      success: true, multiDate: true, dateGroups: processedGroups,
       reportType: extracted.report_type ?? "unknown",
-      // Legacy compatibility: also return first group as flat data/confidence
       data: processedGroups[0]?.data ?? {},
       confidence: processedGroups[0]?.confidence ?? {},
       originalText: processedGroups[0]?.originalText ?? {},
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    console.error("OCR error:", e);
+    const duration = Date.now() - startTime;
+    log("error", FN_NAME, "OCR error", { requestId, userId, duration_ms: duration, error: e instanceof Error ? e.message : "Unknown" });
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
