@@ -165,7 +165,7 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
   };
 
   return (
-    <>
+    <TooltipProvider delayDuration={0}>
       <div className="rounded-lg border overflow-hidden">
         <ScrollArea className="w-full">
           <Table>
@@ -236,8 +236,17 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
                       const val = (lab as any)[h.key];
                       const colorClass = val != null ? getCellColor(h.key, val) : "";
                       return (
-                        <TableCell key={h.key} className={`text-center ${colorClass}`} title={h.label}>
-                          {val != null ? String(val) : "—"}
+                        <TableCell key={h.key} className={`text-center ${colorClass}`}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-default inline-block w-full" tabIndex={0}>
+                                {val != null ? String(val) : "—"}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs font-medium">
+                              {h.label}
+                            </TooltipContent>
+                          </Tooltip>
                         </TableCell>
                       );
                     })}
@@ -264,6 +273,6 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }
