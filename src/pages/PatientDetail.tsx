@@ -126,13 +126,13 @@ export default function PatientDetail() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/patients")}><ArrowLeft className="h-5 w-5" /></Button>
-            <span className="text-lg font-bold">{patient.full_name}</span>
-            <Badge className={riskColorClass(patient.risk_level)}>{t(`risk.${patient.risk_level}`)}</Badge>
-          </div>
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/patients")}><ArrowLeft className="h-5 w-5" /></Button>
+            <span className="text-lg font-bold truncate">{patient.full_name}</span>
+            <Badge className={`shrink-0 ${riskColorClass(patient.risk_level)}`}>{t(`risk.${patient.risk_level}`)}</Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Link to={`/patient/${id}/medications`}>
               <Button variant="outline" size="sm"><Pill className="h-4 w-4 mr-1" />{t("med.title")}</Button>
             </Link>
