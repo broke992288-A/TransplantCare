@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,23 +11,24 @@ import { LanguageProvider } from "@/hooks/useLanguage";
 import { ErrorBoundary } from "@/components/features/ErrorBoundary";
 import { RouteErrorBoundary } from "@/components/features/RouteErrorBoundary";
 import { handleError } from "@/utils/errorHandler";
-import Login from "./pages/Login";
-import SelectRole from "./pages/SelectRole";
-import DoctorDashboard from "./pages/DoctorDashboard";
-import AddPatient from "./pages/AddPatient";
-import PatientDetail from "./pages/PatientDetail";
-import PatientHome from "./pages/PatientHome";
-import PatientProfile from "./pages/PatientProfile";
-import ResetPassword from "./pages/ResetPassword";
-import Compare from "./pages/Compare";
-import Analytics from "./pages/Analytics";
-import Reports from "./pages/Reports";
-import Alerts from "./pages/Alerts";
-import Medications from "./pages/Medications";
-import PatientMedications from "./pages/PatientMedications";
-import Patients from "./pages/Patients";
-import DemoSetup from "./pages/DemoSetup";
-import NotFound from "./pages/NotFound";
+
+// Lazy-loaded pages for code splitting
+const Login = lazy(() => import("./pages/Login"));
+const SelectRole = lazy(() => import("./pages/SelectRole"));
+const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
+const AddPatient = lazy(() => import("./pages/AddPatient"));
+const PatientDetail = lazy(() => import("./pages/PatientDetail"));
+const PatientProfile = lazy(() => import("./pages/PatientProfile"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Alerts = lazy(() => import("./pages/Alerts"));
+const Medications = lazy(() => import("./pages/Medications"));
+const PatientMedications = lazy(() => import("./pages/PatientMedications"));
+const Patients = lazy(() => import("./pages/Patients"));
+const DemoSetup = lazy(() => import("./pages/DemoSetup"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -50,9 +52,20 @@ const queryClient = new QueryClient({
   },
 });
 
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <span className="text-sm">Loading...</span>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole?: string }) {
   const { user, role, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (!role) return <Navigate to="/select-role" replace />;
   if (allowedRole && role !== allowedRole) {
@@ -64,7 +77,7 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; 
 
 function DoctorOrAdminRoute({ children }: { children: React.ReactNode }) {
   const { user, role, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (!role) return <Navigate to="/select-role" replace />;
   if (!["doctor", "admin", "support"].includes(role)) return <Navigate to="/patient/home" replace />;
@@ -77,7 +90,6 @@ function RealtimeProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Wrap each route content in a route-level error boundary */
 function RouteWrap({ children }: { children: React.ReactNode }) {
   return <RouteErrorBoundary>{children}</RouteErrorBoundary>;
 }
@@ -92,6 +104,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <RealtimeProvider>
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -111,6 +124,7 @@ const App = () => (
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             </RealtimeProvider>
           </AuthProvider>
         </BrowserRouter>
