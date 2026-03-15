@@ -111,6 +111,10 @@ serve(async (req) => {
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
+  // Rate limit: 5 recalculations per user per 10 minutes
+  const rl = checkRateLimit(userId, { maxRequests: 5, windowMs: 10 * 60 * 1000, functionName: FN_NAME });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);

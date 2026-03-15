@@ -54,6 +54,10 @@ serve(async (req) => {
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
+  // Rate limit: 50 translations per user per 5 minutes
+  const rl = checkRateLimit(userId, { maxRequests: 50, windowMs: 5 * 60 * 1000, functionName: FN_NAME });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
   try {
     const { texts, targetLang, sourceLang } = await req.json();
 

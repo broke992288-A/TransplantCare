@@ -149,6 +149,10 @@ serve(async (req) => {
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
+  // Rate limit: 20 OCR requests per user per 10 minutes
+  const rl = checkRateLimit(userId, { maxRequests: 20, windowMs: 10 * 60 * 1000, functionName: FN_NAME });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");

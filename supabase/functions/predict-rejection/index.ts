@@ -49,6 +49,10 @@ serve(async (req) => {
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
+  // Rate limit: 10 predictions per user per 5 minutes
+  const rl = checkRateLimit(userId, { maxRequests: 10, windowMs: 5 * 60 * 1000, functionName: FN_NAME });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
   try {
     const { patient_id, organ_type, labs, language = "en", patient_data } = await req.json();
 
