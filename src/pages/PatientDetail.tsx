@@ -178,6 +178,19 @@ export default function PatientDetail() {
             {t("detail.recalculateRisk")}
           </Button>
         </div>
+
+        <PredictionPanel
+          patientId={patient.id}
+          patientName={patient.full_name}
+          organType={patient.organ_type}
+          currentRisk={latestRisk?.risk_level ?? patient.risk_level}
+          patientData={{
+            blood_type: patient.blood_type,
+            donor_blood_type: patient.donor_blood_type,
+            titer_therapy: patient.titer_therapy,
+          }}
+        />
+
         <PatientAlertsCard patientId={patient.id} />
         <PatientLabScheduleCard patientId={patient.id} />
 
