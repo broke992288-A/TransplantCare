@@ -291,7 +291,7 @@ export function computeRiskScore(
     dialysis_history?: boolean | null;
     transplant_date?: string | null;
   },
-  prevLab?: LabResult | null
+  historicalLabs?: HistoricalLabInput
 ): { score: number; level: string; flags: string[]; explanations: RiskExplanation[] } {
   let score = 0;
   const flags: string[] = [];

@@ -45,13 +45,13 @@ export default function PatientDetail() {
     if (latestLab) {
       const matchingSnapshot = riskSnapshots.find(s => s.lab_result_id === latestLab.id);
       if (matchingSnapshot) return matchingSnapshot;
-      // No snapshot for the latest lab — compute on-the-fly
-      const prevLab = allLabs.length >= 2 ? allLabs[1] : null;
+      // No snapshot for the latest lab — compute on-the-fly using a 5-test trend window
+      const historicalLabs = allLabs.slice(1, 5);
       const computed = computeRiskScore(patient?.organ_type ?? "kidney", latestLab, {
         transplant_number: patient?.transplant_number,
         dialysis_history: patient?.dialysis_history,
         transplant_date: patient?.transplant_date,
-      }, prevLab);
+      }, historicalLabs);
       return {
         id: "computed",
         patient_id: latestLab.patient_id,

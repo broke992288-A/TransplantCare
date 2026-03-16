@@ -93,17 +93,17 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
 
       const savedLab = await insertLabResult(labData);
 
-      // Fetch previous lab for trend analysis
-      let prevLab = null;
+      // Fetch recent labs for rolling 5-test trend analysis
+      let historicalLabs: any[] = [];
       try {
-        const prevLabs = await fetchLabsByPatientId(patientId, 2);
-        prevLab = prevLabs.length > 1 ? prevLabs[1] : null;
+        const recentLabs = await fetchLabsByPatientId(patientId, 5);
+        historicalLabs = recentLabs.filter((lab) => lab.id !== savedLab.id).slice(0, 4);
       } catch { /* ignore */ }
 
       // Compute risk score using DB thresholds
       try {
         const { score, level, flags, explanations } = await computeRiskScoreAsync(
-          organType, savedLab as any, patientData ?? {}, prevLab
+          organType, savedLab as any, patientData ?? {}, historicalLabs
         );
         const snapshot = await insertRiskSnapshot({
           patient_id: patientId,
