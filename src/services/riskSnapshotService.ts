@@ -171,6 +171,7 @@ function computeRiskWithDbThresholds(
   let score = 0;
   const flags: string[] = [];
   const explanations: RiskExplanation[] = [];
+  const trendHistory = normalizeHistoricalLabs(historicalLabs);
 
   // --- Time since transplant ---
   const daysSinceTx = daysSinceDate(patient.transplant_date);

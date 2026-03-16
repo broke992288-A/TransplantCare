@@ -352,13 +352,12 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
-      // Track previously saved lab for trend analysis
-      let lastSavedLab: any = null;
+      // Track up to 4 previous labs so each new result is scored against a 5-test rolling window
+      let historicalWindow: any[] = [];
 
-      // Fetch the most recent existing lab before the earliest new one (for first iteration's prevLab)
       try {
-        const existingLabs = await fetchLabsByPatientId(patientId, 1);
-        lastSavedLab = existingLabs.length > 0 ? existingLabs[0] : null;
+        const existingLabs = await fetchLabsByPatientId(patientId, 4);
+        historicalWindow = existingLabs.slice(0, 4);
       } catch { /* ignore */ }
 
       for (const group of sortedGroups) {
