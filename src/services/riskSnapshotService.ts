@@ -37,6 +37,79 @@ function pctChange(prev: number, curr: number): number {
   return ((curr - prev) / prev) * 100;
 }
 
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+type HistoricalLabInput = LabResult | LabResult[] | null | undefined;
+
+function normalizeHistoricalLabs(historicalLabs: HistoricalLabInput): LabResult[] {
+  if (!historicalLabs) return [];
+  const labs = (Array.isArray(historicalLabs) ? historicalLabs : [historicalLabs]).filter(Boolean);
+  return labs.slice(0, 4);
+}
+
+function getLabMetricValue(lab: Partial<LabResult> | null | undefined, parameter: string): number | null {
+  if (!lab) return null;
+
+  const metricMap: Record<string, number | null | undefined> = {
+    tacrolimus: lab.tacrolimus_level,
+    alt: lab.alt,
+    ast: lab.ast,
+    total_bilirubin: lab.total_bilirubin,
+    direct_bilirubin: lab.direct_bilirubin,
+    creatinine: lab.creatinine,
+    egfr: lab.egfr,
+    potassium: lab.potassium,
+    proteinuria: lab.proteinuria,
+    hb: lab.hb,
+    albumin: lab.albumin,
+    platelets: lab.platelets,
+    inr: lab.inr,
+    alp: lab.alp,
+    ggt: lab.ggt,
+    crp: lab.crp,
+  };
+
+  const value = metricMap[parameter];
+  return typeof value === "number" ? value : value ?? null;
+}
+
+function getWindowTrendSignal(
+  currentValue: number,
+  historicalLabs: LabResult[],
+  parameter: string,
+  thresholdPct: number,
+  trendDirection: string | null
+) {
+  if (currentValue <= 0 || !trendDirection) return null;
+
+  const previousValues = historicalLabs
+    .map((lab) => getLabMetricValue(lab, parameter))
+    .filter((value): value is number => typeof value === "number" && value > 0)
+    .slice(0, 4);
+
+  if (previousValues.length === 0) return null;
+
+  const baseline = median(previousValues);
+  const change_pct = pctChange(baseline, currentValue);
+  const trendUp = trendDirection === "up" && change_pct >= thresholdPct;
+  const trendDown = trendDirection === "down" && change_pct <= -thresholdPct;
+
+  if (!trendUp && !trendDown) return null;
+
+  return {
+    baseline,
+    change_pct,
+    direction: trendUp ? "increased" : "decreased",
+    sample_count: previousValues.length,
+  };
+}
+
 /** Days between a date string and now */
 function daysSinceDate(dateStr: string | null | undefined): number | null {
   if (!dateStr) return null;
