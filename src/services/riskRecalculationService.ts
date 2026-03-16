@@ -13,41 +13,27 @@ export interface RecalculationResult {
 
 /**
  * Trigger historical risk recalculation for a single patient or a batch.
- * For all patients, uses pagination (batch_size=20) to prevent timeouts.
+ * Uses supabase.functions.invoke() to avoid CORS issues on mobile.
  */
 export async function triggerRiskRecalculation(
   patientId?: string,
   offset?: number,
   limit?: number
 ): Promise<RecalculationResult> {
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const { data: { session } } = await supabase.auth.getSession();
-
   const body: Record<string, any> = {};
   if (patientId) body.patient_id = patientId;
   if (offset != null) body.offset = offset;
   if (limit != null) body.limit = limit;
 
-  const res = await fetch(
-    `https://${projectId}.supabase.co/functions/v1/recalculate-risk`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token ?? anonKey}`,
-        apikey: anonKey,
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const { data, error } = await supabase.functions.invoke("recalculate-risk", {
+    body,
+  });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Recalculation failed: ${text}`);
+  if (error) {
+    throw new Error(`Recalculation failed: ${error.message}`);
   }
 
-  return res.json();
+  return data as RecalculationResult;
 }
 
 /**
