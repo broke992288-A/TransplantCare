@@ -292,7 +292,7 @@ async function generateDoc(variant: Variant) {
         "  types/                — TypeScript " + t("turlari", variant) + "\n",
         "  data/                 — " + t("Statik ma'lumotlar", variant),
       ].join(''),
-      font: 'Courier', fontSize: 8, color: NAVY, margin: [10, 4, 0, 8],
+      fontSize: 8, color: NAVY, margin: [10, 4, 0, 8],
     },
 
     sub("Asosiy sahifalar"),
