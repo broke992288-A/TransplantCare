@@ -172,6 +172,7 @@ serve(async (req) => {
       const sex = patient.gender === "female" ? "female" : "male";
 
       await supabase.from("risk_snapshots").delete().eq("patient_id", patient.id);
+      await supabase.from("patient_alerts").delete().eq("patient_id", patient.id).in("alert_type", ["risk_recalculation", "risk"]);
 
       const snapshotsToInsert: any[] = [];
       const alertsToInsert: any[] = [];

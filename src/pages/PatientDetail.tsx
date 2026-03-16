@@ -13,6 +13,7 @@ import AddLabDialog from "@/components/features/AddLabDialog";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
+import PredictionPanel from "@/components/features/PredictionPanel";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
 import PatientLabScheduleCard from "@/components/features/PatientLabScheduleCard";
 import { useToast } from "@/hooks/use-toast";
