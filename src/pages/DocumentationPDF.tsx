@@ -500,7 +500,7 @@ async function generateDoc(variant: Variant) {
     sub("Hisobotlar"),
     bullets([
       "Oylik reeystr, choraklik statistika, dori iste'moli, hudud tahlili",
-      "Klient tomonida PDF generatsiya (jsPDF / pdfMake)",
+      "Klient tomonida PDF generatsiya (jsPDF — hisobotlar, pdfMake — texnik hujjat)",
     ]),
 
     /* ═══ 11 ═══ */
