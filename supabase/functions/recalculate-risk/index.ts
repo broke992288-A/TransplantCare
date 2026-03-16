@@ -172,6 +172,7 @@ serve(async (req) => {
       const sex = patient.gender === "female" ? "female" : "male";
 
       await supabase.from("risk_snapshots").delete().eq("patient_id", patient.id);
+      await supabase.from("patient_alerts").delete().eq("patient_id", patient.id).in("alert_type", ["risk_recalculation", "risk"]);
 
       const snapshotsToInsert: any[] = [];
       const alertsToInsert: any[] = [];
@@ -228,10 +229,18 @@ serve(async (req) => {
               const trendDown = threshold.trend_direction === "down" && change <= -threshold.trend_threshold_pct;
               if (trendUp || trendDown) {
                 const pts = Math.round(threshold.risk_points_warning * 0.75);
-                score += pts;
                 const dir = trendUp ? "increased" : "decreased";
                 const f = `${threshold.parameter} ${dir} ${Math.abs(change).toFixed(0)}%`;
-                trendFlags.push(f); flags.push(f);
+                score += pts;
+                trendFlags.push(f);
+                flags.push(f);
+                explanations.push({
+                  key: `${threshold.parameter}_trend`,
+                  severity: trendUp ? "critical" : "warning",
+                  message: `${threshold.parameter.toUpperCase()} ${dir} by ${Math.abs(change).toFixed(0)}% vs median of previous ${previousValues.length} test(s) (${baseline} → ${value})`,
+                  change_pct: change,
+                  guideline: `${threshold.guideline_source} ${threshold.guideline_year}`,
+                });
               }
             }
           }

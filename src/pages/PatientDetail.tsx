@@ -13,6 +13,7 @@ import AddLabDialog from "@/components/features/AddLabDialog";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
+import PredictionPanel from "@/components/features/PredictionPanel";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
 import PatientLabScheduleCard from "@/components/features/PatientLabScheduleCard";
 import { useToast } from "@/hooks/use-toast";
@@ -177,6 +178,19 @@ export default function PatientDetail() {
             {t("detail.recalculateRisk")}
           </Button>
         </div>
+
+        <PredictionPanel
+          patientId={patient.id}
+          patientName={patient.full_name}
+          organType={patient.organ_type}
+          currentRisk={latestRisk?.risk_level ?? patient.risk_level}
+          patientData={{
+            blood_type: patient.blood_type,
+            donor_blood_type: patient.donor_blood_type,
+            titer_therapy: patient.titer_therapy,
+          }}
+        />
+
         <PatientAlertsCard patientId={patient.id} />
         <PatientLabScheduleCard patientId={patient.id} />
 
