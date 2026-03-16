@@ -29,6 +29,7 @@ const PatientMedications = lazy(() => import("./pages/PatientMedications"));
 const Patients = lazy(() => import("./pages/Patients"));
 const DemoSetup = lazy(() => import("./pages/DemoSetup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const DocumentationPDF = lazy(() => import("./pages/DocumentationPDF"));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/demo-setup" element={<DoctorOrAdminRoute><RouteWrap><DemoSetup /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><RouteWrap><PatientProfile /></RouteWrap></ProtectedRoute>} />
               <Route path="/compare" element={<DoctorOrAdminRoute><RouteWrap><Compare /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/documentation" element={<DocumentationPDF />} />
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
