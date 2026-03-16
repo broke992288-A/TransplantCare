@@ -137,7 +137,7 @@ export async function computeRiskScoreAsync(
     dialysis_history?: boolean | null;
     transplant_date?: string | null;
   },
-  prevLab?: LabResult | null
+  historicalLabs?: HistoricalLabInput
 ): Promise<{ score: number; level: string; flags: string[]; explanations: RiskExplanation[] }> {
   let thresholds: ClinicalThreshold[] = [];
   try {
