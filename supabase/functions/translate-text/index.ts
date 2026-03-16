@@ -89,7 +89,7 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: "You are a medical translator. Translate accurately preserving medical terms. For single text, return only the translation. For multiple texts, return a JSON array of strings." },
           { role: "user", content: prompt },
