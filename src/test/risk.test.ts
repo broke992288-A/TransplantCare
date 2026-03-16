@@ -82,17 +82,27 @@ describe("computeRiskScore (advanced)", () => {
     expect(result.explanations.some(e => e.key === "early_post_tx")).toBe(false);
   });
 
-  it("detects ALT rapid increase from previous lab", () => {
-    const prevLab = { ...baseLiverLab, alt: 50 };
-    const currentLab = { ...baseLiverLab, alt: 80 }; // +60%
-    const result = computeRiskScore("liver", currentLab, {}, prevLab);
+  it("detects ALT rapid increase from rolling lab window", () => {
+    const history = [
+      { ...baseLiverLab, alt: 45 },
+      { ...baseLiverLab, alt: 50 },
+      { ...baseLiverLab, alt: 55 },
+      { ...baseLiverLab, alt: 52 },
+    ];
+    const currentLab = { ...baseLiverLab, alt: 80 };
+    const result = computeRiskScore("liver", currentLab, {}, history);
     expect(result.explanations.some(e => e.key === "alt_trend_up")).toBe(true);
   });
 
-  it("detects creatinine rapid increase for kidney", () => {
-    const prevLab = { ...baseKidneyLab, creatinine: 1.0 };
-    const currentLab = { ...baseKidneyLab, creatinine: 1.5 }; // +50%
-    const result = computeRiskScore("kidney", currentLab, {}, prevLab);
+  it("detects creatinine rapid increase from rolling lab window", () => {
+    const history = [
+      { ...baseKidneyLab, creatinine: 1.0 },
+      { ...baseKidneyLab, creatinine: 1.1 },
+      { ...baseKidneyLab, creatinine: 0.95 },
+      { ...baseKidneyLab, creatinine: 1.05 },
+    ];
+    const currentLab = { ...baseKidneyLab, creatinine: 1.5 };
+    const result = computeRiskScore("kidney", currentLab, {}, history);
     expect(result.explanations.some(e => e.key === "cr_trend_up")).toBe(true);
   });
 
