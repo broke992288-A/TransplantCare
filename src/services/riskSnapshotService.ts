@@ -317,11 +317,18 @@ export function computeRiskScore(
     if (bili > FALLBACK_THRESHOLDS.total_bilirubin.critical) { score += 20; flags.push(`Bilirubin critical: ${bili}`); explanations.push({ key: "bilirubin_critical", message: `Bilirubin ${bili} mg/dL critically high`, severity: "critical", value: bili, threshold: FALLBACK_THRESHOLDS.total_bilirubin.critical }); }
     else if (bili > FALLBACK_THRESHOLDS.total_bilirubin.warning) { score += 10; flags.push(`Bilirubin elevated: ${bili}`); explanations.push({ key: "bilirubin_elevated", message: `Bilirubin ${bili} mg/dL elevated`, severity: "warning", value: bili, threshold: FALLBACK_THRESHOLDS.total_bilirubin.warning }); }
     if ((patient.transplant_number ?? 1) >= 2) { score += 15; flags.push("Re-transplant patient"); explanations.push({ key: "retransplant", message: "Re-transplant patient — higher baseline risk", severity: "warning" }); }
-    if (prevLab) {
-      const prevAlt = prevLab.alt ?? 0;
-      if (prevAlt > 0 && alt > 0) { const c = pctChange(prevAlt, alt); if (c >= 40) { score += 15; flags.push(`ALT rapid increase: +${c.toFixed(0)}%`); explanations.push({ key: "alt_trend_up", message: `ALT increased ${c.toFixed(0)}%`, severity: "critical", change_pct: c }); } }
-      const prevTac = prevLab.tacrolimus_level ?? 0;
-      if (prevTac > 0 && tac > 0) { const c = pctChange(prevTac, tac); if (c <= -30) { score += 10; flags.push(`Tacrolimus dropped: ${c.toFixed(0)}%`); explanations.push({ key: "tac_trend_down", message: `Tacrolimus dropped ${Math.abs(c).toFixed(0)}%`, severity: "warning", change_pct: c }); } }
+    const altTrend = getWindowTrendSignal(alt, trendHistory, "alt", 40, "up");
+    if (altTrend) {
+      score += 15;
+      flags.push(`ALT rapid increase: +${Math.abs(altTrend.change_pct).toFixed(0)}%`);
+      explanations.push({ key: "alt_trend_up", message: `ALT increased ${Math.abs(altTrend.change_pct).toFixed(0)}% vs median of previous ${altTrend.sample_count} test(s)`, severity: "critical", change_pct: altTrend.change_pct });
+    }
+
+    const tacTrend = getWindowTrendSignal(tac, trendHistory, "tacrolimus", 30, "down");
+    if (tacTrend) {
+      score += 10;
+      flags.push(`Tacrolimus dropped: ${tacTrend.change_pct.toFixed(0)}%`);
+      explanations.push({ key: "tac_trend_down", message: `Tacrolimus dropped ${Math.abs(tacTrend.change_pct).toFixed(0)}% vs median of previous ${tacTrend.sample_count} test(s)`, severity: "warning", change_pct: tacTrend.change_pct });
     }
   } else {
     if (cr > FALLBACK_THRESHOLDS.creatinine.critical) { score += 35; flags.push(`Creatinine critical: ${cr}`); explanations.push({ key: "creatinine_critical", message: `Creatinine ${cr} mg/dL critically elevated`, severity: "critical", value: cr, threshold: FALLBACK_THRESHOLDS.creatinine.critical }); }
