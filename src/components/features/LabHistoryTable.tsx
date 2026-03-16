@@ -244,7 +244,8 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
                               </span>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs font-medium">
-                              {h.label}
+                              <div>{h.label}</div>
+                              <div className="text-muted-foreground">{new Date(lab.recorded_at).toLocaleDateString()}</div>
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
