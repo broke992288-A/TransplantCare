@@ -165,7 +165,7 @@ function computeRiskWithDbThresholds(
   organType: string,
   lab: LabResult,
   patient: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null },
-  prevLab: LabResult | null | undefined,
+  historicalLabs: HistoricalLabInput,
   thresholds: ClinicalThreshold[]
 ): { score: number; level: string; flags: string[]; explanations: RiskExplanation[] } {
   let score = 0;
