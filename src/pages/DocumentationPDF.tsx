@@ -210,7 +210,7 @@ async function generateDoc(variant: Variant) {
           [
             { text: '', border: [false, false, false, false] },
             { text: "EDGE FUNCTIONS\n(Deno Runtime)", alignment: 'center', fontSize: 8, fillColor: '#E8F5E9', margin: [0, 5, 0, 5] },
-            { text: "PostgreSQL DB\n(12 " + t("jadval", variant) + ")", alignment: 'center', fontSize: 8, fillColor: '#E8F5E9', margin: [0, 5, 0, 5] },
+            { text: "PostgreSQL DB\n(13 " + t("jadval", variant) + ")", alignment: 'center', fontSize: 8, fillColor: '#E8F5E9', margin: [0, 5, 0, 5] },
           ],
           [
             { text: '', border: [false, false, false, false] },
