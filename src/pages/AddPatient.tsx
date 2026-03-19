@@ -27,7 +27,10 @@ export default function AddPatient() {
   const [step, setStep] = useState<1 | 2>(1);
   const [organ, setOrgan] = useState<OrganType | null>(null);
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const ocrFileRef = useRef<HTMLInputElement>(null);
+  const ocrCameraRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
