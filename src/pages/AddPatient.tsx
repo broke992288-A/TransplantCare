@@ -37,7 +37,7 @@ export default function AddPatient() {
   const { t } = useLanguage();
 
   const [form, setForm] = useState<Record<string, string>>({
-    full_name: "", date_of_birth: "", gender: "male", transplant_number: "1", transplant_date: "",
+    full_name: "", phone: "", date_of_birth: "", gender: "male", transplant_number: "1", transplant_date: "",
     rejection_type: "", tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "",
     dialysis_history: "no", return_dialysis_date: "", creatinine: "", egfr: "", proteinuria: "",
     potassium: "", biopsy_result: "", region: "", district: "",
