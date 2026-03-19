@@ -22,7 +22,7 @@ export async function fetchPaginatedPatients(
   let query = supabase
     .from("patients")
     .select(
-      "id, full_name, organ_type, risk_level, gender, date_of_birth, transplant_date, created_at, dialysis_history, return_dialysis_date",
+      "id, full_name, organ_type, risk_level, gender, date_of_birth, transplant_date, created_at, dialysis_history, return_dialysis_date, patient_number",
       { count: "exact" }
     );
 
