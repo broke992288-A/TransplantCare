@@ -209,7 +209,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { base64, file: processedFile, fileType } = await preprocessLabImage(file);
+      const { base64, file: processedFile, fileType, textContent } = await preprocessLabImage(file);
 
       const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
@@ -220,7 +220,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setReportUrl(urlData?.signedUrl ?? null);
 
       const { data: ocrData, error: ocrErr } = await supabase.functions.invoke("ocr-lab-report", {
-        body: { imageBase64: base64, fileType },
+        body: { imageBase64: base64, fileType, textContent },
       });
 
       if (ocrErr) throw ocrErr;
@@ -482,7 +482,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               </Button>
             </div>
             <input ref={cameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleFileChange} />
-            <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/msword" className="hidden" onChange={handleFileChange} />
           </div>
         )}
 

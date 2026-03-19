@@ -81,7 +81,23 @@ function buildMarkerProperties() {
   return props;
 }
 
-const systemPrompt = `You are an expert medical laboratory report OCR system. Your job is to extract lab values from report images with high accuracy.
+// ─── Text-based file types ───
+const TEXT_FILE_TYPES = ["txt", "csv", "tsv", "log", "text"];
+const OFFICE_FILE_TYPES = ["docx", "xlsx", "xls", "doc"];
+
+function isTextFile(fileType: string): boolean {
+  return TEXT_FILE_TYPES.includes(fileType.toLowerCase());
+}
+
+function isOfficeFile(fileType: string): boolean {
+  return OFFICE_FILE_TYPES.includes(fileType.toLowerCase());
+}
+
+function isImageFile(fileType: string): boolean {
+  return ["jpeg", "jpg", "png", "webp", "bmp", "tiff", "tif"].includes(fileType.toLowerCase());
+}
+
+const systemPrompt = `You are an expert medical laboratory report OCR system. Your job is to extract lab values from report images, documents, or text with high accuracy.
 
 CRITICAL: A single document may contain lab results from MULTIPLE DIFFERENT DATES. You MUST detect ALL dates and group results by date.
 
@@ -92,8 +108,10 @@ If multiple dates are found, create a SEPARATE entry for each date.
 If no date is found, use "unknown" as the date.
 
 STEP 2 — LAYOUT DETECTION:
-Identify the report layout: table-based (columns: Test Name | Result | Unit | Reference Range) or free-form text. 
+Identify the report layout: table-based (columns: Test Name | Result | Unit | Reference Range), free-form text, or structured text/CSV format.
 Multi-date reports often have dates as column headers with results underneath.
+For text/CSV files: parse delimiters (commas, tabs, pipes, semicolons) to extract structured data.
+For Office documents: extract text content and identify tables/structured data.
 
 STEP 3 — MULTILINGUAL TEST NAME NORMALIZATION:
 Recognize test names in English, Russian, and Uzbek. Map them to canonical keys:
@@ -132,6 +150,7 @@ STEP 4 — VALUE EXTRACTION:
 - Extract the numeric result value for each detected test
 - If a value has units like µmol/L, mg/dL, etc., note the unit
 - Convert to standard units when possible (e.g. creatinine in µmol/L → divide by 88.4 for mg/dL)
+- For text/CSV files: be especially careful with number parsing (commas vs dots as decimal separators)
 
 STEP 5 — CONFIDENCE SCORING:
 For each extracted value, assign a confidence score (0-100):
@@ -139,6 +158,7 @@ For each extracted value, assign a confidence score (0-100):
 - 80-94: Readable but slightly unclear
 - 60-79: Partially readable, may need verification
 - <60: Very unclear, likely incorrect
+- For text files, confidence is typically 95-100 since values are clearly typed
 
 Use the tool "extract_lab_values" to return results. ALWAYS return an array of date_groups, even if there is only one date.`;
 
@@ -162,15 +182,49 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { imageBase64, fileType } = await req.json();
-    if (!imageBase64) throw new Error("No image data provided");
+    const { imageBase64, fileType, textContent } = await req.json();
+    if (!imageBase64 && !textContent) throw new Error("No file data provided");
 
     log("info", FN_NAME, "OCR request received", { requestId, userId, fileType });
 
-    const mediaType = fileType === "pdf" ? "application/pdf" :
-                      fileType === "png" ? "image/png" : "image/jpeg";
-
     const markerProperties = buildMarkerProperties();
+
+    // ─── Build messages based on file type ───
+    let userContent: any[];
+
+    if (textContent || isTextFile(fileType)) {
+      // Text files: send content directly as text
+      const text = textContent || atob(imageBase64);
+      userContent = [
+        {
+          type: "text",
+          text: `Extract all lab values from this laboratory report text. The content is from a ${fileType.toUpperCase()} file.\n\nIMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value.\n\n--- FILE CONTENT START ---\n${text}\n--- FILE CONTENT END ---`,
+        },
+      ];
+    } else if (isOfficeFile(fileType)) {
+      // Office files: send as base64 binary with description
+      // GPT-5-mini can handle document understanding from images, so we describe the format
+      userContent = [
+        {
+          type: "text",
+          text: `I'm uploading a ${fileType.toUpperCase()} office document containing laboratory results. The file is provided as base64-encoded binary. Please analyze and extract all lab values from this document.\n\nIMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value.\n\nBase64 content (${fileType}):\n${imageBase64.substring(0, 50000)}`,
+        },
+      ];
+    } else {
+      // Images and PDFs: send as image_url
+      const mediaType = fileType === "pdf" ? "application/pdf" :
+                        fileType === "png" ? "image/png" : "image/jpeg";
+      userContent = [
+        {
+          type: "text",
+          text: "Extract all lab values from this laboratory report. IMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value.",
+        },
+        {
+          type: "image_url",
+          image_url: { url: `data:${mediaType};base64,${imageBase64}` },
+        },
+      ];
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -182,13 +236,7 @@ serve(async (req) => {
         model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract all lab values from this laboratory report. IMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value." },
-              { type: "image_url", image_url: { url: `data:${mediaType};base64,${imageBase64}` } },
-            ],
-          },
+          { role: "user", content: userContent },
         ],
         tools: [
           {
@@ -199,7 +247,7 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  report_type: { type: "string", enum: ["table", "freeform", "mixed"] },
+                  report_type: { type: "string", enum: ["table", "freeform", "mixed", "text", "spreadsheet"] },
                   date_groups: {
                     type: "array",
                     items: {
@@ -237,11 +285,11 @@ serve(async (req) => {
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       try { extracted = JSON.parse(toolCall.function.arguments); }
-      catch { throw new Error("Could not parse lab values from image"); }
+      catch { throw new Error("Could not parse lab values from file"); }
     } else {
       const content = aiData.choices?.[0]?.message?.content ?? "";
       try { const m = content.match(/\{[\s\S]*\}/); if (m) extracted = JSON.parse(m[0]); }
-      catch { throw new Error("Could not parse lab values from image"); }
+      catch { throw new Error("Could not parse lab values from file"); }
     }
 
     let dateGroups = extracted.date_groups;
@@ -270,7 +318,7 @@ serve(async (req) => {
     });
 
     const duration = Date.now() - startTime;
-    log("info", FN_NAME, "OCR completed", { requestId, userId, duration_ms: duration, groups: processedGroups.length });
+    log("info", FN_NAME, "OCR completed", { requestId, userId, duration_ms: duration, groups: processedGroups.length, fileType });
 
     return new Response(JSON.stringify({
       success: true, multiDate: true, dateGroups: processedGroups,

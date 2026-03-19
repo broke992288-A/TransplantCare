@@ -1,6 +1,7 @@
 /**
  * Client-side image preprocessing for OCR accuracy improvement.
  * Pipeline: Auto-crop → Contrast enhancement → Sharpen → Denoise → Export
+ * Also supports text-based files (TXT, CSV) and Office documents (DOCX, XLSX).
  */
 
 /** Load an image file into an HTMLImageElement */
@@ -26,7 +27,6 @@ function luminance(r: number, g: number, b: number): number {
 
 /**
  * Auto-crop: detect document edges by finding rows/cols with content.
- * Uses Otsu-like threshold to separate document from background.
  */
 function autoCrop(
   ctx: CanvasRenderingContext2D,
@@ -36,14 +36,12 @@ function autoCrop(
   const imageData = getPixels(ctx, w, h);
   const data = imageData.data;
 
-  // Build luminance histogram
   const hist = new Array(256).fill(0);
   for (let i = 0; i < data.length; i += 4) {
     const lum = Math.round(luminance(data[i], data[i + 1], data[i + 2]));
     hist[lum]++;
   }
 
-  // Otsu threshold
   const total = w * h;
   let sum = 0;
   for (let i = 0; i < 256; i++) sum += i * hist[i];
@@ -64,9 +62,8 @@ function autoCrop(
     }
   }
 
-  // Find bounding box of dark (document) pixels
   let top = h, bottom = 0, left = w, right = 0;
-  const margin = 0.02; // 2% margin tolerance
+  const margin = 0.02;
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -81,14 +78,12 @@ function autoCrop(
     }
   }
 
-  // Add small padding
   const pad = Math.round(Math.min(w, h) * margin);
   top = Math.max(0, top - pad);
   left = Math.max(0, left - pad);
   bottom = Math.min(h - 1, bottom + pad);
   right = Math.min(w - 1, right + pad);
 
-  // If crop would remove >70% of image, skip cropping
   const cropW = right - left + 1;
   const cropH = bottom - top + 1;
   if (cropW < w * 0.3 || cropH < h * 0.3) {
@@ -98,15 +93,11 @@ function autoCrop(
   return { x: left, y: top, w: cropW, h: cropH };
 }
 
-/**
- * Enhance contrast using adaptive histogram stretching.
- * Maps the middle 95% of the histogram to full range.
- */
+/** Enhance contrast using adaptive histogram stretching. */
 function enhanceContrast(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const imageData = getPixels(ctx, w, h);
   const data = imageData.data;
 
-  // Find 2.5th and 97.5th percentile
   const hist = new Array(256).fill(0);
   const total = w * h;
   for (let i = 0; i < data.length; i += 4) {
@@ -135,21 +126,14 @@ function enhanceContrast(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.putImageData(imageData, 0, 0);
 }
 
-/**
- * Sharpen using unsharp mask via 3x3 kernel convolution.
- */
+/** Sharpen using unsharp mask via 3x3 kernel convolution. */
 function sharpen(ctx: CanvasRenderingContext2D, w: number, h: number, strength = 0.4) {
   const imageData = getPixels(ctx, w, h);
   const src = new Uint8ClampedArray(imageData.data);
   const dst = imageData.data;
 
-  // Sharpening kernel
   const k = strength;
-  const kernel = [
-    0, -k, 0,
-    -k, 1 + 4 * k, -k,
-    0, -k, 0,
-  ];
+  const kernel = [0, -k, 0, -k, 1 + 4 * k, -k, 0, -k, 0];
 
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
@@ -169,10 +153,7 @@ function sharpen(ctx: CanvasRenderingContext2D, w: number, h: number, strength =
   ctx.putImageData(imageData, 0, 0);
 }
 
-/**
- * Denoise using a simple 3x3 median filter on luminance,
- * preserving color ratios.
- */
+/** Denoise using a simple 3x3 median filter. */
 function denoise(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const imageData = getPixels(ctx, w, h);
   const src = new Uint8ClampedArray(imageData.data);
@@ -187,9 +168,8 @@ function denoise(ctx: CanvasRenderingContext2D, w: number, h: number) {
           neighbors.push([src[idx], src[idx + 1], src[idx + 2]]);
         }
       }
-      // Sort by luminance, pick median
       neighbors.sort((a, b) => luminance(a[0], a[1], a[2]) - luminance(b[0], b[1], b[2]));
-      const med = neighbors[4]; // median of 9
+      const med = neighbors[4];
       const idx = (y * w + x) * 4;
       dst[idx] = med[0];
       dst[idx + 1] = med[1];
@@ -200,24 +180,82 @@ function denoise(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.putImageData(imageData, 0, 0);
 }
 
+/** File type categories */
+const TEXT_EXTENSIONS = ["txt", "csv", "tsv", "log", "text"];
+const OFFICE_EXTENSIONS = ["docx", "xlsx", "xls", "doc"];
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "bmp", "tiff", "tif"];
+
+/** Determine file category from extension */
+function getFileCategory(fileName: string): "image" | "pdf" | "text" | "office" {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return "pdf";
+  if (TEXT_EXTENSIONS.includes(ext)) return "text";
+  if (OFFICE_EXTENSIONS.includes(ext)) return "office";
+  return "image";
+}
+
+/** Read text file content */
+async function readTextFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+/** Convert file to base64 */
+async function fileToBase64(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+export interface PreprocessResult {
+  base64: string;
+  file: File;
+  fileType: string;
+  /** For text/office files, extracted text content sent directly */
+  textContent?: string;
+}
+
 /**
  * Full preprocessing pipeline.
- * Returns a preprocessed base64 string (JPEG) and the cleaned File.
+ * Supports: images, PDFs, text files (TXT/CSV), Office files (DOCX/XLSX).
  */
-export async function preprocessLabImage(file: File): Promise<{ base64: string; file: File; fileType: string }> {
-  // Skip preprocessing for PDFs
+export async function preprocessLabImage(file: File): Promise<PreprocessResult> {
+  const category = getFileCategory(file.name);
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "pdf") {
-    const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+  // ─── Text files: read content directly ───
+  if (category === "text") {
+    const textContent = await readTextFile(file);
+    const base64 = fileToBase64ToString(textContent);
+    return { base64, file, fileType: ext, textContent };
+  }
+
+  // ─── Office files: send as binary for server-side parsing ───
+  if (category === "office") {
+    const base64 = await fileToBase64(file);
+    return { base64, file, fileType: ext };
+  }
+
+  // ─── PDF: pass through without image preprocessing ───
+  if (category === "pdf") {
+    const base64 = await fileToBase64(file);
     return { base64, file, fileType: "pdf" };
   }
 
+  // ─── Images: full preprocessing pipeline ───
   const img = await loadImage(file);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
 
-  // Resize large images to max 2048px on longest side (prevents payload too large errors)
   const MAX_DIM = 2048;
   let drawW = img.naturalWidth;
   let drawH = img.naturalHeight;
@@ -231,10 +269,7 @@ export async function preprocessLabImage(file: File): Promise<{ base64: string; 
   canvas.height = drawH;
   ctx.drawImage(img, 0, 0, drawW, drawH);
 
-  // Step 1: Auto-crop (detect document edges)
   const crop = autoCrop(ctx, canvas.width, canvas.height);
-
-  // Apply crop if different from original
   if (crop.x !== 0 || crop.y !== 0 || crop.w !== canvas.width || crop.h !== canvas.height) {
     const cropped = ctx.getImageData(crop.x, crop.y, crop.w, crop.h);
     canvas.width = crop.w;
@@ -245,27 +280,59 @@ export async function preprocessLabImage(file: File): Promise<{ base64: string; 
   const w = canvas.width;
   const h = canvas.height;
 
-  // Step 2: Denoise first (remove noise before enhancing)
   denoise(ctx, w, h);
-
-  // Step 3: Enhance contrast
   enhanceContrast(ctx, w, h);
-
-  // Step 4: Sharpen text
   sharpen(ctx, w, h, 0.5);
 
-  // Export as high-quality JPEG
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
   const base64 = dataUrl.split(",")[1];
 
-  // Convert to File for storage upload
   const blob = await (await fetch(dataUrl)).blob();
   const processedFile = new File([blob], file.name.replace(/\.[^.]+$/, "_processed.jpg"), {
     type: "image/jpeg",
   });
 
-  // Clean up
   URL.revokeObjectURL(img.src);
 
   return { base64, file: processedFile, fileType: "jpeg" };
+}
+
+/** Helper: encode plain text string to base64 */
+function fileToBase64ToString(text: string): string {
+  try {
+    return btoa(unescape(encodeURIComponent(text)));
+  } catch {
+    return btoa(text);
+  }
+}
+
+/** Get accepted file types string for file input */
+export function getAcceptedFileTypes(includeCamera = false): string {
+  const types = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "application/pdf",
+    // Text files
+    ".txt",
+    ".csv",
+    ".tsv",
+    // Office files
+    ".docx",
+    ".xlsx",
+    ".xls",
+    ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "application/msword",
+    "text/plain",
+    "text/csv",
+  ];
+  return types.join(",");
+}
+
+/** Get camera-only accepted types */
+export function getCameraAcceptedTypes(): string {
+  return "image/jpeg,image/jpg,image/png";
 }
