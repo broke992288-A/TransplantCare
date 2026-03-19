@@ -111,6 +111,7 @@ export async function insertPatient(patient: {
   blood_type?: string | null;
   donor_blood_type?: string | null;
   titer_therapy?: boolean;
+  phone?: string | null;
 }) {
   const { data, error } = await supabase
     .from("patients")
