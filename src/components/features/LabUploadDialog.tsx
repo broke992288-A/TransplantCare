@@ -482,7 +482,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               </Button>
             </div>
             <input ref={cameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleFileChange} />
-            <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/msword" className="hidden" onChange={handleFileChange} />
           </div>
         )}
 

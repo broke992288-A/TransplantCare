@@ -378,7 +378,7 @@ export default function AddPatient() {
                   {t("upload.uploadFile")}
                 </Button>
                 <input ref={ocrCameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleOcrFile} />
-                <input ref={ocrFileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={handleOcrFile} />
+                <input ref={ocrFileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={handleOcrFile} />
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
