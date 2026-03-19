@@ -10,6 +10,7 @@ import { ArrowLeft, Clock, FlaskConical, Shield, Trash2, Pill, Stethoscope } fro
 import { Link } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AddLabDialog from "@/components/features/AddLabDialog";
+import LabUploadDialog from "@/components/features/LabUploadDialog";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
 import RiskScoreCard from "@/components/features/RiskScoreCard";
