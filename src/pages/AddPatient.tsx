@@ -37,7 +37,7 @@ export default function AddPatient() {
   const { t } = useLanguage();
 
   const [form, setForm] = useState<Record<string, string>>({
-    full_name: "", date_of_birth: "", gender: "male", transplant_number: "1", transplant_date: "",
+    full_name: "", phone: "", date_of_birth: "", gender: "male", transplant_number: "1", transplant_date: "",
     rejection_type: "", tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "",
     dialysis_history: "no", return_dialysis_date: "", creatinine: "", egfr: "", proteinuria: "",
     potassium: "", biopsy_result: "", region: "", district: "",
@@ -178,6 +178,7 @@ export default function AddPatient() {
         blood_type: form.blood_type || null,
         donor_blood_type: form.donor_blood_type || null,
         titer_therapy: form.titer_therapy === "yes",
+        phone: form.phone || null,
       });
 
       const labData: any = { patient_id: patient.id };
@@ -254,6 +255,7 @@ export default function AddPatient() {
             <CardHeader><CardTitle className="text-lg">{t("add.patientInfo")}</CardTitle></CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <ValidatedInput label={t("add.fullName")} required error={errors.full_name} value={form.full_name} onChange={(e) => set("full_name", e.target.value)} wrapperClassName="sm:col-span-2" />
+              <ValidatedInput label={t("add.phone")} error={errors.phone} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998 XX XXX XX XX" />
               <FormField label={t("add.dob")} required error={errors.date_of_birth}>
                 <DateInputSeparate value={form.date_of_birth} onChange={(v) => set("date_of_birth", v)} yearRange={[1940, new Date().getFullYear()]} />
               </FormField>
