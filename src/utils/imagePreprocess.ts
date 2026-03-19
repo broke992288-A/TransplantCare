@@ -217,10 +217,19 @@ export async function preprocessLabImage(file: File): Promise<{ base64: string; 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
 
-  // Draw original
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  ctx.drawImage(img, 0, 0);
+  // Resize large images to max 2048px on longest side (prevents payload too large errors)
+  const MAX_DIM = 2048;
+  let drawW = img.naturalWidth;
+  let drawH = img.naturalHeight;
+  if (drawW > MAX_DIM || drawH > MAX_DIM) {
+    const scale = MAX_DIM / Math.max(drawW, drawH);
+    drawW = Math.round(drawW * scale);
+    drawH = Math.round(drawH * scale);
+  }
+
+  canvas.width = drawW;
+  canvas.height = drawH;
+  ctx.drawImage(img, 0, 0, drawW, drawH);
 
   // Step 1: Auto-crop (detect document edges)
   const crop = autoCrop(ctx, canvas.width, canvas.height);
