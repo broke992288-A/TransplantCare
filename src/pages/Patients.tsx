@@ -94,6 +94,7 @@ export default function Patients() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-16">№</TableHead>
                       <TableHead>{t("patients.name")}</TableHead>
                       <TableHead>{t("patients.ageGender")}</TableHead>
                       <TableHead>{t("patients.organ")}</TableHead>
