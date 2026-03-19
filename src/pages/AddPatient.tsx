@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Camera, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -20,6 +20,8 @@ import { calculateRisk } from "@/utils/risk";
 import { uzbekistanRegions } from "@/data/uzbekistanRegions";
 import { patientSchema, liverLabSchema, kidneyLabSchema } from "@/lib/validations";
 import type { OrganType } from "@/types/patient";
+import { supabase } from "@/integrations/supabase/client";
+import { preprocessLabImage } from "@/utils/imagePreprocess";
 
 export default function AddPatient() {
   const [step, setStep] = useState<1 | 2>(1);
