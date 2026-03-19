@@ -366,7 +366,21 @@ export default function AddPatient() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-lg">{t("add.labResults")}</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-lg">{t("add.labResults")}</CardTitle>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" disabled={scanning} onClick={() => ocrCameraRef.current?.click()} className="gap-1.5">
+                  {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                  {t("upload.takePhoto")}
+                </Button>
+                <Button type="button" variant="outline" size="sm" disabled={scanning} onClick={() => ocrFileRef.current?.click()} className="gap-1.5">
+                  {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {t("upload.uploadFile")}
+                </Button>
+                <input ref={ocrCameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleOcrFile} />
+                <input ref={ocrFileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf" className="hidden" onChange={handleOcrFile} />
+              </div>
+            </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               {organ === "liver" ? (
                 <>
