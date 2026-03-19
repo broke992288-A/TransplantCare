@@ -537,6 +537,7 @@ export type Database = {
           last_risk_evaluation: string | null
           linked_user_id: string | null
           organ_type: string
+          patient_number: number | null
           phone: string | null
           region: string | null
           rejection_type: string | null
@@ -563,6 +564,7 @@ export type Database = {
           last_risk_evaluation?: string | null
           linked_user_id?: string | null
           organ_type: string
+          patient_number?: number | null
           phone?: string | null
           region?: string | null
           rejection_type?: string | null
@@ -589,6 +591,7 @@ export type Database = {
           last_risk_evaluation?: string | null
           linked_user_id?: string | null
           organ_type?: string
+          patient_number?: number | null
           phone?: string | null
           region?: string | null
           rejection_type?: string | null
