@@ -254,6 +254,7 @@ export default function AddPatient() {
             <CardHeader><CardTitle className="text-lg">{t("add.patientInfo")}</CardTitle></CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <ValidatedInput label={t("add.fullName")} required error={errors.full_name} value={form.full_name} onChange={(e) => set("full_name", e.target.value)} wrapperClassName="sm:col-span-2" />
+              <ValidatedInput label={t("add.phone")} error={errors.phone} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998 XX XXX XX XX" />
               <FormField label={t("add.dob")} required error={errors.date_of_birth}>
                 <DateInputSeparate value={form.date_of_birth} onChange={(v) => set("date_of_birth", v)} yearRange={[1940, new Date().getFullYear()]} />
               </FormField>
