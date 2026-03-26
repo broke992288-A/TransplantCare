@@ -29,6 +29,7 @@ const PatientMedications = lazy(() => import("./pages/PatientMedications"));
 const Patients = lazy(() => import("./pages/Patients"));
 const DemoSetup = lazy(() => import("./pages/DemoSetup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Install = lazy(() => import("./pages/Install"));
 const DocumentationPDF = lazy(() => import("./pages/DocumentationPDF"));
 
 const queryClient = new QueryClient({
