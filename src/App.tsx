@@ -124,6 +124,7 @@ const App = () => (
               <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><RouteWrap><PatientProfile /></RouteWrap></ProtectedRoute>} />
               <Route path="/compare" element={<DoctorOrAdminRoute><RouteWrap><Compare /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/documentation" element={<DocumentationPDF />} />
+              <Route path="/install" element={<Install />} />
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
