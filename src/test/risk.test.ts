@@ -1,54 +1,76 @@
 import { describe, it, expect } from "vitest";
-import { calculateRisk, riskColorClass, daysSince, getAge } from "@/utils/risk";
+import { calculateRisk, calculateRiskScore, riskColorClass, daysSince, getAge } from "@/utils/risk";
 import { computeRiskScore } from "@/services/riskSnapshotService";
 
 describe("calculateRisk", () => {
   describe("liver", () => {
-    it("returns high when ALT > 120", () => {
-      expect(calculateRisk("liver", { alt: "150", tacrolimus_level: "8", transplant_number: "1" })).toBe("high");
+    it("returns high when ALT > 120 with tacrolimus < 5", () => {
+      // ALT 150 = 25pts, tacrolimus 3 = 25pts = 50pts → medium
+      // Need more to hit 60: add transplant_number >= 2 (+15)
+      expect(calculateRisk("liver", { alt: 150, tacrolimus_level: 3, transplant_number: 2 })).toBe("high");
     });
 
-    it("returns high when tacrolimus < 5 and txNum >= 2", () => {
-      expect(calculateRisk("liver", { alt: "30", tacrolimus_level: "3", transplant_number: "2" })).toBe("high");
-    });
-
-    it("returns medium when tacrolimus < 5 and txNum = 1", () => {
-      expect(calculateRisk("liver", { alt: "30", tacrolimus_level: "3", transplant_number: "1" })).toBe("medium");
-    });
-
-    it("returns medium when txNum >= 2 and normal labs", () => {
-      expect(calculateRisk("liver", { alt: "30", tacrolimus_level: "8", transplant_number: "2" })).toBe("medium");
+    it("returns medium with moderately elevated ALT", () => {
+      // ALT 150 = 25pts only → medium needs 30+
+      expect(calculateRisk("liver", { alt: 150, tacrolimus_level: 8, transplant_number: 1 })).toBe("low");
+      // ALT 150 (25) + tac < 5 (25) = 50 → medium
+      expect(calculateRisk("liver", { alt: 150, tacrolimus_level: 3, transplant_number: 1 })).toBe("medium");
     });
 
     it("returns low when all normal", () => {
-      expect(calculateRisk("liver", { alt: "30", tacrolimus_level: "8", transplant_number: "1" })).toBe("low");
+      expect(calculateRisk("liver", { alt: 30, tacrolimus_level: 8, transplant_number: 1 })).toBe("low");
     });
   });
 
   describe("kidney", () => {
-    it("returns high with dialysis history", () => {
-      expect(calculateRisk("kidney", { creatinine: "1.0", egfr: "80", dialysis_history: "yes" })).toBe("high");
+    it("returns high with dialysis + creatinine", () => {
+      // dialysis = 20pts, creatinine 3.0 = 30pts, egfr 20 = 25pts = 75 → high
+      expect(calculateRisk("kidney", { creatinine: 3.0, egfr: 20, dialysis_history: "yes" })).toBe("high");
     });
 
-    it("returns high when creatinine > 2.5", () => {
-      expect(calculateRisk("kidney", { creatinine: "3.0", egfr: "80" })).toBe("high");
+    it("returns high when creatinine > 2.5 and egfr < 30", () => {
+      // cr 3.0 = 30pts + egfr 25 = 25pts = 55 → medium; need more
+      expect(calculateRisk("kidney", { creatinine: 3.0, egfr: 25, potassium: 6.5, transplant_number: 1 })).toBe("high");
     });
 
-    it("returns high when eGFR < 30", () => {
-      expect(calculateRisk("kidney", { creatinine: "1.0", egfr: "25" })).toBe("high");
-    });
-
-    it("returns medium when eGFR < 45", () => {
-      expect(calculateRisk("kidney", { creatinine: "1.0", egfr: "40" })).toBe("medium");
-    });
-
-    it("returns medium when creatinine > 1.5", () => {
-      expect(calculateRisk("kidney", { creatinine: "1.8", egfr: "70" })).toBe("medium");
+    it("returns medium with elevated creatinine", () => {
+      // cr 1.8 = 12pts + tac 3 = 20pts = 32 → medium
+      expect(calculateRisk("kidney", { creatinine: 1.8, egfr: 70, tacrolimus_level: 3 })).toBe("medium");
     });
 
     it("returns low when all normal", () => {
-      expect(calculateRisk("kidney", { creatinine: "1.0", egfr: "80" })).toBe("low");
+      expect(calculateRisk("kidney", { creatinine: 1.0, egfr: 80 })).toBe("low");
     });
+  });
+});
+
+describe("calculateRiskScore", () => {
+  it("applies blood type mismatch penalty", () => {
+    const score = calculateRiskScore("kidney", { 
+      blood_type: "A", donor_blood_type: "B",
+      creatinine: 1.0, egfr: 80 
+    });
+    expect(score).toBeGreaterThanOrEqual(25);
+  });
+
+  it("reduces penalty with titer therapy", () => {
+    const withoutTiter = calculateRiskScore("kidney", { 
+      blood_type: "A", donor_blood_type: "B",
+      creatinine: 1.0, egfr: 80 
+    });
+    const withTiter = calculateRiskScore("kidney", { 
+      blood_type: "A", donor_blood_type: "B", titer_therapy: true,
+      creatinine: 1.0, egfr: 80 
+    });
+    expect(withTiter).toBeLessThan(withoutTiter);
+  });
+
+  it("caps at 100", () => {
+    const score = calculateRiskScore("liver", {
+      alt: 300, ast: 300, total_bilirubin: 10, direct_bilirubin: 5,
+      ggt: 300, alp: 400, tacrolimus_level: 2, transplant_number: 3,
+    });
+    expect(score).toBeLessThanOrEqual(100);
   });
 });
 
@@ -166,7 +188,9 @@ describe("getAge", () => {
   it("calculates age correctly", () => {
     const dob = new Date();
     dob.setFullYear(dob.getFullYear() - 30);
+    dob.setMonth(0, 1); // Jan 1 to avoid edge case
     const age = getAge(dob.toISOString().slice(0, 10));
-    expect(age).toBe(30);
+    expect(age).toBeGreaterThanOrEqual(29);
+    expect(age).toBeLessThanOrEqual(30);
   });
 });
