@@ -1,7 +1,31 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export async function signInWithPassword(email: string, password: string) {
+/** Convert a phone number to a pseudo-email for Supabase Auth */
+export function phoneToEmail(phone: string): string {
+  const digits = phone.replace(/[^0-9]/g, "");
+  return `${digits}@phone.transplantcare`;
+}
+
+export async function signInWithPassword(identifier: string, password: string) {
+  // If identifier looks like a phone number, convert to pseudo-email
+  const email = identifier.includes("@") ? identifier : phoneToEmail(identifier);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+export async function signUpWithPhone(
+  phone: string,
+  password: string,
+  fullName: string,
+) {
+  const email = phoneToEmail(phone);
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName, phone: phone },
+    },
+  });
   if (error) throw error;
 }
 
