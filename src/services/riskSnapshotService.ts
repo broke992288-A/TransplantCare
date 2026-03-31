@@ -359,7 +359,7 @@ export async function insertRiskSnapshot(data: {
   trend_flags?: string[];
   algorithm_version?: string;
 }) {
-  const payload: TablesInsert<"risk_snapshots"> = {
+  const payload = {
     patient_id: data.patient_id,
     lab_result_id: data.lab_result_id ?? null,
     score: data.score,
@@ -369,8 +369,8 @@ export async function insertRiskSnapshot(data: {
     ast: data.ast ?? null,
     total_bilirubin: data.total_bilirubin ?? null,
     tacrolimus_level: data.tacrolimus_level ?? null,
-    details: (data.details ?? {}) as Record<string, unknown>,
-    trend_flags: (data.trend_flags ?? []) as unknown as Record<string, unknown>,
+    details: (data.details ?? {}) as unknown as Record<string, string>,
+    trend_flags: (data.trend_flags ?? []) as unknown as Record<string, string>,
     algorithm_version: data.algorithm_version ?? CURRENT_ALGORITHM_VERSION,
   };
   const { data: row, error } = await supabase
