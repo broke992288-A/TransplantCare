@@ -66,9 +66,15 @@ export default function PatientProfile() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-6 w-6 text-primary" />
-            </div>
+            {patient.full_name.includes("bdulhayot") ? (
+              <div className="h-12 w-12 rounded-lg overflow-hidden border-2 border-primary/20 shrink-0">
+                <img src={patientPhotoAbdulhayot} alt={patient.full_name} className="h-full w-full object-cover object-[50%_0%] scale-125" />
+              </div>
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-6 w-6 text-primary" />
+              </div>
+            )}
             <div>
               <h1 className="text-xl font-bold">{patient.full_name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
