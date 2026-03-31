@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import LanguageSelector from "@/components/features/LanguageSelector";
@@ -47,9 +48,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8">
         <div className="flex justify-end"><LanguageSelector /></div>
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-            <Heart className="h-7 w-7 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="Logo" className="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-primary/25" />
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">{t("login.title")}</h1>
             <p className="mt-1 text-muted-foreground">{t("login.subtitle")}</p>
