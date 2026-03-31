@@ -135,7 +135,7 @@ export default function PatientDetail() {
             <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/patients")}><ArrowLeft className="h-5 w-5" /></Button>
             {patient.full_name.includes("bdulhayot") && (
               <div className="h-24 w-24 rounded-lg overflow-hidden border-2 border-primary/20 shrink-0">
-                <img src={patientPhotoAbdulhayot} alt={patient.full_name} className="h-full w-full object-cover object-[50%_5%] scale-125" />
+                <img src={patientPhotoAbdulhayot} alt={patient.full_name} className="h-full w-full object-cover object-[50%_0%] scale-125" />
               </div>
             )}
             <span className="text-lg font-bold truncate">{patient.full_name}</span>
