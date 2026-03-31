@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Loader2, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
+import { Loader2, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
