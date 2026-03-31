@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Loader2, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
+import { Loader2, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -85,9 +86,7 @@ export default function SelectRole() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 px-4">
       <div className="w-full max-w-3xl space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-            <Heart className="h-7 w-7 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="Logo" className="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-primary/25" />
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">Welcome to TransplantCare</h1>
             <p className="mt-1 text-muted-foreground">Select your role to continue</p>
