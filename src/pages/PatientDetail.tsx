@@ -133,7 +133,7 @@ export default function PatientDetail() {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/patients")}><ArrowLeft className="h-5 w-5" /></Button>
-            {patient.full_name === "Abdulhayot Abdulhayev" && (
+            {patient.full_name.includes("bdulhayot") && (
               <Avatar className="h-12 w-12 border-2 border-primary/20">
                 <AvatarImage src={patientPhotoAbdulhayot} alt={patient.full_name} />
                 <AvatarFallback>{patient.full_name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
