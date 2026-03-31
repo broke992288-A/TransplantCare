@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";
 import { usePatientHomeLabs, usePatientHomeEvents } from "@/hooks/usePatientDetail";
 import { riskColorClass } from "@/utils/risk";
+import patientPhotoAbdulhayot from "@/assets/patient-photo-edited.jpg";
 
 export default function PatientHome() {
   const { t } = useLanguage();
