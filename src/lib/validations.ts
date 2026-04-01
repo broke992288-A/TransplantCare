@@ -10,7 +10,7 @@ export const patientSchema = z.object({
   date_of_birth: z
     .string()
     .min(1, "Туғилган сана киритилиши шарт"),
-  gender: z.enum(["male", "female", "other"], {
+  gender: z.enum(["male", "female"], {
     required_error: "Жинс танланиши шарт",
   }),
   region: z
