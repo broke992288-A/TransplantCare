@@ -24,7 +24,7 @@ export default function LabTrendCharts({ labs }: Props) {
   const { t } = useLanguage();
   const sortedLabs = [...labs].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
 
-  const charts = CHART_MARKERS.filter((m) => sortedLabs.some((l) => (l as any)[m.key] != null));
+  const charts = CHART_MARKERS.filter((m) => sortedLabs.some((l) => l[m.key] != null));
 
   if (charts.length === 0) return <p className="text-muted-foreground text-sm">{t("lab.noTrendData")}</p>;
 
