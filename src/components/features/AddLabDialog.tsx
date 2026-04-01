@@ -21,6 +21,7 @@ interface AddLabDialogProps {
   organType: string;
   onLabAdded: () => void;
   patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null; date_of_birth?: string | null; gender?: string | null };
+  patientCountry?: string;
 }
 
 /** Country labels for display */
