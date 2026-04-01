@@ -152,7 +152,7 @@ export default function DoctorDashboard() {
                           <TableCell className="font-medium">{p.full_name}</TableCell>
                           <TableCell>{t(`organ.${p.organ_type}`)}</TableCell>
                           <TableCell>
-                            <span className="font-bold text-destructive">{(p as any).risk_score ?? "—"}</span>
+                            <span className="font-bold text-destructive">{p.risk_score ?? "—"}</span>
                             <span className="text-muted-foreground text-xs">/100</span>
                           </TableCell>
                           <TableCell>{keyLab}</TableCell>
