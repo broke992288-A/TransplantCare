@@ -44,7 +44,7 @@ export default function AddPatient() {
     rejection_type: "", tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "",
     dialysis_history: "no", return_dialysis_date: "", creatinine: "", egfr: "", proteinuria: "",
     potassium: "", biopsy_result: "", region: "", district: "",
-    blood_type: "", donor_blood_type: "", titer_therapy: "no",
+    blood_type: "", donor_blood_type: "", titer_therapy: "no", country: "uzbekistan",
   });
 
   const set = (key: string, value: string) => {
@@ -183,6 +183,7 @@ export default function AddPatient() {
         donor_blood_type: form.donor_blood_type || null,
         titer_therapy: form.titer_therapy === "yes",
         phone: form.phone || null,
+        country: form.country || "uzbekistan",
       });
 
       const labData: TablesInsert<"lab_results"> = { patient_id: patient.id };
@@ -288,6 +289,15 @@ export default function AddPatient() {
                     {selectedRegionData?.districts.map((d) => (
                       <SelectItem key={d} value={d}>{d}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <FormField label={t("add.country")} required>
+                <Select value={form.country} onValueChange={(v) => set("country", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="uzbekistan">🇺🇿 O'zbekiston</SelectItem>
+                    <SelectItem value="india">🇮🇳 India</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>

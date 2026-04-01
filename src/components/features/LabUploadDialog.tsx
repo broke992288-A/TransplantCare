@@ -56,6 +56,7 @@ interface Props {
   organType?: string;
   patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null };
   onLabAdded: () => void;
+  patientCountry?: string;
 }
 
 type Step = "upload" | "processing" | "confirm";
@@ -226,7 +227,7 @@ function DateGroupValues({
   );
 }
 
-export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded }: Props) {
+export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded, patientCountry }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   const [saving, setSaving] = useState(false);
@@ -234,7 +235,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [reportType, setReportType] = useState<string>("");
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("0");
-  const [country, setCountry] = useState<string>("uzbekistan");
+  const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();

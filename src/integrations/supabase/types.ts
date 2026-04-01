@@ -562,6 +562,7 @@ export type Database = {
           assigned_doctor_id: string | null
           biopsy_result: string | null
           blood_type: string | null
+          country: string
           created_at: string
           date_of_birth: string | null
           dialysis_history: boolean | null
@@ -589,6 +590,7 @@ export type Database = {
           assigned_doctor_id?: string | null
           biopsy_result?: string | null
           blood_type?: string | null
+          country?: string
           created_at?: string
           date_of_birth?: string | null
           dialysis_history?: boolean | null
@@ -616,6 +618,7 @@ export type Database = {
           assigned_doctor_id?: string | null
           biopsy_result?: string | null
           blood_type?: string | null
+          country?: string
           created_at?: string
           date_of_birth?: string | null
           dialysis_history?: boolean | null

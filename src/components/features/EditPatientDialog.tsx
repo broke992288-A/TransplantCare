@@ -36,6 +36,7 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
   const [bloodType, setBloodType] = useState(patient.blood_type || "");
   const [donorBloodType, setDonorBloodType] = useState(patient.donor_blood_type || "");
   const [titerTherapy, setTiterTherapy] = useState(patient.titer_therapy || false);
+  const [country, setCountry] = useState(patient.country || "uzbekistan");
 
   const handleSave = async () => {
     if (!fullName.trim()) {
@@ -59,6 +60,7 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
         blood_type: bloodType || null,
         donor_blood_type: donorBloodType || null,
         titer_therapy: titerTherapy,
+        country: country,
       });
       toast({ title: t("edit.patientUpdated") });
       setOpen(false);
@@ -86,6 +88,7 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
         setBloodType(patient.blood_type || "");
         setDonorBloodType(patient.donor_blood_type || "");
         setTiterTherapy(patient.titer_therapy || false);
+        setCountry(patient.country || "uzbekistan");
       }
       setOpen(v);
     }}>
@@ -123,6 +126,17 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div>
+            <Label>{t("add.country")}</Label>
+            <Select value={country} onValueChange={setCountry}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="uzbekistan">🇺🇿 O'zbekiston</SelectItem>
+                <SelectItem value="india">🇮🇳 India</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
