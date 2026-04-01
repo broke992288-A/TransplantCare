@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Upload, Loader2, CheckCircle2, Edit3, FileText, AlertTriangle, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Camera, Upload, Loader2, CheckCircle2, Edit3, FileText, AlertTriangle, Calendar, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,8 @@ import { insertPatientAlert } from "@/services/patientAlertService";
 import { preprocessLabImage } from "@/utils/imagePreprocess";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
+import { STANDARD_UNITS } from "@/utils/unitConversion";
 
 const LAB_FIELDS = [
   { key: "hb", label: "HB (Hemoglobin)", unit: "g/dL" },
@@ -91,14 +94,38 @@ function formatDateLocalized(dateStr: string, t: (key: string) => string): strin
   }
 }
 
+/** Country labels for display */
+const COUNTRY_LABELS: Record<string, string> = {
+  uzbekistan: "🇺🇿 O'zbekiston",
+  india: "🇮🇳 India",
+};
+
+/** Unit conversion: country-specific → standard */
+function convertToStandard(key: string, value: number, countryUnit: string): { converted: number; wasConverted: boolean; fromUnit: string; toUnit: string } {
+  const standardUnit = STANDARD_UNITS[key] ?? "";
+  if (!countryUnit || !standardUnit || countryUnit === standardUnit) {
+    return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
+  }
+  if (countryUnit === "µmol/L" && standardUnit === "mg/dL") {
+    if (key === "creatinine") return { converted: Math.round((value / 88.4) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
+    if (key === "total_bilirubin" || key === "direct_bilirubin") return { converted: Math.round((value / 17.1) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
+  }
+  if (key === "urea" && countryUnit === "mmol/L" && standardUnit === "mg/dL") {
+    return { converted: Math.round(value * 6 * 100) / 100, wasConverted: true, fromUnit: "mmol/L", toUnit: "mg/dL" };
+  }
+  return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
+}
+
 function DateGroupValues({
   group,
   onValueChange,
   t,
+  refMap,
 }: {
   group: DateGroup;
   onValueChange: (key: string, value: string) => void;
   t: (key: string) => string;
+  refMap: Record<string, { min: number | null; max: number | null; unit: string }>;
 }) {
   const filledCount = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "").length;
   const lowConfFields = LAB_FIELDS.filter(
@@ -142,12 +169,25 @@ function DateGroupValues({
           const isLowConf = hasValue && conf < 80;
           const origText = group.originalText[field.key];
 
+          // Use country-specific unit if available
+          const ref = refMap[field.key];
+          const displayUnit = ref?.unit ?? field.unit;
+          const refRange = ref ? `${ref.min ?? "—"}–${ref.max ?? "—"}` : null;
+
+          // Check if value is outside reference range
+          const numVal = hasValue ? parseFloat(group.values[field.key]) : NaN;
+          const isOutOfRange = ref && !isNaN(numVal) && (
+            (ref.min !== null && numVal < ref.min) || (ref.max !== null && numVal > ref.max)
+          );
+
           return (
             <div
               key={field.key}
               className={`space-y-1 rounded-lg border p-2.5 ${
                 isLowConf
                   ? "border-destructive/40 bg-destructive/5 ring-1 ring-destructive/20"
+                  : isOutOfRange
+                  ? "border-warning/40 bg-warning/5"
                   : hasValue
                   ? "border-primary/30 bg-primary/5"
                   : ""
@@ -158,7 +198,7 @@ function DateGroupValues({
                   {field.label}
                   {hasValue && <ConfidenceBadge confidence={conf} />}
                 </span>
-                <span className="text-muted-foreground">{field.unit}</span>
+                <Badge variant="outline" className="text-[10px] px-1 py-0 font-normal">{displayUnit}</Badge>
               </Label>
               {origText && origText !== group.values[field.key] && (
                 <p className="text-[10px] text-muted-foreground truncate" title={origText}>
@@ -170,9 +210,14 @@ function DateGroupValues({
                 step="any"
                 value={group.values[field.key] ?? ""}
                 onChange={(e) => onValueChange(field.key, e.target.value)}
-                className={`h-8 text-sm ${isLowConf ? "border-destructive/40" : ""}`}
+                className={`h-8 text-sm ${isLowConf ? "border-destructive/40" : isOutOfRange ? "border-warning/40" : ""}`}
                 placeholder="—"
               />
+              {refRange && (
+                <p className={`text-[10px] ${isOutOfRange ? "text-warning font-medium" : "text-muted-foreground"}`}>
+                  {isOutOfRange ? "⚠️ " : ""}Norma: {refRange} {displayUnit}
+                </p>
+              )}
             </div>
           );
         })}
@@ -189,10 +234,23 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [reportType, setReportType] = useState<string>("");
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("0");
+  const [country, setCountry] = useState<string>("uzbekistan");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { t } = useLanguage();
+
+  const { data: countries } = useLabCountries();
+  const { data: refProfiles } = useLabReferenceProfiles(country, organType ?? null);
+
+  /** Map test_name → reference profile for quick lookup */
+  const refMap = useMemo(() => {
+    const map: Record<string, { min: number | null; max: number | null; unit: string }> = {};
+    refProfiles?.forEach((p) => {
+      map[p.test_name] = { min: p.min_value, max: p.max_value, unit: p.unit };
+    });
+    return map;
+  }, [refProfiles]);
 
   const reset = () => {
     setStep("upload");
@@ -370,10 +428,25 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         let filledCount = 0;
+        const conversionMessages: string[] = [];
         for (const field of LAB_FIELDS) {
           const v = parseFloat(group.values[field.key]);
-          labData[field.key] = isNaN(v) ? null : v;
-          if (!isNaN(v)) filledCount++;
+          if (isNaN(v)) { labData[field.key] = null; continue; }
+
+          // Convert from country-specific unit to standard unit
+          const countryUnit = refMap[field.key]?.unit;
+          if (countryUnit) {
+            const { converted, wasConverted, fromUnit, toUnit } = convertToStandard(field.key, v, countryUnit);
+            labData[field.key] = converted;
+            if (wasConverted) conversionMessages.push(`${field.key}: ${v} ${fromUnit} → ${converted} ${toUnit}`);
+          } else {
+            labData[field.key] = v;
+          }
+          filledCount++;
+        }
+
+        if (conversionMessages.length > 0) {
+          toast({ title: "🔄 " + t("common.info"), description: conversionMessages.join(", ") });
         }
 
         if (filledCount > 0) {
@@ -465,6 +538,27 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             <p className="text-sm text-muted-foreground">
               {t("upload.description")}
             </p>
+
+            {/* Country selector */}
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border">
+              <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(countries ?? ["uzbekistan", "india"]).map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {COUNTRY_LABELS[c] ?? c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Badge variant="secondary" className="text-[10px] shrink-0">
+                {country === "uzbekistan" ? "µmol/L" : "mg/dL"}
+              </Badge>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
@@ -543,6 +637,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                       group={group}
                       onValueChange={(key, value) => updateGroupValue(i, key, value)}
                       t={t}
+                      refMap={refMap}
                     />
                   </TabsContent>
                 ))}
@@ -578,6 +673,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                     group={dateGroups[0]}
                     onValueChange={(key, value) => updateGroupValue(0, key, value)}
                     t={t}
+                    refMap={refMap}
                   />
                 )}
               </>
