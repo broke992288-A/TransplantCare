@@ -95,7 +95,7 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
   }
 
   if (showAll) {
-    headers = headers.filter(h => sorted.some(lab => (lab as any)[h.key] != null));
+    headers = headers.filter(h => sorted.some(lab => lab[h.key] != null));
   }
 
   const startEdit = (lab: LabResult) => {
