@@ -8,7 +8,7 @@ import type { OrganType, RiskLevel } from "@/types/patient";
  * KIDNEY MODEL: Creatinine, eGFR, Proteinuria, Potassium, Tacrolimus, Dialysis history, Days post-Tx
  * FUTURE KIDNEY MARKERS: BK virus, CMV, Donor-specific antibodies (DSA)
  */
-export function calculateRisk(organ: OrganType, data: Record<string, any>): RiskLevel {
+export function calculateRisk(organ: OrganType, data: Record<string, number | string | boolean | null | undefined>): RiskLevel {
   const score = calculateRiskScore(organ, data);
   return score >= 60 ? "high" : score >= 30 ? "medium" : "low";
 }
