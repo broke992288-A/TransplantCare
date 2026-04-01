@@ -15,7 +15,16 @@ import { updateLabDate, updateLabResult, deleteLabResult } from "@/services/labS
 import { Pencil, Trash2, Check, X } from "lucide-react";
 import type { LabResult } from "@/types/patient";
 
-const ALL_HEADERS = [
+/** Numeric fields on LabResult that can appear as table columns */
+type LabNumericKey = keyof Pick<LabResult,
+  "tacrolimus_level" | "cyclosporine" | "hb" | "tlc" | "platelets" | "pti" | "inr" |
+  "total_bilirubin" | "direct_bilirubin" | "ast" | "alt" | "alp" | "ggt" |
+  "total_protein" | "albumin" | "urea" | "creatinine" | "egfr" |
+  "sodium" | "potassium" | "calcium" | "magnesium" | "phosphorus" |
+  "uric_acid" | "crp" | "esr" | "ldh" | "ammonia" | "proteinuria"
+>;
+
+const ALL_HEADERS: { key: LabNumericKey; label: string }[] = [
   { key: "tacrolimus_level", label: "Tacrolimus" },
   { key: "cyclosporine", label: "Cyclosporine" },
   { key: "hb", label: "HB" },
