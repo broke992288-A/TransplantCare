@@ -4,7 +4,9 @@ import { useLanguage } from "@/hooks/useLanguage";
 import type { LabResult } from "@/types/patient";
 import { REFERENCE_RANGES } from "./LabResultsTable";
 
-const CHART_MARKERS = [
+type ChartableKey = keyof Pick<LabResult, "creatinine" | "alt" | "ast" | "total_bilirubin" | "tacrolimus_level" | "potassium" | "urea">;
+
+const CHART_MARKERS: { key: ChartableKey; color: string }[] = [
   { key: "creatinine", color: "#ef4444" },
   { key: "alt", color: "#f59e0b" },
   { key: "ast", color: "#8b5cf6" },
