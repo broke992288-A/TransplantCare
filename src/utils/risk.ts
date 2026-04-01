@@ -34,7 +34,7 @@ export function calculateRiskScore(organ: OrganType, data: Record<string, number
   }
 
   // ── Re-transplant ──
-  const txNum = parseInt(data.transplant_number) || 1;
+  const txNum = parseInt(String(data.transplant_number)) || 1;
   if (txNum >= 2) score += 15;
 
   if (organ === "liver") {
