@@ -100,8 +100,9 @@ export default function PatientDetail() {
       const res = await triggerRiskRecalculation(id);
       toast({ title: t("detail.riskRecalculated"), description: `${res.snapshots_created ?? 0} snapshot(s)` });
       invalidateAll();
-    } catch (err: any) {
-      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: t("common.error"), description: message, variant: "destructive" });
     } finally {
       setRecalculating(false);
     }
