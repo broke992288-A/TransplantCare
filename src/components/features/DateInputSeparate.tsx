@@ -1,4 +1,3 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/hooks/useLanguage";
 
 interface DateInputSeparateProps {
@@ -32,32 +31,41 @@ export function DateInputSeparate({ value, onChange, yearRange }: DateInputSepar
     }
   };
 
+  const selectClass =
+    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer";
+
   return (
     <div className="grid grid-cols-3 gap-2">
-      <Select value={year} onValueChange={(v) => update(v, month, day)}>
-        <SelectTrigger><SelectValue placeholder={t("date.year")} /></SelectTrigger>
-        <SelectContent className="max-h-60">
-          {years.map((y) => (
-            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={month} onValueChange={(v) => update(year, v, day)}>
-        <SelectTrigger><SelectValue placeholder={t("date.month")} /></SelectTrigger>
-        <SelectContent>
-          {months.map((m) => (
-            <SelectItem key={m} value={m}>{Number(m)}-{t("date.monthSuffix")}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={day} onValueChange={(v) => update(year, month, v)}>
-        <SelectTrigger><SelectValue placeholder={t("date.day")} /></SelectTrigger>
-        <SelectContent className="max-h-60">
-          {days.map((d) => (
-            <SelectItem key={d} value={d}>{Number(d)}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <select
+        className={selectClass}
+        value={year}
+        onChange={(e) => update(e.target.value, month, day)}
+      >
+        <option value="">{t("date.year")}</option>
+        {years.map((y) => (
+          <option key={y} value={String(y)}>{y}</option>
+        ))}
+      </select>
+      <select
+        className={selectClass}
+        value={month}
+        onChange={(e) => update(year, e.target.value, day)}
+      >
+        <option value="">{t("date.month")}</option>
+        {months.map((m) => (
+          <option key={m} value={m}>{Number(m)}-{t("date.monthSuffix")}</option>
+        ))}
+      </select>
+      <select
+        className={selectClass}
+        value={day}
+        onChange={(e) => update(year, month, e.target.value)}
+      >
+        <option value="">{t("date.day")}</option>
+        {days.map((d) => (
+          <option key={d} value={d}>{Number(d)}</option>
+        ))}
+      </select>
     </div>
   );
 }
