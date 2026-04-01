@@ -281,9 +281,10 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       }
 
       setStep("confirm");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Upload/OCR error:", err);
-      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: t("common.error"), description: message, variant: "destructive" });
       setStep("upload");
     }
   };
