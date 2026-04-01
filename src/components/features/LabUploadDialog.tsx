@@ -234,10 +234,23 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [reportType, setReportType] = useState<string>("");
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("0");
+  const [country, setCountry] = useState<string>("uzbekistan");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { t } = useLanguage();
+
+  const { data: countries } = useLabCountries();
+  const { data: refProfiles } = useLabReferenceProfiles(country, organType ?? null);
+
+  /** Map test_name → reference profile for quick lookup */
+  const refMap = useMemo(() => {
+    const map: Record<string, { min: number | null; max: number | null; unit: string }> = {};
+    refProfiles?.forEach((p) => {
+      map[p.test_name] = { min: p.min_value, max: p.max_value, unit: p.unit };
+    });
+    return map;
+  }, [refProfiles]);
 
   const reset = () => {
     setStep("upload");
