@@ -79,8 +79,9 @@ export default function Alerts() {
     try {
       await markAlertRead(alertId);
       queryClient.invalidateQueries({ queryKey: ["all-alerts"] });
-    } catch (err: any) {
-      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: t("common.error"), description: message, variant: "destructive" });
     }
   };
 
