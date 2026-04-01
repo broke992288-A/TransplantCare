@@ -428,10 +428,25 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         let filledCount = 0;
+        const conversionMessages: string[] = [];
         for (const field of LAB_FIELDS) {
           const v = parseFloat(group.values[field.key]);
-          labData[field.key] = isNaN(v) ? null : v;
-          if (!isNaN(v)) filledCount++;
+          if (isNaN(v)) { labData[field.key] = null; continue; }
+
+          // Convert from country-specific unit to standard unit
+          const countryUnit = refMap[field.key]?.unit;
+          if (countryUnit) {
+            const { converted, wasConverted, fromUnit, toUnit } = convertToStandard(field.key, v, countryUnit);
+            labData[field.key] = converted;
+            if (wasConverted) conversionMessages.push(`${field.key}: ${v} ${fromUnit} → ${converted} ${toUnit}`);
+          } else {
+            labData[field.key] = v;
+          }
+          filledCount++;
+        }
+
+        if (conversionMessages.length > 0) {
+          toast({ title: "🔄 " + t("common.info"), description: conversionMessages.join(", ") });
         }
 
         if (filledCount > 0) {
