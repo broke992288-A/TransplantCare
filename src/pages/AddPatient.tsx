@@ -292,6 +292,15 @@ export default function AddPatient() {
                   </SelectContent>
                 </Select>
               </FormField>
+              <FormField label={t("add.country")} required>
+                <Select value={form.country} onValueChange={(v) => set("country", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="uzbekistan">🇺🇿 O'zbekiston</SelectItem>
+                    <SelectItem value="india">🇮🇳 India</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
             </CardContent>
           </Card>
 
