@@ -36,7 +36,7 @@ export default function DoctorDashboard() {
   // Sort high-risk by risk_score descending
   const highRisk = patients
     .filter((p) => p.risk_level === "high")
-    .sort((a, b) => ((b as any).risk_score ?? 0) - ((a as any).risk_score ?? 0));
+    .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0));
   const mediumRisk = patients.filter((p) => p.risk_level === "medium");
   const pieData = [
     { name: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(var(--destructive))" },
