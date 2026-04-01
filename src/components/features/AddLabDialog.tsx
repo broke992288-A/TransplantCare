@@ -30,11 +30,11 @@ const COUNTRY_LABELS: Record<string, string> = {
   india: "🇮🇳 India",
 };
 
-export default function AddLabDialog({ patientId, organType, onLabAdded, patientData }: AddLabDialogProps) {
+export default function AddLabDialog({ patientId, organType, onLabAdded, patientData, patientCountry }: AddLabDialogProps) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [country, setCountry] = useState<string>("uzbekistan");
+  const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
   const { toast } = useToast();
   const { t } = useLanguage();
   const [form, setForm] = useState<Record<string, string>>({
