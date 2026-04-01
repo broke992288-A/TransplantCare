@@ -96,25 +96,28 @@ function liverRiskModel(data: Record<string, number | string | boolean | null | 
 }
 
 // ─── KIDNEY-SPECIFIC RISK MODEL ───
-function kidneyRiskModel(data: Record<string, any>): number {
+function kidneyRiskModel(data: Record<string, number | string | boolean | null | undefined>): number {
   let pts = 0;
-  const cr = parseFloat(data.creatinine) || 0;
-  const egfr = parseFloat(data.egfr) || 999;
-  const prot = parseFloat(data.proteinuria) || 0;
-  const k = parseFloat(data.potassium) || 0;
-  const tac = parseFloat(data.tacrolimus_level) || 0;
+  const cr = parseFloat(String(data.creatinine ?? 0)) || 0;
+  const egfr = parseFloat(String(data.egfr ?? 999)) || 999;
+  const prot = parseFloat(String(data.proteinuria ?? 0)) || 0;
+  const k = parseFloat(String(data.potassium ?? 0)) || 0;
+  const tac = parseFloat(String(data.tacrolimus_level ?? 0)) || 0;
   const dialysis = data.dialysis_history === "yes" || data.dialysis_history === true;
 
-  // Creatinine (mg/dL) — KDIGO 2024
-  if (cr > 2.5) pts += 30;
+  // Creatinine (mg/dL) — KDIGO 2024, with severe tier
+  if (cr > 4.0) pts += 35;
+  else if (cr > 2.5) pts += 30;
   else if (cr > 1.5) pts += 12;
 
-  // eGFR (mL/min/1.73m²)
-  if (egfr < 30) pts += 25;
+  // eGFR (mL/min/1.73m²) — severe tier
+  if (egfr < 15) pts += 30;
+  else if (egfr < 30) pts += 25;
   else if (egfr < 45) pts += 12;
 
-  // Proteinuria (g/day)
-  if (prot > 1.0) pts += 15;
+  // Proteinuria (g/day) — nephrotic tier
+  if (prot > 3.0) pts += 20;
+  else if (prot > 1.0) pts += 15;
   else if (prot > 0.3) pts += 8;
 
   // Potassium (mmol/L)
