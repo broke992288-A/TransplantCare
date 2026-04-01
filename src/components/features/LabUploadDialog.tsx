@@ -658,6 +658,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                     group={dateGroups[0]}
                     onValueChange={(key, value) => updateGroupValue(0, key, value)}
                     t={t}
+                    refMap={refMap}
                   />
                 )}
               </>
