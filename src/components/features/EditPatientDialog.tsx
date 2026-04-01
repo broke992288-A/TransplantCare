@@ -129,6 +129,17 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
           </div>
 
           <div>
+            <Label>{t("add.country")}</Label>
+            <Select value={country} onValueChange={setCountry}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="uzbekistan">🇺🇿 O'zbekiston</SelectItem>
+                <SelectItem value="india">🇮🇳 India</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label>{t("detail.dob")}</Label>
             <DateInputSeparate value={dateOfBirth} onChange={setDateOfBirth} />
           </div>
