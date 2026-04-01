@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Upload, Loader2, CheckCircle2, Edit3, FileText, AlertTriangle, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Camera, Upload, Loader2, CheckCircle2, Edit3, FileText, AlertTriangle, Calendar, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,8 @@ import { insertPatientAlert } from "@/services/patientAlertService";
 import { preprocessLabImage } from "@/utils/imagePreprocess";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
+import { STANDARD_UNITS } from "@/utils/unitConversion";
 
 const LAB_FIELDS = [
   { key: "hb", label: "HB (Hemoglobin)", unit: "g/dL" },
