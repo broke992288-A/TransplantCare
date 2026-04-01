@@ -642,7 +642,7 @@ const translations: Record<Language, Record<string, string>> = {
     "add.gender": "Пол",
     "add.male": "Мужской",
     "add.female": "Женский",
-    "add.other": "Другой",
+    
     "add.transplantDetails": "Детали трансплантации",
     "add.transplantNumber": "Номер трансплантации",
     "add.transplantDate": "Дата трансплантации",
