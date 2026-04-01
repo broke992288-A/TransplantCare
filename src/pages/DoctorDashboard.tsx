@@ -146,7 +146,7 @@ export default function DoctorDashboard() {
                     {highRisk.map((p) => {
                       const lab = labs[p.id];
                       const keyLab = p.organ_type === "liver" ? `Tac: ${lab?.tacrolimus_level ?? "—"}` : `Cr: ${lab?.creatinine ?? "—"}`;
-                      const lastEval = (p as any).last_risk_evaluation;
+                      const lastEval = p.last_risk_evaluation;
                       return (
                         <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/patient/${p.id}`)}>
                           <TableCell className="font-medium">{p.full_name}</TableCell>

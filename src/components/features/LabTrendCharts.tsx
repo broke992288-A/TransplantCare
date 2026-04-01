@@ -33,10 +33,10 @@ export default function LabTrendCharts({ labs }: Props) {
       {charts.map(({ key, color }) => {
         const ref = REFERENCE_RANGES[key];
         const data = sortedLabs
-          .filter((l) => (l as any)[key] != null)
+          .filter((l) => l[key] != null)
           .map((l) => ({
             date: new Date(l.recorded_at).toLocaleDateString(),
-            value: (l as any)[key] as number,
+            value: l[key] as number,
           }));
 
         if (data.length < 1) return null;
