@@ -981,7 +981,7 @@ const translations: Record<Language, Record<string, string>> = {
     "organ.kidney": "Почка",
     "gender.male": "Мужской",
     "gender.female": "Женский",
-    "gender.other": "Другой",
+    
     "risk.high": "ВЫСОКИЙ",
     "risk.medium": "СРЕДНИЙ",
     "risk.low": "НИЗКИЙ",
