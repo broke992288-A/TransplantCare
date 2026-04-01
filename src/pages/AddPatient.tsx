@@ -268,7 +268,6 @@ export default function AddPatient() {
                   <SelectContent>
                     <SelectItem value="male">{t("add.male")}</SelectItem>
                     <SelectItem value="female">{t("add.female")}</SelectItem>
-                    <SelectItem value="other">{t("add.other")}</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>
