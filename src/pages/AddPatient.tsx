@@ -183,6 +183,7 @@ export default function AddPatient() {
         donor_blood_type: form.donor_blood_type || null,
         titer_therapy: form.titer_therapy === "yes",
         phone: form.phone || null,
+        country: form.country || "uzbekistan",
       });
 
       const labData: TablesInsert<"lab_results"> = { patient_id: patient.id };
