@@ -133,7 +133,7 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
       // Check lab value changes
       headers.forEach(h => {
         const newStr = editValues[h.key]?.trim() ?? "";
-        const origVal = (original as any)[h.key];
+        const origVal = original[h.key];
         const newVal = newStr === "" ? null : parseFloat(newStr);
 
         if (newStr === "" && origVal == null) return; // both null, no change
