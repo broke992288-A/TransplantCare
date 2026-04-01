@@ -523,6 +523,27 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             <p className="text-sm text-muted-foreground">
               {t("upload.description")}
             </p>
+
+            {/* Country selector */}
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border">
+              <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger className="h-8 text-sm border-0 bg-transparent shadow-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(countries ?? ["uzbekistan", "india"]).map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {COUNTRY_LABELS[c] ?? c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Badge variant="secondary" className="text-[10px] shrink-0">
+                {country === "uzbekistan" ? "µmol/L" : "mg/dL"}
+              </Badge>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
