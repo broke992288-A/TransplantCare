@@ -47,34 +47,39 @@ export function calculateRiskScore(organ: OrganType, data: Record<string, any>):
 }
 
 // ─── LIVER-SPECIFIC RISK MODEL ───
-function liverRiskModel(data: Record<string, any>): number {
+function liverRiskModel(data: Record<string, number | string | boolean | null | undefined>): number {
   let pts = 0;
-  const alt = parseFloat(data.alt) || 0;
-  const ast = parseFloat(data.ast) || 0;
-  const tac = parseFloat(data.tacrolimus_level) || 0;
-  const bili = parseFloat(data.total_bilirubin) || 0;
-  const dbili = parseFloat(data.direct_bilirubin) || 0;
-  const ggt = parseFloat(data.ggt) || 0;
-  const alp = parseFloat(data.alp) || 0;
+  const alt = parseFloat(String(data.alt ?? 0)) || 0;
+  const ast = parseFloat(String(data.ast ?? 0)) || 0;
+  const tac = parseFloat(String(data.tacrolimus_level ?? 0)) || 0;
+  const bili = parseFloat(String(data.total_bilirubin ?? 0)) || 0;
+  const dbili = parseFloat(String(data.direct_bilirubin ?? 0)) || 0;
+  const ggt = parseFloat(String(data.ggt ?? 0)) || 0;
+  const alp = parseFloat(String(data.alp ?? 0)) || 0;
 
-  // ALT thresholds (U/L) — AASLD 2023
-  if (alt > 120) pts += 25;
+  // ALT thresholds (U/L) — AASLD 2023, with severe acute rejection tiers
+  if (alt > 800) pts += 40;
+  else if (alt > 500) pts += 30;
+  else if (alt > 120) pts += 25;
   else if (alt > 60) pts += 10;
 
-  // AST thresholds (U/L)
-  if (ast > 120) pts += 20;
+  // AST thresholds (U/L) — severe tiers added
+  if (ast > 500) pts += 25;
+  else if (ast > 120) pts += 20;
   else if (ast > 60) pts += 8;
 
-  // Total Bilirubin (mg/dL)
-  if (bili > 3.0) pts += 20;
+  // Total Bilirubin (mg/dL) — normalized, with severe tier
+  if (bili > 10.0) pts += 30;
+  else if (bili > 3.0) pts += 20;
   else if (bili > 1.5) pts += 10;
 
   // Direct Bilirubin (mg/dL)
   if (dbili > 1.5) pts += 10;
   else if (dbili > 0.5) pts += 5;
 
-  // GGT (U/L) — biliary/cholestatic rejection marker
-  if (ggt > 200) pts += 15;
+  // GGT (U/L) — biliary/cholestatic rejection marker, severe tier
+  if (ggt > 500) pts += 20;
+  else if (ggt > 200) pts += 15;
   else if (ggt > 60) pts += 8;
 
   // ALP (U/L) — biliary obstruction/rejection marker
