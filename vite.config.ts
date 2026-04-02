@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["pwa-icon-192.png", "pwa-icon-512.png"],
+      devOptions: {
+        enabled: false,
+      },
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
