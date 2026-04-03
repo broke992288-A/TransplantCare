@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { RefreshCw, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import { triggerFullRecalculation } from "@/services/riskRecalculationService";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function RiskRecalculationCard() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
@@ -26,14 +28,14 @@ export default function RiskRecalculationCard() {
       });
       setResult(res);
       toast({
-        title: "Хавф балли қайта ҳисобланди ✅",
-        description: `${res.totalProcessed} бемор, ${res.totalSnapshots} snapshot, ${res.totalAlerts} алерт`,
+        title: t("recalc.success"),
+        description: `${res.totalProcessed} ${t("recalc.patients")}, ${res.totalSnapshots} snapshot, ${res.totalAlerts} ${t("recalc.alerts")}`,
       });
       qc.invalidateQueries();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      toast({ title: "Хатолик", description: message, variant: "destructive" });
+      toast({ title: t("error.title"), description: message, variant: "destructive" });
     } finally {
       setRunning(false);
     }
@@ -47,10 +49,8 @@ export default function RiskRecalculationCard() {
             <RefreshCw className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-base">Хавф баллини қайта ҳисоблаш</CardTitle>
-            <CardDescription>
-              Барча тарихий таҳлилларни янги клиник алгоритмлар билан қайта ишлайди (20 та бемор пакетида)
-            </CardDescription>
+            <CardTitle className="text-base">{t("recalc.title")}</CardTitle>
+            <CardDescription>{t("recalc.desc")}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -58,7 +58,7 @@ export default function RiskRecalculationCard() {
         {running && (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Қайта ҳисобланмоқда... {progress.processed > 0 && `(${progress.processed} бемор ишланди)`}
+              {t("recalc.calculating")} {progress.processed > 0 && `(${progress.processed} ${t("recalc.patients")})`}
             </p>
             <Progress
               value={progress.total > 0 ? (progress.processed / progress.total) * 100 : undefined}
@@ -71,9 +71,9 @@ export default function RiskRecalculationCard() {
           <div className="flex items-start gap-2 rounded-lg bg-success/10 p-3">
             <CheckCircle className="h-5 w-5 text-success mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium text-success">Муваффақиятли!</p>
+              <p className="font-medium text-success">{t("recalc.successLabel")}</p>
               <p className="text-muted-foreground mt-1">
-                {result.totalProcessed} бемор • {result.totalSnapshots} snapshot • {result.totalAlerts} алерт
+                {result.totalProcessed} {t("recalc.patients")} • {result.totalSnapshots} snapshot • {result.totalAlerts} {t("recalc.alerts")}
               </p>
             </div>
           </div>
@@ -90,12 +90,12 @@ export default function RiskRecalculationCard() {
           {running ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Ҳисобланмоқда...
+              {t("recalc.calculating")}
             </>
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Барча таҳлилларни қайта ҳисоблаш
+              {t("recalc.button")}
             </>
           )}
         </Button>

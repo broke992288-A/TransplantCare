@@ -12,6 +12,17 @@ interface State {
   error: Error | null;
 }
 
+// Helper to get translation from localStorage (class components can't use hooks)
+function getStoredLang(): string {
+  try { return localStorage.getItem("app-lang") || "en"; } catch { return "en"; }
+}
+
+const errorTexts: Record<string, Record<string, string>> = {
+  en: { title: "An error occurred", desc: "An unexpected error occurred. Please try again.", retry: "Try Again", reload: "Reload Page" },
+  ru: { title: "Произошла ошибка", desc: "Произошла непредвиденная ошибка. Попробуйте снова.", retry: "Попробовать снова", reload: "Перезагрузить" },
+  uz: { title: "Xatolik yuz berdi", desc: "Kutilmagan xatolik yuz berdi. Iltimos, qayta urinib ko'ring.", retry: "Qayta urinish", reload: "Sahifani yangilash" },
+};
+
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -33,26 +44,26 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const lang = getStoredLang();
+      const txt = errorTexts[lang] || errorTexts.en;
       return (
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
           <Card className="max-w-md w-full">
             <CardHeader className="flex flex-row items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-destructive" />
-              <CardTitle className="text-lg">Хатолик юз берди</CardTitle>
+              <CardTitle className="text-lg">{txt.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Кутилмаган хатолик юз берди. Илтимос, қайта уриниб кўринг.
-              </p>
+              <p className="text-sm text-muted-foreground">{txt.desc}</p>
               {this.state.error && (
                 <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-32 text-muted-foreground">
                   {this.state.error.message}
                 </pre>
               )}
               <div className="flex gap-2">
-                <Button onClick={this.handleReset}>Қайта уриниш</Button>
+                <Button onClick={this.handleReset}>{txt.retry}</Button>
                 <Button variant="outline" onClick={() => window.location.reload()}>
-                  Саҳифани янгилаш
+                  {txt.reload}
                 </Button>
               </div>
             </CardContent>

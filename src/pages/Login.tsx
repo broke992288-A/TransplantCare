@@ -61,7 +61,7 @@ export default function Login() {
               {isForgot ? t("login.resetPassword") : t("login.signIn")}
             </CardTitle>
             <CardDescription>
-              {isForgot ? t("login.resetDesc") : "Email ва парол орқали тизимга киринг"}
+              {isForgot ? t("login.resetDesc") : t("login.signInDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
