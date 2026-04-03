@@ -5,24 +5,19 @@ import { Progress } from "@/components/ui/progress";
 import { Database, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import { generateDemoData, type DemoProgress } from "@/services/demoDataService";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function DemoDataGenerator() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<DemoProgress | null>(null);
   const [result, setResult] = useState<{ patients: number; labs: number; alerts: number; medications: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const stepLabels: Record<string, string> = {
-    patients: "Беморлар яратилмоқда...",
-    labs: "Лаб натижалари киритилмоқда...",
-    alerts: "Огоҳлантиришлар яратилмоқда...",
-    medications: "Дорилар киритилмоқда...",
-  };
 
   const getProgressPercent = () => {
     if (!progress) return 0;
@@ -44,12 +39,15 @@ export default function DemoDataGenerator() {
     try {
       const res = await generateDemoData(user.id, setProgress);
       setResult(res);
-      toast({ title: "Demo маълумотлар яратилди ✅", description: `${res.patients} бемор, ${res.labs} таҳлил, ${res.alerts} алерт, ${res.medications} дори` });
+      toast({
+        title: t("demo.success"),
+        description: `${res.patients} ${t("demo.patients")}, ${res.labs} ${t("demo.labs")}, ${res.alerts} ${t("demo.alerts")}, ${res.medications} ${t("demo.meds")}`,
+      });
       qc.invalidateQueries();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      toast({ title: "Хатолик", description: message, variant: "destructive" });
+      toast({ title: t("error.title"), description: message, variant: "destructive" });
     } finally {
       setRunning(false);
       setProgress(null);
@@ -64,15 +62,15 @@ export default function DemoDataGenerator() {
             <Database className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-base">Demo маълумотлар генератори</CardTitle>
-            <CardDescription>50 бемор, ~200 таҳлил, 20 алерт, ~100 дори</CardDescription>
+            <CardTitle className="text-base">{t("demo.title")}</CardTitle>
+            <CardDescription>{t("demo.desc")}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {running && progress && (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{stepLabels[progress.step] ?? progress.step}</p>
+            <p className="text-sm text-muted-foreground">{t(`demo.step.${progress.step}`)}</p>
             <Progress value={getProgressPercent()} className="h-2" />
             <p className="text-xs text-muted-foreground text-right">{Math.round(getProgressPercent())}%</p>
           </div>
@@ -82,9 +80,9 @@ export default function DemoDataGenerator() {
           <div className="flex items-start gap-2 rounded-lg bg-success/10 p-3">
             <CheckCircle className="h-5 w-5 text-success mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium text-success">Муваффақиятли яратилди!</p>
+              <p className="font-medium text-success">{t("demo.successLabel")}</p>
               <p className="text-muted-foreground mt-1">
-                {result.patients} бемор • {result.labs} таҳлил • {result.alerts} алерт • {result.medications} дори
+                {result.patients} {t("demo.patients")} • {result.labs} {t("demo.labs")} • {result.alerts} {t("demo.alerts")} • {result.medications} {t("demo.meds")}
               </p>
             </div>
           </div>
@@ -98,7 +96,7 @@ export default function DemoDataGenerator() {
         )}
 
         <Button onClick={handleGenerate} disabled={running} className="w-full">
-          {running ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Яратилмоқда...</> : "Demo маълумотлар яратиш"}
+          {running ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t("demo.generating")}</> : t("demo.button")}
         </Button>
       </CardContent>
     </Card>
