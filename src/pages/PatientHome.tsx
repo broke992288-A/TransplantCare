@@ -1,165 +1,260 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FlaskConical, TrendingUp, TrendingDown, Minus, Phone, Calendar, User, Info } from "lucide-react";
-import PatientLabScheduleCard from "@/components/features/PatientLabScheduleCard";
+import { Stethoscope, Pill, FlaskConical, CalendarClock, FileText, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLinkedPatient } from "@/hooks/usePatients";
-import { usePatientHomeLabs, usePatientHomeEvents } from "@/hooks/usePatientDetail";
-import { riskColorClass } from "@/utils/risk";
-import patientPhotoAbdulhayot from "@/assets/patient-photo-edited.jpg";
+import { usePatientHomeLabs } from "@/hooks/usePatientDetail";
+import { usePatientMedications } from "@/hooks/useMedications";
+import { useLabSchedules } from "@/hooks/useLabSchedule";
+import { useDoctorNotes } from "@/hooks/useDoctorNotes";
+
+// --- Simple lab status helpers ---
+interface LabCheck {
+  label: string;
+  value: number | null;
+  status: "normal" | "high" | "critical";
+}
+
+function kidneyChecks(lab: any, t: (k: string) => string): LabCheck[] {
+  return [
+    {
+      label: t("add.creatinine"),
+      value: lab.creatinine,
+      status: lab.creatinine == null ? "normal" : lab.creatinine > 2.5 ? "critical" : lab.creatinine > 1.5 ? "high" : "normal",
+    },
+    {
+      label: t("add.egfr"),
+      value: lab.egfr,
+      // eGFR is inverted — lower is worse
+      status: lab.egfr == null ? "normal" : lab.egfr < 30 ? "critical" : lab.egfr < 60 ? "high" : "normal",
+    },
+    {
+      label: t("add.tacrolimus"),
+      value: lab.tacrolimus_level,
+      status: lab.tacrolimus_level == null ? "normal" : (lab.tacrolimus_level < 4 || lab.tacrolimus_level > 12) ? "critical" : (lab.tacrolimus_level < 6 || lab.tacrolimus_level > 10) ? "high" : "normal",
+    },
+  ];
+}
+
+function liverChecks(lab: any, t: (k: string) => string): LabCheck[] {
+  return [
+    {
+      label: t("add.alt"),
+      value: lab.alt,
+      status: lab.alt == null ? "normal" : lab.alt > 500 ? "critical" : lab.alt > 60 ? "high" : "normal",
+    },
+    {
+      label: t("add.totalBilirubin"),
+      value: lab.total_bilirubin,
+      status: lab.total_bilirubin == null ? "normal" : lab.total_bilirubin > 10 ? "critical" : lab.total_bilirubin > 1.5 ? "high" : "normal",
+    },
+    {
+      label: t("add.tacrolimus"),
+      value: lab.tacrolimus_level,
+      status: lab.tacrolimus_level == null ? "normal" : (lab.tacrolimus_level < 4 || lab.tacrolimus_level > 12) ? "critical" : (lab.tacrolimus_level < 6 || lab.tacrolimus_level > 10) ? "high" : "normal",
+    },
+  ];
+}
+
+function statusIcon(status: "normal" | "high" | "critical") {
+  switch (status) {
+    case "normal": return <CheckCircle2 className="h-5 w-5 text-success" />;
+    case "high": return <AlertTriangle className="h-5 w-5 text-warning" />;
+    case "critical": return <XCircle className="h-5 w-5 text-destructive" />;
+  }
+}
+
+function statusLabel(status: "normal" | "high" | "critical") {
+  switch (status) {
+    case "normal": return "Normal ✅";
+    case "high": return "High ⚠️";
+    case "critical": return "Critical 🔴";
+  }
+}
+
+// --- Status banner config ---
+const STATUS_CONFIG = {
+  low: {
+    emoji: "🟢",
+    title: "Your condition is stable",
+    subtitle: "Continue taking your medications as prescribed",
+    bgClass: "bg-success/10 border-success/30",
+    textClass: "text-success",
+  },
+  medium: {
+    emoji: "🟠",
+    title: "Attention required",
+    subtitle: "Your doctor will review your latest results",
+    bgClass: "bg-warning/10 border-warning/30",
+    textClass: "text-warning",
+  },
+  high: {
+    emoji: "🔴",
+    title: "Please contact your doctor",
+    subtitle: "Your doctor has been notified about your condition",
+    bgClass: "bg-amber-500/10 border-amber-500/30",
+    textClass: "text-amber-600",
+  },
+} as const;
 
 export default function PatientHome() {
   const { t } = useLanguage();
   const { data: patient, isLoading: loadingPatient } = useLinkedPatient();
-  const { data: allLabs = [] } = usePatientHomeLabs(patient?.id);
-  const { data: timeline = [] } = usePatientHomeEvents(patient?.id);
+  const { data: allLabs = [] } = usePatientHomeLabs(patient?.id, 2);
+  const { data: medications = [] } = usePatientMedications(patient?.id);
+  const { data: schedules = [] } = useLabSchedules(patient?.id);
+  const { data: notes = [] } = useDoctorNotes(patient?.id, 1);
 
   const loading = loadingPatient;
   const latestLab = allLabs[0] ?? null;
-  const prevLab = allLabs[1] ?? null;
+
+  // Next upcoming lab
+  const today = new Date().toISOString().slice(0, 10);
+  const nextSchedule = schedules.find((s: any) => s.status === "upcoming" || s.status === "due_soon" || (s.status === "overdue"));
+  const overdueSchedule = schedules.find((s: any) => s.status === "overdue");
+
+  // Active medications (first one as "today's action")
+  const activeMeds = medications.filter((m: any) => m.is_active);
+
+  // Latest doctor note
+  const lastNote = notes[0] ?? null;
+
+  const riskLevel = (patient?.risk_level ?? "low") as keyof typeof STATUS_CONFIG;
+  const config = STATUS_CONFIG[riskLevel] ?? STATUS_CONFIG.low;
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-lg mx-auto space-y-4">
         {loading ? (
-          <p className="text-muted-foreground text-center">{t("home.loading")}</p>
+          <p className="text-muted-foreground text-center py-12">{t("home.loading")}</p>
         ) : !patient ? (
           <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">{t("home.noLinked")}</p></CardContent></Card>
         ) : (
           <>
+            {/* TOP — Status Card */}
+            <Card className={`border-2 ${config.bgClass}`}>
+              <CardContent className="py-8 text-center space-y-2">
+                <div className="text-5xl">{config.emoji}</div>
+                <h1 className={`text-xl font-bold ${config.textClass}`}>{config.title}</h1>
+                <p className="text-sm text-muted-foreground">{config.subtitle}</p>
+                {riskLevel === "high" && (
+                  <div className="flex items-center justify-center gap-2 mt-3 text-sm text-amber-600">
+                    <Stethoscope className="h-4 w-4" />
+                    <span>{t("home.highRiskWarning")}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* MIDDLE — Today's Actions */}
             <Card>
-              <CardHeader><CardTitle className="text-lg flex items-center gap-2">
-                {patient.full_name.includes("bdulhayot") ? (
-                  <div className="h-10 w-10 rounded-lg overflow-hidden border border-primary/20 shrink-0">
-                    <img src={patientPhotoAbdulhayot} alt={patient.full_name} className="h-full w-full object-cover object-[50%_0%] scale-125" />
+              <CardContent className="py-5 space-y-4">
+                <h2 className="text-base font-semibold flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-primary" />
+                  Today's Actions
+                </h2>
+
+                {/* Next medication */}
+                {activeMeds.length > 0 ? (
+                  <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+                    <Pill className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm">{activeMeds[0].medication_name} {activeMeds[0].dosage}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {activeMeds[0].frequency === "daily" ? "Take once daily" :
+                         activeMeds[0].frequency === "twice_daily" ? "Take twice daily" :
+                         activeMeds[0].frequency}
+                      </p>
+                      {activeMeds.length > 1 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          + {activeMeds.length - 1} more medication{activeMeds.length > 2 ? "s" : ""}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <User className="h-5 w-5 text-primary" />
+                  <p className="text-sm text-muted-foreground">No active medications</p>
                 )}
-                {t("home.healthStatus")}</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.name")}</span><span className="font-medium">{patient.full_name}</span></div>
-                <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.organ")}</span><span className="font-medium">{t(`organ.${patient.organ_type}`)}</span></div>
-                {patient.phone && (
-                  <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{t("common.phone")}</span><span className="font-medium">{patient.phone}</span></div>
-                )}
-                {patient.transplant_date && (
-                  <div className="flex items-center justify-between"><span className="text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />{t("profile.transplant")}</span><span className="font-medium">{new Date(patient.transplant_date).toLocaleDateString()}</span></div>
-                )}
-                <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("home.riskLevel")}</span><Badge className={riskColorClass(patient.risk_level)}>{t(`risk.${patient.risk_level}`)}</Badge></div>
-                {(patient.risk_level === "high" || patient.risk_level === "medium") && (
-                  <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm flex items-start gap-2">
-                    <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                    {t("prediction.patientNotice")}
+
+                {/* Next lab date */}
+                {nextSchedule ? (
+                  <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+                    <FlaskConical className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm">
+                        Lab test {overdueSchedule ? "overdue" : "due"}: {new Date(nextSchedule.scheduled_date).toLocaleDateString()}
+                      </p>
+                      {overdueSchedule && (
+                        <Badge className="mt-1 bg-destructive/10 text-destructive border-destructive/30" variant="outline">
+                          Overdue
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                )}
-                {patient.risk_level === "high" && (
-                  <div className="mt-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">{t("home.highRiskWarning")}</div>
+                ) : (
+                  <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+                    <FlaskConical className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                    <p className="text-sm text-muted-foreground">No upcoming lab tests</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
 
-            {patient.id && <PatientLabScheduleCard patientId={patient.id} isPatientView />}
-
+            {/* BOTTOM — Latest Lab Summary (simple) */}
             {latestLab && (
               <Card>
-                <CardHeader className="flex flex-row items-center gap-2"><FlaskConical className="h-5 w-5 text-primary" /><CardTitle className="text-lg">{t("lab.latestLabs")}</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {patient.organ_type === "liver" ? (
-                      <>
-                        <LabItemTrend label={t("add.tacrolimus")} value={latestLab.tacrolimus_level} prev={prevLab?.tacrolimus_level} />
-                        <LabItemTrend label={t("add.alt")} value={latestLab.alt} prev={prevLab?.alt} />
-                        <LabItemTrend label={t("add.ast")} value={latestLab.ast} prev={prevLab?.ast} />
-                        <LabItemTrend label={t("add.totalBilirubin")} value={latestLab.total_bilirubin} prev={prevLab?.total_bilirubin} />
-                        <LabItemTrend label={t("add.directBilirubin")} value={latestLab.direct_bilirubin} prev={prevLab?.direct_bilirubin} />
-                      </>
-                    ) : (
-                      <>
-                        <LabItemTrend label={t("add.creatinine")} value={latestLab.creatinine} prev={prevLab?.creatinine} />
-                        <LabItemTrend label={t("add.egfr")} value={latestLab.egfr} prev={prevLab?.egfr} />
-                        <LabItemTrend label={t("add.proteinuria")} value={latestLab.proteinuria} prev={prevLab?.proteinuria} />
-                        <LabItemTrend label={t("add.potassium")} value={latestLab.potassium} prev={prevLab?.potassium} />
-                      </>
-                    )}
+                <CardContent className="py-5 space-y-4">
+                  <h2 className="text-base font-semibold flex items-center gap-2">
+                    <FlaskConical className="h-5 w-5 text-primary" />
+                    Latest Results
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(latestLab.recorded_at).toLocaleDateString()}
+                  </p>
+                  <div className="space-y-2">
+                    {(patient.organ_type === "liver"
+                      ? liverChecks(latestLab, t)
+                      : kidneyChecks(latestLab, t)
+                    ).map((check) => (
+                      check.value != null && (
+                        <div key={check.label} className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-3">
+                            {statusIcon(check.status)}
+                            <div>
+                              <p className="text-sm font-medium">{check.label}</p>
+                              <p className="text-lg font-bold tabular-nums">{check.value}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs font-medium">{statusLabel(check.status)}</span>
+                        </div>
+                      )
+                    ))}
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground">{t("common.date")}: {new Date(latestLab.recorded_at).toLocaleDateString()}</p>
                 </CardContent>
               </Card>
             )}
 
-            {allLabs.length > 1 && (
+            {/* Doctor Instructions */}
+            {lastNote?.plan && (
               <Card>
-                <CardHeader><CardTitle className="text-lg">{t("lab.labHistory")}</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {allLabs.map((lab, i) => (
-                      <div key={lab.id} className={`rounded-lg border p-3 ${i === 0 ? "border-primary/30 bg-primary/5" : ""}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{new Date(lab.recorded_at).toLocaleDateString()}</span>
-                          {i === 0 && <Badge variant="outline" className="text-xs">{t("lab.latest")}</Badge>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          {patient.organ_type === "liver" ? (
-                            <>
-                              {lab.tacrolimus_level != null && <span>{t("add.tacrolimus")}: <strong>{lab.tacrolimus_level}</strong></span>}
-                              {lab.alt != null && <span>{t("add.alt")}: <strong>{lab.alt}</strong></span>}
-                              {lab.ast != null && <span>{t("add.ast")}: <strong>{lab.ast}</strong></span>}
-                              {lab.total_bilirubin != null && <span>{t("add.totalBilirubin")}: <strong>{lab.total_bilirubin}</strong></span>}
-                            </>
-                          ) : (
-                            <>
-                              {lab.creatinine != null && <span>{t("add.creatinine")}: <strong>{lab.creatinine}</strong></span>}
-                              {lab.egfr != null && <span>{t("add.egfr")}: <strong>{lab.egfr}</strong></span>}
-                              {lab.proteinuria != null && <span>{t("add.proteinuria")}: <strong>{lab.proteinuria}</strong></span>}
-                              {lab.potassium != null && <span>{t("add.potassium")}: <strong>{lab.potassium}</strong></span>}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                <CardContent className="py-5 space-y-3">
+                  <h2 className="text-base font-semibold flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Doctor's Instructions
+                  </h2>
+                  <div className="rounded-lg border p-3 bg-primary/5 border-primary/20">
+                    <p className="text-sm leading-relaxed">{lastNote.plan}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(lastNote.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             )}
-
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-2"><Clock className="h-5 w-5 text-primary" /><CardTitle className="text-lg">{t("home.careTimeline")}</CardTitle></CardHeader>
-              <CardContent>
-                {timeline.length === 0 ? <p className="text-muted-foreground text-sm">{t("home.noEvents")}</p> : (
-                  <div className="space-y-3">
-                    {timeline.map((ev) => (
-                      <div key={ev.id} className="flex items-start gap-3 border-l-2 border-primary/20 pl-4 py-1">
-                        <div>
-                          <p className="text-sm font-medium">{ev.description}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </>
         )}
       </div>
     </DashboardLayout>
-  );
-}
-
-function LabItemTrend({ label, value, prev }: { label: string; value: number | null; prev?: number | null }) {
-  if (value == null) return null;
-  const trend = prev != null ? (value > prev ? "up" : value < prev ? "down" : "same") : null;
-  return (
-    <div className="rounded-lg border p-3 flex items-center justify-between">
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-semibold">{value}</p>
-      </div>
-      {trend === "up" && <TrendingUp className="h-4 w-4 text-destructive" />}
-      {trend === "down" && <TrendingDown className="h-4 w-4 text-success" />}
-      {trend === "same" && <Minus className="h-4 w-4 text-muted-foreground" />}
-    </div>
   );
 }
