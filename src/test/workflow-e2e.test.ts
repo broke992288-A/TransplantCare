@@ -146,7 +146,7 @@ describe("Workflow: Alert Generation", () => {
       message: flags.join("; "),
     };
     expect(alert.severity).toBe("critical");
-    expect(alert.message).toContain("Tacrolimus low");
+    expect(alert.message).toContain("Tacrolimus 2 outside");
   });
 
   it("medium risk triggers warning alert", () => {
@@ -212,9 +212,13 @@ describe("Workflow: Trend Analysis", () => {
 describe("Workflow: Early Post-Transplant", () => {
   it("adds bonus score within 90 days of transplant", () => {
     const recentDate = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-    const lab = makeLab({ tacrolimus_level: 8, alt: 30, ast: 25, total_bilirubin: 0.8 });
+    // tac=5: within [8-10] for 30d window → tac<8 = +25; for >180d [4-7] → within range = 0
+    // So use tac=5 which is within [4-7] (old) but below [8-10] (recent) + early bonus
+    const lab = makeLab({ tacrolimus_level: 5, alt: 30, ast: 25, total_bilirubin: 0.8 });
     const { score: scoreRecent } = computeRiskScore("liver", lab, { ...patientBase, transplant_date: recentDate });
     const { score: scoreOld } = computeRiskScore("liver", lab, { ...patientBase, transplant_date: "2020-01-01" });
+    // Recent: tac 5 < 8 (0-30d window) = +25 + early +10 = 35
+    // Old: tac 5 within [4-7] (>180d) = 0
     expect(scoreRecent).toBeGreaterThan(scoreOld);
   });
 });
