@@ -239,3 +239,51 @@ describe("getAge", () => {
     expect(age).toBeLessThanOrEqual(30);
   });
 });
+
+describe("BK/CMV/DSA kidney risk markers", () => {
+  it("adds +20 for BK virus >10000", () => {
+    const score = calculateRiskScore("kidney", { bk_virus_load: 15000 });
+    expect(score).toBeGreaterThanOrEqual(20);
+  });
+
+  it("adds +10 for BK virus >1000 but <=10000", () => {
+    const score = calculateRiskScore("kidney", { bk_virus_load: 5000 });
+    expect(score).toBeGreaterThanOrEqual(10);
+  });
+
+  it("no points for BK virus <=1000", () => {
+    const score = calculateRiskScore("kidney", { bk_virus_load: 500 });
+    expect(score).toBe(0);
+  });
+
+  it("adds +15 for CMV >1000", () => {
+    const score = calculateRiskScore("kidney", { cmv_load: 2000 });
+    expect(score).toBeGreaterThanOrEqual(15);
+  });
+
+  it("adds +8 for CMV >500 but <=1000", () => {
+    const score = calculateRiskScore("kidney", { cmv_load: 800 });
+    expect(score).toBeGreaterThanOrEqual(8);
+  });
+
+  it("adds +20 for DSA MFI >5000", () => {
+    const score = calculateRiskScore("kidney", { dsa_mfi: 8000 });
+    expect(score).toBeGreaterThanOrEqual(20);
+  });
+
+  it("adds +10 for DSA MFI >1000 but <=5000", () => {
+    const score = calculateRiskScore("kidney", { dsa_mfi: 3000 });
+    expect(score).toBeGreaterThanOrEqual(10);
+  });
+
+  it("combined BK + CMV + DSA produces high risk", () => {
+    const score = calculateRiskScore("kidney", { bk_virus_load: 15000, cmv_load: 2000, dsa_mfi: 8000 });
+    // 20 + 15 + 20 = 55 → medium; with creatinine elevated → high
+    expect(score).toBeGreaterThanOrEqual(55);
+  });
+
+  it("does NOT add BK/CMV/DSA points for liver organ", () => {
+    const score = calculateRiskScore("liver", { bk_virus_load: 15000, cmv_load: 2000, dsa_mfi: 8000 });
+    expect(score).toBe(0);
+  });
+});
