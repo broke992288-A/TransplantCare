@@ -346,6 +346,16 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setDateGroups(groups);
       setReportType(ocrData?.reportType ?? "");
 
+      // Auto-detect country from extracted values
+      for (const g of groups) {
+        const detected = detectCountryFromValues(g.values);
+        if (detected) {
+          setCountry(detected.country);
+          toast({ title: "🌍 " + t("common.info"), description: detected.reason });
+          break;
+        }
+      }
+
       const totalLowConf = groups.reduce((sum, g) => {
         return sum + LAB_FIELDS.filter(
           (f) => g.values[f.key] && g.confidence[f.key] != null && g.confidence[f.key] < 80
