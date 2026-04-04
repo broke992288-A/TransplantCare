@@ -8,8 +8,6 @@ import { TableProperties, Plus, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
-import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
-import { fetchLabsByPatientId } from "@/services/labService";
 import { autoCompleteSchedules } from "@/services/labScheduleService";
 
 interface Props {
