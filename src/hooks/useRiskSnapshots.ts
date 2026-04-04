@@ -1,10 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchRiskSnapshots, fetchLatestRiskSnapshot } from "@/services/riskSnapshotService";
+import { fetchRiskSnapshots } from "@/services/riskSnapshotService";
 
 export function useRiskSnapshots(patientId: string | undefined, limit = 10) {
   return useQuery({
     queryKey: ["risk-snapshots", patientId, limit],
-    queryFn: () => fetchRiskSnapshots(patientId!, limit),
+    queryFn: async () => {
+      const all = await fetchRiskSnapshots(patientId!);
+      return all.slice(0, limit);
+    },
     enabled: !!patientId,
   });
 }
@@ -12,7 +15,10 @@ export function useRiskSnapshots(patientId: string | undefined, limit = 10) {
 export function useLatestRiskSnapshot(patientId: string | undefined) {
   return useQuery({
     queryKey: ["risk-snapshot-latest", patientId],
-    queryFn: () => fetchLatestRiskSnapshot(patientId!),
+    queryFn: async () => {
+      const all = await fetchRiskSnapshots(patientId!);
+      return all.length > 0 ? all[0] : null;
+    },
     enabled: !!patientId,
   });
 }
