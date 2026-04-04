@@ -154,6 +154,9 @@ function kidneyRiskModel(data: Record<string, number | string | boolean | null |
   const k = parseFloat(String(data.potassium ?? 0)) || 0;
   const tac = parseFloat(String(data.tacrolimus_level ?? 0)) || 0;
   const dialysis = data.dialysis_history === "yes" || data.dialysis_history === true;
+  const bkVirus = parseFloat(String(data.bk_virus_load ?? 0)) || 0;
+  const cmv = parseFloat(String(data.cmv_load ?? 0)) || 0;
+  const dsaMfi = parseFloat(String(data.dsa_mfi ?? 0)) || 0;
 
   // Creatinine (mg/dL) — KDIGO 2024, with severe tier
   if (cr > 4.0) pts += 35;
@@ -183,6 +186,18 @@ function kidneyRiskModel(data: Record<string, number | string | boolean | null |
   // Tacrolimus (ng/mL) — KDIGO 2009/2024 time-dependent windows
   const tacResult = kidneyTacrolimusScore(tac, daysSinceTx);
   pts += tacResult.pts;
+
+  // BK Virus (copies/ml) — KDIGO 2009/2024
+  if (bkVirus > 10000) pts += 20;
+  else if (bkVirus > 1000) pts += 10;
+
+  // CMV (copies/ml) — KDIGO 2009/2024
+  if (cmv > 1000) pts += 15;
+  else if (cmv > 500) pts += 8;
+
+  // DSA MFI — Banff/KDIGO
+  if (dsaMfi > 5000) pts += 20;
+  else if (dsaMfi > 1000) pts += 10;
 
   // Dialysis history
   if (dialysis) pts += 20;

@@ -222,6 +222,7 @@ serve(async (req) => {
           creatinine: lab.creatinine, egfr: lab.egfr, potassium: lab.potassium,
           proteinuria: lab.proteinuria, hb: lab.hb, albumin: lab.albumin,
           platelets: lab.platelets, inr: lab.inr, alp: lab.alp, ggt: lab.ggt, crp: lab.crp,
+          bk_virus_load: lab.bk_virus_load, cmv_load: lab.cmv_load, dsa_mfi: lab.dsa_mfi,
         };
 
         // ── Time-dependent Tacrolimus scoring ──
@@ -308,6 +309,21 @@ serve(async (req) => {
             flags.push(msg);
             explanations.push({ key: "cr_baseline_alert", severity: "critical", message: msg, value: lab.creatinine, guideline: "KDIGO 2009" });
           }
+        }
+
+        // ── BK Virus (copies/ml) — KDIGO 2009/2024 ──
+        if (patient.organ_type === "kidney") {
+          const bk = lab.bk_virus_load ?? 0;
+          if (bk > 10000) { score += 20; flags.push(`BK Virus high: ${bk} copies/ml`); explanations.push({ key: "bk_virus_high", severity: "critical", message: `BK Virus load ${bk} copies/ml — high risk of BK nephropathy (KDIGO 2009/2024)`, value: bk, guideline: "KDIGO 2009/2024" }); }
+          else if (bk > 1000) { score += 10; flags.push(`BK Virus elevated: ${bk} copies/ml`); explanations.push({ key: "bk_virus_elevated", severity: "warning", message: `BK Virus load ${bk} copies/ml — monitor closely`, value: bk, guideline: "KDIGO 2009/2024" }); }
+
+          const cmv = lab.cmv_load ?? 0;
+          if (cmv > 1000) { score += 15; flags.push(`CMV high: ${cmv} copies/ml`); explanations.push({ key: "cmv_high", severity: "critical", message: `CMV viral load ${cmv} copies/ml — active infection risk`, value: cmv, guideline: "KDIGO 2009/2024" }); }
+          else if (cmv > 500) { score += 8; flags.push(`CMV elevated: ${cmv} copies/ml`); explanations.push({ key: "cmv_elevated", severity: "warning", message: `CMV viral load ${cmv} copies/ml — monitor closely`, value: cmv }); }
+
+          const dsa = lab.dsa_mfi ?? 0;
+          if (dsa > 5000) { score += 20; flags.push(`DSA MFI high: ${dsa}`); explanations.push({ key: "dsa_high", severity: "critical", message: `Donor-Specific Antibody MFI ${dsa} — high rejection risk (Banff/KDIGO)`, value: dsa, guideline: "Banff/KDIGO" }); }
+          else if (dsa > 1000) { score += 10; flags.push(`DSA MFI elevated: ${dsa}`); explanations.push({ key: "dsa_elevated", severity: "warning", message: `DSA MFI ${dsa} — monitor closely`, value: dsa }); }
         }
 
         if ((patient.transplant_number ?? 1) >= 2) { score += 15; flags.push("Re-transplant patient"); }

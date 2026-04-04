@@ -64,6 +64,7 @@ const LAB_NUMERIC_KEYS = [
   "sodium", "potassium", "calcium", "magnesium", "phosphorus",
   "uric_acid", "crp", "esr", "ldh", "ammonia",
   "tacrolimus_level", "cyclosporine", "proteinuria",
+  "bk_virus_load", "cmv_load", "dsa_mfi",
 ] as const;
 
 type LabNumericKey = typeof LAB_NUMERIC_KEYS[number];

@@ -159,12 +159,15 @@ export type Database = {
           alt: number | null
           ammonia: number | null
           ast: number | null
+          bk_virus_load: number | null
           calcium: number | null
+          cmv_load: number | null
           created_at: string
           creatinine: number | null
           crp: number | null
           cyclosporine: number | null
           direct_bilirubin: number | null
+          dsa_mfi: number | null
           egfr: number | null
           esr: number | null
           ggt: number | null
@@ -195,12 +198,15 @@ export type Database = {
           alt?: number | null
           ammonia?: number | null
           ast?: number | null
+          bk_virus_load?: number | null
           calcium?: number | null
+          cmv_load?: number | null
           created_at?: string
           creatinine?: number | null
           crp?: number | null
           cyclosporine?: number | null
           direct_bilirubin?: number | null
+          dsa_mfi?: number | null
           egfr?: number | null
           esr?: number | null
           ggt?: number | null
@@ -231,12 +237,15 @@ export type Database = {
           alt?: number | null
           ammonia?: number | null
           ast?: number | null
+          bk_virus_load?: number | null
           calcium?: number | null
+          cmv_load?: number | null
           created_at?: string
           creatinine?: number | null
           crp?: number | null
           cyclosporine?: number | null
           direct_bilirubin?: number | null
+          dsa_mfi?: number | null
           egfr?: number | null
           esr?: number | null
           ggt?: number | null
