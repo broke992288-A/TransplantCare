@@ -146,7 +146,7 @@ describe("Workflow: Alert Generation", () => {
       message: flags.join("; "),
     };
     expect(alert.severity).toBe("critical");
-    expect(alert.message).toContain("Tacrolimus low");
+    expect(alert.message).toContain("Tacrolimus 2 outside");
   });
 
   it("medium risk triggers warning alert", () => {
