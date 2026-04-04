@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pill, Trash2, Stethoscope } from "lucide-react";
+import { ArrowLeft, Pill, Trash2, Stethoscope, CalendarClock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
@@ -9,6 +9,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { deletePatient } from "@/services/patientService";
 import { riskColorClass } from "@/utils/risk";
+import { useLabSchedules } from "@/hooks/useLabSchedule";
 import patientPhotoAbdulhayot from "@/assets/patient-photo-edited.jpg";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
 
@@ -22,9 +23,14 @@ export default function PatientCockpitHeader({ patient, latestRisk, onUpdated }:
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: schedules = [] } = useLabSchedules(patient.id);
 
   const riskScore = latestRisk?.score ?? patient.risk_score ?? 0;
   const riskLevel = latestRisk?.risk_level ?? patient.risk_level ?? "low";
+
+  const nextSchedule = schedules.find(s => s.status !== "completed" && new Date(s.scheduled_date) >= new Date(new Date().toDateString()));
+  const overdueSchedule = schedules.find(s => s.status !== "completed" && new Date(s.scheduled_date) < new Date(new Date().toDateString()) && !s.completed_lab_id);
+  const displaySchedule = overdueSchedule ?? nextSchedule;
 
   return (
     <Card className="border-2 border-primary/20">
@@ -60,10 +66,22 @@ export default function PatientCockpitHeader({ patient, latestRisk, onUpdated }:
               <Badge className={`text-sm px-3 py-1 ${riskColorClass(riskLevel)}`}>
                 {t(`risk.${riskLevel}`)}
               </Badge>
+              {displaySchedule && (
+                <div className="text-center ml-2">
+                  <div className="flex items-center gap-1">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{new Date(displaySchedule.scheduled_date).toLocaleDateString()}</span>
+                  </div>
+                  {overdueSchedule ? (
+                    <Badge variant="destructive" className="text-[10px] mt-0.5">Overdue</Badge>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Next lab</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Under-review banner */}
           {patient.risk_level === "high" && (
             <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 flex items-center gap-2 text-sm">
               <Stethoscope className="h-4 w-4 text-warning" />
