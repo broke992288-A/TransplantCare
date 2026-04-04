@@ -210,9 +210,10 @@ serve(async (req) => {
         const lab = labs[i];
         const prevWindow = labs.slice(Math.max(0, i - 4), i);
 
-        const CONVERTIBLE = ["total_bilirubin", "direct_bilirubin", "creatinine", "hb", "platelets", "tlc"];
+        const CONVERTIBLE = ["total_bilirubin", "direct_bilirubin", "creatinine", "urea", "hb", "platelets", "tlc"];
+        const patientCountry = patient.country ?? "uzbekistan";
         for (const param of CONVERTIBLE) {
-          if (lab[param] != null) lab[param] = detectAndConvert(param, lab[param]);
+          if (lab[param] != null) lab[param] = normalizeForCountry(param, lab[param], patientCountry);
         }
 
         if (lab.egfr == null && lab.creatinine && age) {
