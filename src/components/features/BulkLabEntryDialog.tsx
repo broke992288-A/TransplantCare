@@ -182,32 +182,8 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
         savedCount++;
       }
 
-      // Trigger risk recalculation for all saved labs
-      setProgress("Recalculating risk scores...");
-      try {
-        const recentLabs = await fetchLabsByPatientId(patientId, 20);
-        for (const lab of recentLabs.slice(0, dataRows.length)) {
-          const riskResult = await computeRiskScoreAsync(organType, patientId);
-          if (riskResult && typeof riskResult === "object" && "score" in riskResult) {
-            await insertRiskSnapshot({
-              patient_id: patientId,
-              lab_result_id: lab.id,
-              score: (riskResult as any).score,
-              risk_level: (riskResult as any).level ?? "low",
-              creatinine: lab.creatinine,
-              alt: lab.alt,
-              ast: lab.ast,
-              total_bilirubin: lab.total_bilirubin,
-              tacrolimus_level: lab.tacrolimus_level,
-              details: {},
-              trend_flags: [],
-              algorithm_version: "v4.0-full-kdigo-aasld",
-            }).catch(() => {});
-          }
-        }
-      } catch (riskErr) {
-        console.error("Bulk risk recalculation partial error:", riskErr);
-      }
+      // Risk recalculation is handled by the RPC and DB triggers
+      setProgress("Finalizing...");
 
       toast({ title: `${savedCount} lab result(s) saved` });
       setRows(Array.from({ length: 5 }, emptyRow));
