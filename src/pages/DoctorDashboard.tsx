@@ -191,44 +191,8 @@ export default function DoctorDashboard() {
           </div>
         )}
 
-        {/* All patients table */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">{t("dashboard.allPatients")}</CardTitle></CardHeader>
-          <CardContent>
-            {loading ? (
-              <SkeletonTable rows={6} cols={4} />
-            ) : patients.length === 0 ? (
-              <EmptyState
-                icon={UserPlus}
-                title={t("dashboard.noPatients")}
-                description={t("dashboard.addFirstPatient")}
-                actionLabel={t("nav.addPatient")}
-                onAction={() => navigate("/add-patient")}
-              />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("dashboard.patient")}</TableHead>
-                    <TableHead>{t("dashboard.organ")}</TableHead>
-                    <TableHead>{t("dashboard.daysPostTx")}</TableHead>
-                    <TableHead>{t("dashboard.risk")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {patients.map((p) => (
-                    <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/patient/${p.id}`)}>
-                      <TableCell className="font-medium">{p.full_name}</TableCell>
-                      <TableCell>{t(`organ.${p.organ_type}`)}</TableCell>
-                      <TableCell>{p.transplant_date ? daysSince(p.transplant_date) : "—"}</TableCell>
-                      <TableCell>{riskBadge(p.risk_level)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {/* Smart Priority Patient Queue */}
+        <SmartPatientQueue />
       </div>
     </DashboardLayout>
   );
