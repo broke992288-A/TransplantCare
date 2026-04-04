@@ -1,0 +1,85 @@
+import { Bell, BellOff, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useLanguage } from "@/hooks/useLanguage";
+
+export default function NotificationSettings() {
+  const { t } = useLanguage();
+  const { permission, isSubscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+
+  const notSupported = typeof Notification === "undefined" || !("serviceWorker" in navigator);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Bell className="h-5 w-5 text-primary" />
+          {t("notif.title") || "Bildirishnomalar"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {notSupported ? (
+          <p className="text-sm text-muted-foreground">
+            {t("notif.notSupported") || "Brauzeringiz bildirishnomalarni qo'llab-quvvatlamaydi"}
+          </p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">
+                  {t("notif.pushStatus") || "Push bildirishnomalar"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isSubscribed
+                    ? t("notif.enabled") || "Yoqilgan ✅"
+                    : t("notif.disabled") || "O'chirilgan"}
+                </p>
+              </div>
+              <Badge variant={isSubscribed ? "default" : "secondary"}>
+                {permission === "granted" ? "Ruxsat berilgan" : permission === "denied" ? "Rad etilgan" : "So'ralmagan"}
+              </Badge>
+            </div>
+
+            {permission === "denied" ? (
+              <p className="text-xs text-destructive">
+                {t("notif.denied") || "Bildirishnoma ruxsati brauzer sozlamalarida rad etilgan. Iltimos, brauzer sozlamalarini tekshiring."}
+              </p>
+            ) : isSubscribed ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={unsubscribe}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BellOff className="h-4 w-4 mr-2" />}
+                {t("notif.disable") || "Bildirishnomalarni o'chirish"}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={subscribe}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bell className="h-4 w-4 mr-2" />}
+                {t("notif.enable") || "Bildirishnomalarni yoqish"}
+              </Button>
+            )}
+
+            <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
+              <p className="font-medium">{t("notif.whatYouGet") || "Quyidagi bildirishnomalar yuboriladi:"}</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>{t("notif.criticalAlert") || "Kritik risk ogohlantirishlari"}</li>
+                <li>{t("notif.labReminder") || "Tahlil topshirish eslatmalari"}</li>
+                <li>{t("notif.medReminder") || "Dori qabul qilish eslatmalari"}</li>
+              </ul>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

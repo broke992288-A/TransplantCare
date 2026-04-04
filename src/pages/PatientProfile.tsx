@@ -13,6 +13,7 @@ import { usePatientHomeLabs, usePatientHomeEvents } from "@/hooks/usePatientDeta
 import { useRiskSnapshots } from "@/hooks/useRiskSnapshots";
 import { riskColorClass } from "@/utils/risk";
 import LabUploadDialog from "@/components/features/LabUploadDialog";
+import NotificationSettings from "@/components/features/NotificationSettings";
 import LabResultsTable from "@/components/features/LabResultsTable";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
@@ -134,6 +135,7 @@ export default function PatientProfile() {
                 {t("profile.highRiskWarning")}
               </div>
             )}
+            <NotificationSettings />
           </TabsContent>
 
           {/* Medications */}
