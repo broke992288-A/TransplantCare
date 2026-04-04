@@ -147,9 +147,8 @@ export default function PatientDetail() {
           </Card>
         </div>
 
-        {/* ROW 2: Alerts + Medications */}
+        {/* ROW 2: Medications */}
         <div className="grid gap-4 lg:grid-cols-2">
-          <PatientAlertsCard patientId={patient.id} />
           <ActiveMedicationsCard patientId={patient.id} />
         </div>
 
