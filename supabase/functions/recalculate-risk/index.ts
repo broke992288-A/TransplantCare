@@ -24,7 +24,7 @@ async function authenticateRequest(req: Request, corsHeaders: Record<string, str
 }
 
 const FN_NAME = "recalculate-risk";
-const ALGORITHM_VERSION = "v2.0-kdigo2024";
+const ALGORITHM_VERSION = "v3.0-kdigo2024-aasld2023";
 const BATCH_SIZE = 20;
 
 // ─── Unit conversion helpers ───
@@ -76,6 +76,39 @@ function daysSince(dateStr: string | null): number | null {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
 }
 
+// ─── Time-dependent Tacrolimus windows ───
+function kidneyTacrolimusScore(tac: number, daysTx: number | null): { pts: number; target: string; guideline: string } {
+  if (tac <= 0) return { pts: 0, target: "", guideline: "KDIGO 2009/2024" };
+  const d = daysTx ?? 999;
+  if (d <= 90) {
+    if (tac < 8) return { pts: 20, target: "8-12", guideline: "KDIGO 2009/2024" };
+    if (tac > 12) return { pts: 15, target: "8-12", guideline: "KDIGO 2009/2024" };
+  } else if (d <= 365) {
+    if (tac < 6) return { pts: 20, target: "6-8", guideline: "KDIGO 2009/2024" };
+    if (tac > 8) return { pts: 20, target: "6-8", guideline: "KDIGO 2009/2024" };
+  } else {
+    if (tac < 4) return { pts: 25, target: "4-6", guideline: "KDIGO 2009/2024" };
+    if (tac > 6) return { pts: 25, target: "4-6", guideline: "KDIGO 2009/2024" };
+  }
+  return { pts: 0, target: d <= 90 ? "8-12" : d <= 365 ? "6-8" : "4-6", guideline: "KDIGO 2009/2024" };
+}
+
+function liverTacrolimusScore(tac: number, daysTx: number | null): { pts: number; target: string; guideline: string } {
+  if (tac <= 0) return { pts: 0, target: "", guideline: "AASLD 2021/2023" };
+  const d = daysTx ?? 999;
+  if (d <= 30) {
+    if (tac < 8) return { pts: 25, target: "8-10", guideline: "AASLD 2021/2023" };
+    if (tac > 10) return { pts: 15, target: "8-10", guideline: "AASLD 2021/2023" };
+  } else if (d <= 180) {
+    if (tac < 6) return { pts: 20, target: "6-8", guideline: "AASLD 2021/2023" };
+    if (tac > 8) return { pts: 20, target: "6-8", guideline: "AASLD 2021/2023" };
+  } else {
+    if (tac < 4) return { pts: 25, target: "4-7", guideline: "AASLD 2021/2023" };
+    if (tac > 7) return { pts: 25, target: "4-7", guideline: "AASLD 2021/2023" };
+  }
+  return { pts: 0, target: d <= 30 ? "8-10" : d <= 180 ? "6-8" : "4-7", guideline: "AASLD 2021/2023" };
+}
+
 interface Threshold {
   parameter: string; organ_type: string;
   warning_min: number | null; warning_max: number | null;
@@ -104,7 +137,6 @@ serve(async (req) => {
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
-  // Rate limit: 5 recalculations per user per 10 minutes
   const rl = checkRateLimit(userId, { maxRequests: 5, windowMs: 10 * 60 * 1000, functionName: FN_NAME });
   if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
@@ -130,7 +162,6 @@ serve(async (req) => {
     if (targetPatientId) {
       patientsQuery = patientsQuery.eq("id", targetPatientId);
     } else {
-      // Batch pagination for large datasets
       patientsQuery = patientsQuery.range(offset, offset + limit - 1);
     }
     const { data: patients, error: pErr } = await patientsQuery;
@@ -153,6 +184,9 @@ serve(async (req) => {
       const snapshotsToInsert: any[] = [];
       const alertsToInsert: any[] = [];
 
+      // Track best creatinine for baseline-relative scoring
+      let bestCreatinine: number | null = null;
+
       for (let i = 0; i < labs.length; i++) {
         const lab = labs[i];
         const prevWindow = labs.slice(Math.max(0, i - 4), i);
@@ -164,6 +198,14 @@ serve(async (req) => {
 
         if (lab.egfr == null && lab.creatinine && age) {
           lab.egfr = calculateEgfr(lab.creatinine, age, sex);
+        }
+
+        // Update best creatinine from previous labs
+        if (lab.creatinine != null && lab.creatinine > 0) {
+          if (bestCreatinine === null || lab.creatinine < bestCreatinine) {
+            // Only use previous labs for baseline (not current)
+            if (i > 0) bestCreatinine = Math.min(bestCreatinine ?? lab.creatinine, ...prevWindow.map(l => l.creatinine).filter((v): v is number => v != null && v > 0));
+          }
         }
 
         let score = 0;
@@ -182,7 +224,23 @@ serve(async (req) => {
           platelets: lab.platelets, inr: lab.inr, alp: lab.alp, ggt: lab.ggt, crp: lab.crp,
         };
 
+        // ── Time-dependent Tacrolimus scoring ──
+        const tac = lab.tacrolimus_level ?? 0;
+        if (tac > 0) {
+          const tacResult = patient.organ_type === "liver"
+            ? liverTacrolimusScore(tac, daysTx)
+            : kidneyTacrolimusScore(tac, daysTx);
+          if (tacResult.pts > 0) {
+            score += tacResult.pts;
+            const msg = `Tacrolimus ${tac} ng/mL outside target [${tacResult.target}] (${tacResult.guideline})`;
+            flags.push(msg);
+            explanations.push({ key: "tacrolimus_abnormal", severity: "critical", message: msg, value: tac, guideline: tacResult.guideline });
+          }
+        }
+
+        // ── Evaluate other thresholds (skip tacrolimus) ──
         for (const threshold of organThresholds) {
+          if (threshold.parameter === "tacrolimus") continue;
           const value = labParamMap[threshold.parameter];
           if (value == null) continue;
           const result = evaluateValue(value, threshold);
@@ -191,6 +249,26 @@ serve(async (req) => {
             flags.push(result.message);
             explanations.push({ key: `${threshold.parameter}_${result.status}`, severity: result.status, message: result.message, value, threshold: result.status === "critical" ? (threshold.critical_min ?? threshold.critical_max) : (threshold.warning_min ?? threshold.warning_max), guideline: `${threshold.guideline_source} ${threshold.guideline_year}` });
           }
+
+          // ── Enhanced ALT/AST trend: >50% vs median of last 3 → +30 pts (AASLD) ──
+          if ((threshold.parameter === "alt" || threshold.parameter === "ast") && patient.organ_type === "liver" && prevWindow.length > 0 && value > 0) {
+            const prevValues = prevWindow
+              .map(l => threshold.parameter === "alt" ? l.alt : l.ast)
+              .filter((v): v is number => v != null && v > 0);
+            if (prevValues.length > 0) {
+              const base = median(prevValues);
+              const change = pctChange(base, value);
+              if (change >= 50) {
+                score += 30;
+                const f = `${threshold.parameter.toUpperCase()} rapid increase: +${Math.abs(change).toFixed(0)}%`;
+                trendFlags.push(f);
+                flags.push(f);
+                explanations.push({ key: `${threshold.parameter}_trend_up`, severity: "critical", message: `${threshold.parameter.toUpperCase()} increased ${Math.abs(change).toFixed(0)}% vs median of last ${prevValues.length} tests — Acute Injury/Rejection suspicion (AASLD 2021/2023)`, change_pct: change, guideline: "AASLD 2021/2023" });
+                continue;
+              }
+            }
+          }
+
           if (threshold.trend_threshold_pct != null && prevWindow.length > 0) {
             const previousValues = prevWindow
               .map((prevLab) => threshold.parameter === "tacrolimus"
@@ -222,6 +300,16 @@ serve(async (req) => {
           }
         }
 
+        // ── Baseline-relative creatinine for kidney (KDIGO 2009) ──
+        if (patient.organ_type === "kidney" && lab.creatinine != null && lab.creatinine > 0 && bestCreatinine != null && bestCreatinine > 0) {
+          if (lab.creatinine > bestCreatinine * 1.25) {
+            score += 35;
+            const msg = `Creatinine ${lab.creatinine} mg/dL >25% above best baseline ${bestCreatinine} mg/dL — Immediate Rejection Alert (KDIGO 2009)`;
+            flags.push(msg);
+            explanations.push({ key: "cr_baseline_alert", severity: "critical", message: msg, value: lab.creatinine, guideline: "KDIGO 2009" });
+          }
+        }
+
         if ((patient.transplant_number ?? 1) >= 2) { score += 15; flags.push("Re-transplant patient"); }
         if (patient.organ_type === "kidney" && patient.dialysis_history) { score += 20; flags.push("Dialysis history"); }
 
@@ -238,6 +326,13 @@ serve(async (req) => {
           details: { flags, explanations }, trend_flags: trendFlags,
           algorithm_version: ALGORITHM_VERSION, created_at: lab.recorded_at,
         });
+
+        // Update best creatinine after processing
+        if (lab.creatinine != null && lab.creatinine > 0) {
+          if (bestCreatinine === null || lab.creatinine < bestCreatinine) {
+            bestCreatinine = lab.creatinine;
+          }
+        }
 
         const hasCriticalFinding = explanations.some((e: any) => e.severity === "critical") || score >= 60;
         if (hasCriticalFinding) {
@@ -272,7 +367,6 @@ serve(async (req) => {
       totalProcessed++;
     }
 
-    // Count total patients to determine if more batches needed
     let hasMore = false;
     if (!targetPatientId) {
       const { count } = await supabase.from("patients").select("id", { count: "exact", head: true });

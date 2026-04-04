@@ -3,7 +3,7 @@ import type { LabResult } from "@/types/patient";
 import { fetchClinicalThresholds, evaluateValue, type ClinicalThreshold } from "@/services/clinicalThresholdService";
 import type { TablesInsert } from "@/integrations/supabase/types";
 
-export const CURRENT_ALGORITHM_VERSION = "v2.0-kdigo2024";
+export const CURRENT_ALGORITHM_VERSION = "v3.0-kdigo2024-aasld2023";
 
 export interface RiskSnapshot {
   id: string;
@@ -123,6 +123,40 @@ function daysSinceDate(dateStr: string | null | undefined): number | null {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
 }
 
+// ─── Time-dependent Tacrolimus scoring ───
+
+function kidneyTacrolimusScore(tac: number, daysSinceTx: number | null): { pts: number; target: string; guideline: string } {
+  if (tac <= 0) return { pts: 0, target: "", guideline: "KDIGO 2009/2024" };
+  const days = daysSinceTx ?? 999;
+  if (days <= 90) {
+    if (tac < 8) return { pts: 20, target: "8-12", guideline: "KDIGO 2009/2024" };
+    if (tac > 12) return { pts: 15, target: "8-12", guideline: "KDIGO 2009/2024" };
+  } else if (days <= 365) {
+    if (tac < 6) return { pts: 20, target: "6-8", guideline: "KDIGO 2009/2024" };
+    if (tac > 8) return { pts: 20, target: "6-8", guideline: "KDIGO 2009/2024" };
+  } else {
+    if (tac < 4) return { pts: 25, target: "4-6", guideline: "KDIGO 2009/2024" };
+    if (tac > 6) return { pts: 25, target: "4-6", guideline: "KDIGO 2009/2024" };
+  }
+  return { pts: 0, target: days <= 90 ? "8-12" : days <= 365 ? "6-8" : "4-6", guideline: "KDIGO 2009/2024" };
+}
+
+function liverTacrolimusScore(tac: number, daysSinceTx: number | null): { pts: number; target: string; guideline: string } {
+  if (tac <= 0) return { pts: 0, target: "", guideline: "AASLD 2021/2023" };
+  const days = daysSinceTx ?? 999;
+  if (days <= 30) {
+    if (tac < 8) return { pts: 25, target: "8-10", guideline: "AASLD 2021/2023" };
+    if (tac > 10) return { pts: 15, target: "8-10", guideline: "AASLD 2021/2023" };
+  } else if (days <= 180) {
+    if (tac < 6) return { pts: 20, target: "6-8", guideline: "AASLD 2021/2023" };
+    if (tac > 8) return { pts: 20, target: "6-8", guideline: "AASLD 2021/2023" };
+  } else {
+    if (tac < 4) return { pts: 25, target: "4-7", guideline: "AASLD 2021/2023" };
+    if (tac > 7) return { pts: 25, target: "4-7", guideline: "AASLD 2021/2023" };
+  }
+  return { pts: 0, target: days <= 30 ? "8-10" : days <= 180 ? "6-8" : "4-7", guideline: "AASLD 2021/2023" };
+}
+
 // Fallback hardcoded thresholds (used only if DB fetch fails)
 const FALLBACK_THRESHOLDS = {
   creatinine: { warning: 1.5, critical: 2.5 },
@@ -196,8 +230,33 @@ function computeRiskWithDbThresholds(
     platelets: lab.platelets, inr: lab.inr, alp: lab.alp, ggt: lab.ggt, crp: lab.crp,
   };
 
+  // ── Time-dependent Tacrolimus scoring (skip DB threshold for tacrolimus) ──
+  const tac = lab.tacrolimus_level ?? 0;
+  if (tac > 0) {
+    const tacResult = organType === "liver"
+      ? liverTacrolimusScore(tac, daysSinceTx)
+      : kidneyTacrolimusScore(tac, daysSinceTx);
+
+    if (tacResult.pts > 0) {
+      score += tacResult.pts;
+      const stage = daysSinceTx !== null
+        ? `${daysSinceTx} days post-transplant`
+        : "unknown stage";
+      flags.push(`Tacrolimus ${tac} ng/mL outside target [${tacResult.target}]`);
+      explanations.push({
+        key: tac < parseFloat(tacResult.target.split("-")[0]) ? "tacrolimus_low" : "tacrolimus_high",
+        message: `Tacrolimus ${tac} ng/mL is outside the target range [${tacResult.target} ng/mL] for your current transplant stage (${stage}). Based on ${tacResult.guideline}.`,
+        severity: "critical",
+        value: tac,
+        guideline: tacResult.guideline,
+      });
+    }
+  }
+
+  // ── Evaluate other thresholds from DB (skip tacrolimus — handled above) ──
   for (const threshold of thresholds) {
-    const paramKey = threshold.parameter === "tacrolimus" ? "tacrolimus" : threshold.parameter;
+    if (threshold.parameter === "tacrolimus") continue;
+    const paramKey = threshold.parameter;
     const value = labParamMap[paramKey];
     if (value == null) continue;
 
@@ -217,6 +276,23 @@ function computeRiskWithDbThresholds(
       });
     }
 
+    // ── Enhanced ALT/AST trend: >50% vs median of last 3 → +30 pts (AASLD) ──
+    if ((threshold.parameter === "alt" || threshold.parameter === "ast") && organType === "liver") {
+      const altAstTrend = getWindowTrendSignal(value, trendHistory, threshold.parameter, 50, "up");
+      if (altAstTrend) {
+        score += 30;
+        flags.push(`${threshold.parameter.toUpperCase()} rapid increase: +${Math.abs(altAstTrend.change_pct).toFixed(0)}%`);
+        explanations.push({
+          key: `${threshold.parameter}_trend_up`,
+          message: `${threshold.parameter.toUpperCase()} increased by ${Math.abs(altAstTrend.change_pct).toFixed(0)}% vs median of last ${altAstTrend.sample_count} tests — Acute Injury/Rejection suspicion (AASLD 2021/2023)`,
+          severity: "critical",
+          change_pct: altAstTrend.change_pct,
+          guideline: "AASLD 2021/2023",
+        });
+        continue; // skip generic trend below for this parameter
+      }
+    }
+
     if (threshold.trend_threshold_pct != null) {
       const trendSignal = getWindowTrendSignal(value, trendHistory, threshold.parameter, threshold.trend_threshold_pct, threshold.trend_direction);
 
@@ -230,6 +306,28 @@ function computeRiskWithDbThresholds(
           severity: trendSignal.direction === "increased" ? "critical" : "warning",
           change_pct: trendSignal.change_pct,
           guideline: `${threshold.guideline_source} ${threshold.guideline_year}`,
+        });
+      }
+    }
+  }
+
+  // ── Baseline-relative creatinine for kidney (KDIGO 2009) ──
+  if (organType === "kidney" && lab.creatinine && lab.creatinine > 0 && trendHistory.length > 0) {
+    const allCreatinineValues = trendHistory
+      .map((l) => l.creatinine)
+      .filter((v): v is number => v != null && v > 0);
+    if (allCreatinineValues.length > 0) {
+      const bestCr = Math.min(...allCreatinineValues);
+      if (lab.creatinine > bestCr * 1.25) {
+        score += 35;
+        flags.push(`Creatinine >25% above baseline (${bestCr} → ${lab.creatinine})`);
+        explanations.push({
+          key: "cr_baseline_alert",
+          message: `Creatinine ${lab.creatinine} mg/dL is >25% above best post-transplant baseline of ${bestCr} mg/dL — Immediate Rejection Alert (KDIGO 2009)`,
+          severity: "critical",
+          value: lab.creatinine,
+          threshold: bestCr * 1.25,
+          guideline: "KDIGO 2009",
         });
       }
     }
@@ -261,7 +359,7 @@ function computeRiskWithDbThresholds(
 
 /**
  * Synchronous fallback risk score computation (hardcoded thresholds).
- * Used when DB thresholds are unavailable.
+ * Now includes time-dependent tacrolimus windows.
  */
 export function computeRiskScore(
   organType: string,
@@ -293,8 +391,14 @@ export function computeRiskScore(
   }
 
   if (organType === "liver") {
-    if (tac < FALLBACK_THRESHOLDS.tacrolimus.low) { score += 30; flags.push(`Tacrolimus low: ${tac}`); explanations.push({ key: "tacrolimus_low", message: `Tacrolimus ${tac} ng/mL below therapeutic range`, severity: "critical", value: tac, threshold: FALLBACK_THRESHOLDS.tacrolimus.low }); }
-    else if (tac > FALLBACK_THRESHOLDS.tacrolimus.high) { score += 20; flags.push(`Tacrolimus high: ${tac}`); explanations.push({ key: "tacrolimus_high", message: `Tacrolimus ${tac} ng/mL above safe range`, severity: "warning", value: tac, threshold: FALLBACK_THRESHOLDS.tacrolimus.high }); }
+    // Time-dependent tacrolimus
+    const tacResult = liverTacrolimusScore(tac, daysSinceTx);
+    if (tacResult.pts > 0) {
+      score += tacResult.pts;
+      flags.push(`Tacrolimus ${tac} outside [${tacResult.target}]`);
+      explanations.push({ key: tac < 5 ? "tacrolimus_low" : "tacrolimus_high", message: `Tacrolimus ${tac} ng/mL outside target [${tacResult.target}] (${tacResult.guideline})`, severity: "critical", value: tac, guideline: tacResult.guideline });
+    }
+
     if (alt > FALLBACK_THRESHOLDS.alt.critical) { score += 30; flags.push(`ALT critical: ${alt}`); explanations.push({ key: "alt_critical", message: `ALT ${alt} U/L critically elevated`, severity: "critical", value: alt, threshold: FALLBACK_THRESHOLDS.alt.critical }); }
     else if (alt > FALLBACK_THRESHOLDS.alt.warning) { score += 15; flags.push(`ALT elevated: ${alt}`); explanations.push({ key: "alt_elevated", message: `ALT ${alt} U/L elevated`, severity: "warning", value: alt, threshold: FALLBACK_THRESHOLDS.alt.warning }); }
     if (ast > FALLBACK_THRESHOLDS.ast.critical) { score += 25; flags.push(`AST critical: ${ast}`); explanations.push({ key: "ast_critical", message: `AST ${ast} U/L critically elevated`, severity: "critical", value: ast, threshold: FALLBACK_THRESHOLDS.ast.critical }); }
@@ -302,11 +406,20 @@ export function computeRiskScore(
     if (bili > FALLBACK_THRESHOLDS.total_bilirubin.critical) { score += 20; flags.push(`Bilirubin critical: ${bili}`); explanations.push({ key: "bilirubin_critical", message: `Bilirubin ${bili} mg/dL critically high`, severity: "critical", value: bili, threshold: FALLBACK_THRESHOLDS.total_bilirubin.critical }); }
     else if (bili > FALLBACK_THRESHOLDS.total_bilirubin.warning) { score += 10; flags.push(`Bilirubin elevated: ${bili}`); explanations.push({ key: "bilirubin_elevated", message: `Bilirubin ${bili} mg/dL elevated`, severity: "warning", value: bili, threshold: FALLBACK_THRESHOLDS.total_bilirubin.warning }); }
     if ((patient.transplant_number ?? 1) >= 2) { score += 15; flags.push("Re-transplant patient"); explanations.push({ key: "retransplant", message: "Re-transplant patient — higher baseline risk", severity: "warning" }); }
-    const altTrend = getWindowTrendSignal(alt, trendHistory, "alt", 40, "up");
+
+    // Enhanced ALT/AST trend: >50% vs median of last 3 → +30 (AASLD)
+    const altTrend = getWindowTrendSignal(alt, trendHistory, "alt", 50, "up");
     if (altTrend) {
-      score += 15;
+      score += 30;
       flags.push(`ALT rapid increase: +${Math.abs(altTrend.change_pct).toFixed(0)}%`);
-      explanations.push({ key: "alt_trend_up", message: `ALT increased ${Math.abs(altTrend.change_pct).toFixed(0)}% vs median of previous ${altTrend.sample_count} test(s)`, severity: "critical", change_pct: altTrend.change_pct });
+      explanations.push({ key: "alt_trend_up", message: `ALT increased ${Math.abs(altTrend.change_pct).toFixed(0)}% vs median of last ${altTrend.sample_count} tests — Acute Injury/Rejection suspicion (AASLD 2021/2023)`, severity: "critical", change_pct: altTrend.change_pct, guideline: "AASLD 2021/2023" });
+    }
+
+    const astTrend = getWindowTrendSignal(ast, trendHistory, "ast", 50, "up");
+    if (astTrend) {
+      score += 30;
+      flags.push(`AST rapid increase: +${Math.abs(astTrend.change_pct).toFixed(0)}%`);
+      explanations.push({ key: "ast_trend_up", message: `AST increased ${Math.abs(astTrend.change_pct).toFixed(0)}% vs median of last ${astTrend.sample_count} tests — Acute Injury/Rejection suspicion (AASLD 2021/2023)`, severity: "critical", change_pct: astTrend.change_pct, guideline: "AASLD 2021/2023" });
     }
 
     const tacTrend = getWindowTrendSignal(tac, trendHistory, "tacrolimus", 30, "down");
@@ -316,12 +429,33 @@ export function computeRiskScore(
       explanations.push({ key: "tac_trend_down", message: `Tacrolimus dropped ${Math.abs(tacTrend.change_pct).toFixed(0)}% vs median of previous ${tacTrend.sample_count} test(s)`, severity: "warning", change_pct: tacTrend.change_pct });
     }
   } else {
+    // Time-dependent tacrolimus for kidney
+    const tacResult = kidneyTacrolimusScore(tac, daysSinceTx);
+    if (tacResult.pts > 0) {
+      score += tacResult.pts;
+      flags.push(`Tacrolimus ${tac} outside [${tacResult.target}]`);
+      explanations.push({ key: tac < 5 ? "tacrolimus_low" : "tacrolimus_high", message: `Tacrolimus ${tac} ng/mL outside target [${tacResult.target}] (${tacResult.guideline})`, severity: "critical", value: tac, guideline: tacResult.guideline });
+    }
+
     if (cr > FALLBACK_THRESHOLDS.creatinine.critical) { score += 35; flags.push(`Creatinine critical: ${cr}`); explanations.push({ key: "creatinine_critical", message: `Creatinine ${cr} mg/dL critically elevated`, severity: "critical", value: cr, threshold: FALLBACK_THRESHOLDS.creatinine.critical }); }
     else if (cr > FALLBACK_THRESHOLDS.creatinine.warning) { score += 15; flags.push(`Creatinine elevated: ${cr}`); explanations.push({ key: "creatinine_elevated", message: `Creatinine ${cr} mg/dL elevated`, severity: "warning", value: cr, threshold: FALLBACK_THRESHOLDS.creatinine.warning }); }
+
+    // Baseline-relative creatinine (KDIGO 2009)
+    if (cr > 0 && trendHistory.length > 0) {
+      const allCr = trendHistory.map((l) => l.creatinine).filter((v): v is number => v != null && v > 0);
+      if (allCr.length > 0) {
+        const bestCr = Math.min(...allCr);
+        if (cr > bestCr * 1.25) {
+          score += 35;
+          flags.push(`Creatinine >25% above baseline (${bestCr} → ${cr})`);
+          explanations.push({ key: "cr_baseline_alert", message: `Creatinine ${cr} mg/dL is >25% above best post-transplant baseline of ${bestCr} mg/dL — Immediate Rejection Alert (KDIGO 2009)`, severity: "critical", value: cr, threshold: bestCr * 1.25, guideline: "KDIGO 2009" });
+        }
+      }
+    }
+
     if (egfr < 30) { score += 30; flags.push(`eGFR very low: ${egfr}`); explanations.push({ key: "egfr_very_low", message: `eGFR ${egfr} severe impairment`, severity: "critical", value: egfr, threshold: 30 }); }
     else if (egfr < 45) { score += 15; flags.push(`eGFR low: ${egfr}`); explanations.push({ key: "egfr_low", message: `eGFR ${egfr} moderate impairment`, severity: "warning", value: egfr, threshold: 45 }); }
-    if (tac < FALLBACK_THRESHOLDS.tacrolimus.low) { score += 20; flags.push(`Tacrolimus low: ${tac}`); explanations.push({ key: "tacrolimus_low", message: `Tacrolimus ${tac} ng/mL below range`, severity: "critical", value: tac, threshold: FALLBACK_THRESHOLDS.tacrolimus.low }); }
-    else if (tac > FALLBACK_THRESHOLDS.tacrolimus.high) { score += 15; flags.push(`Tacrolimus high: ${tac}`); explanations.push({ key: "tacrolimus_high", message: `Tacrolimus ${tac} ng/mL above range`, severity: "warning", value: tac, threshold: FALLBACK_THRESHOLDS.tacrolimus.high }); }
+
     if (patient.dialysis_history) { score += 20; flags.push("Dialysis history"); explanations.push({ key: "dialysis_history", message: "History of dialysis", severity: "warning" }); }
     const creatinineTrend = getWindowTrendSignal(cr, trendHistory, "creatinine", 30, "up");
     if (creatinineTrend) {
@@ -336,7 +470,7 @@ export function computeRiskScore(
       flags.push(`eGFR declining: ${egfrTrend.change_pct.toFixed(0)}%`);
       explanations.push({ key: "egfr_trend_down", message: `eGFR declined ${Math.abs(egfrTrend.change_pct).toFixed(0)}% vs median of previous ${egfrTrend.sample_count} test(s)`, severity: "warning", change_pct: egfrTrend.change_pct });
     }
-    const abnormalCount = [cr > FALLBACK_THRESHOLDS.creatinine.warning, egfr < 45, tac < FALLBACK_THRESHOLDS.tacrolimus.low || tac > FALLBACK_THRESHOLDS.tacrolimus.high].filter(Boolean).length;
+    const abnormalCount = [cr > FALLBACK_THRESHOLDS.creatinine.warning, egfr < 45, tacResult.pts > 0].filter(Boolean).length;
     if (abnormalCount >= 2) { score += 10; flags.push(`Multiple abnormal: ${abnormalCount}`); explanations.push({ key: "multiple_abnormal", message: `${abnormalCount} values abnormal`, severity: "warning" }); }
   }
 
@@ -370,78 +504,50 @@ export async function insertRiskSnapshot(data: {
     total_bilirubin: data.total_bilirubin ?? null,
     tacrolimus_level: data.tacrolimus_level ?? null,
     details: (data.details ?? {}) as unknown as Record<string, string>,
-    trend_flags: (data.trend_flags ?? []) as unknown as Record<string, string>,
+    trend_flags: (data.trend_flags ?? []) as unknown as string,
     algorithm_version: data.algorithm_version ?? CURRENT_ALGORITHM_VERSION,
-  };
-  const { data: row, error } = await supabase
+  } satisfies TablesInsert<"risk_snapshots">;
+
+  const { data: result, error } = await supabase
     .from("risk_snapshots")
     .insert(payload)
-    .select()
+    .select("id")
     .single();
-  if (error) throw error;
-  return row;
+
+  if (error) {
+    console.error("Failed to insert risk snapshot:", error);
+    throw error;
+  }
+
+  return result;
 }
 
-/** Shape of a risk snapshot row joined with lab_results recorded_at */
-interface RiskSnapshotWithLab {
-  id: string;
-  patient_id: string;
-  lab_result_id: string | null;
-  score: number;
-  risk_level: string;
-  creatinine: number | null;
-  alt: number | null;
-  ast: number | null;
-  total_bilirubin: number | null;
-  tacrolimus_level: number | null;
-  details: Record<string, unknown> | null;
-  trend_flags: unknown;
-  algorithm_version: string | null;
-  created_at: string;
-  lab_results: { recorded_at: string } | null;
-}
-
-export async function fetchRiskSnapshots(patientId: string, limit = 10) {
+export async function fetchRiskSnapshots(patientId: string): Promise<RiskSnapshot[]> {
   const { data, error } = await supabase
     .from("risk_snapshots")
-    .select("*, lab_results!risk_snapshots_lab_result_id_fkey(recorded_at)")
+    .select("*")
     .eq("patient_id", patientId)
-    .order("created_at", { ascending: false })
-    .limit(limit * 2);
-  if (error) throw error;
+    .order("created_at", { ascending: false });
 
-  const rows = (data ?? []) as unknown as RiskSnapshotWithLab[];
+  if (error) {
+    console.error("Failed to fetch risk snapshots:", error);
+    return [];
+  }
 
-  const sorted = rows
-    .sort((a, b) => {
-      const aDate = a.lab_results?.recorded_at ?? a.created_at;
-      const bDate = b.lab_results?.recorded_at ?? b.created_at;
-      return new Date(bDate).getTime() - new Date(aDate).getTime();
-    })
-    .slice(0, limit)
-    .map(({ lab_results: _lr, ...rest }) => rest);
-
-  return sorted as RiskSnapshot[];
-}
-
-export async function fetchLatestRiskSnapshot(patientId: string) {
-  const { data, error } = await supabase
-    .from("risk_snapshots")
-    .select("*, lab_results!risk_snapshots_lab_result_id_fkey(recorded_at)")
-    .eq("patient_id", patientId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-  if (error) throw error;
-  if (!data || data.length === 0) return null;
-
-  const rows = data as unknown as RiskSnapshotWithLab[];
-
-  const sorted = rows.sort((a, b) => {
-    const aDate = a.lab_results?.recorded_at ?? a.created_at;
-    const bDate = b.lab_results?.recorded_at ?? b.created_at;
-    return new Date(bDate).getTime() - new Date(aDate).getTime();
-  });
-
-  const { lab_results: _lr, ...snapshot } = sorted[0];
-  return snapshot as RiskSnapshot;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    patient_id: row.patient_id,
+    lab_result_id: row.lab_result_id,
+    score: Number(row.score),
+    risk_level: row.risk_level,
+    creatinine: row.creatinine != null ? Number(row.creatinine) : null,
+    alt: row.alt != null ? Number(row.alt) : null,
+    ast: row.ast != null ? Number(row.ast) : null,
+    total_bilirubin: row.total_bilirubin != null ? Number(row.total_bilirubin) : null,
+    tacrolimus_level: row.tacrolimus_level != null ? Number(row.tacrolimus_level) : null,
+    details: (row.details ?? {}) as RiskDetails,
+    trend_flags: Array.isArray(row.trend_flags) ? row.trend_flags as string[] : [],
+    algorithm_version: row.algorithm_version ?? "unknown",
+    created_at: row.created_at,
+  }));
 }

@@ -4,9 +4,8 @@ import type { OrganType, RiskLevel } from "@/types/patient";
  * Deterministic risk calculation with organ-specific algorithms.
  * Returns a RiskLevel based on a normalized 0-100 scoring system.
  *
- * LIVER MODEL: ALT, AST, Total Bilirubin, Direct Bilirubin, GGT, ALP, Tacrolimus, Transplant #, Days post-Tx
- * KIDNEY MODEL: Creatinine, eGFR, Proteinuria, Potassium, Tacrolimus, Dialysis history, Days post-Tx
- * FUTURE KIDNEY MARKERS: BK virus, CMV, Donor-specific antibodies (DSA)
+ * LIVER MODEL (AASLD 2021/2023): ALT, AST, Total Bilirubin, Direct Bilirubin, GGT, ALP, Tacrolimus (time-dependent), Transplant #, Days post-Tx
+ * KIDNEY MODEL (KDIGO 2009/2024): Creatinine (absolute + baseline-relative), eGFR, Proteinuria, Potassium, Tacrolimus (time-dependent), Dialysis history, Days post-Tx
  */
 export function calculateRisk(organ: OrganType, data: Record<string, number | string | boolean | null | undefined>): RiskLevel {
   const score = calculateRiskScore(organ, data);
@@ -14,10 +13,66 @@ export function calculateRisk(organ: OrganType, data: Record<string, number | st
 }
 
 /**
+ * Get days since transplant from data.
+ */
+function getDaysSinceTx(data: Record<string, number | string | boolean | null | undefined>): number | null {
+  if (!data.transplant_date) return null;
+  const d = Math.floor((Date.now() - new Date(String(data.transplant_date)).getTime()) / 86400000);
+  return d >= 0 ? d : null;
+}
+
+/**
+ * Time-dependent Tacrolimus scoring for Kidney (KDIGO 2009/2024).
+ */
+function kidneyTacrolimusScore(tac: number, daysSinceTx: number | null): { pts: number; target: string; guideline: string } {
+  if (tac <= 0) return { pts: 0, target: "", guideline: "KDIGO 2009/2024" };
+  const days = daysSinceTx ?? 999;
+
+  if (days <= 90) {
+    // 0-90 days: Target [8–12 ng/ml]
+    if (tac < 8) return { pts: 20, target: "8-12", guideline: "KDIGO 2009/2024" };
+    if (tac > 12) return { pts: 15, target: "8-12", guideline: "KDIGO 2009/2024" };
+  } else if (days <= 365) {
+    // 90-365 days: Target [6–8 ng/ml]
+    if (tac < 6) return { pts: 20, target: "6-8", guideline: "KDIGO 2009/2024" };
+    if (tac > 8) return { pts: 20, target: "6-8", guideline: "KDIGO 2009/2024" };
+  } else {
+    // >365 days: Target [4–6 ng/ml]
+    if (tac < 4) return { pts: 25, target: "4-6", guideline: "KDIGO 2009/2024" };
+    if (tac > 6) return { pts: 25, target: "4-6", guideline: "KDIGO 2009/2024" };
+  }
+  return { pts: 0, target: days <= 90 ? "8-12" : days <= 365 ? "6-8" : "4-6", guideline: "KDIGO 2009/2024" };
+}
+
+/**
+ * Time-dependent Tacrolimus scoring for Liver (AASLD 2021/2023).
+ */
+function liverTacrolimusScore(tac: number, daysSinceTx: number | null): { pts: number; target: string; guideline: string } {
+  if (tac <= 0) return { pts: 0, target: "", guideline: "AASLD 2021/2023" };
+  const days = daysSinceTx ?? 999;
+
+  if (days <= 30) {
+    // 0-30 days: Target [8–10 ng/ml]
+    if (tac < 8) return { pts: 25, target: "8-10", guideline: "AASLD 2021/2023" };
+    if (tac > 10) return { pts: 15, target: "8-10", guideline: "AASLD 2021/2023" };
+  } else if (days <= 180) {
+    // 30-180 days: Target [6–8 ng/ml]
+    if (tac < 6) return { pts: 20, target: "6-8", guideline: "AASLD 2021/2023" };
+    if (tac > 8) return { pts: 20, target: "6-8", guideline: "AASLD 2021/2023" };
+  } else {
+    // >180 days: Target [4–7 ng/ml]
+    if (tac < 4) return { pts: 25, target: "4-7", guideline: "AASLD 2021/2023" };
+    if (tac > 7) return { pts: 25, target: "4-7", guideline: "AASLD 2021/2023" };
+  }
+  return { pts: 0, target: days <= 30 ? "8-10" : days <= 180 ? "6-8" : "4-7", guideline: "AASLD 2021/2023" };
+}
+
+/**
  * Full 0-100 risk score calculator with organ-specific logic.
  */
 export function calculateRiskScore(organ: OrganType, data: Record<string, number | string | boolean | null | undefined>): number {
   let score = 0;
+  const daysSinceTx = getDaysSinceTx(data);
 
   // ── Blood type incompatibility ──
   const bloodMismatch = data.blood_type && data.donor_blood_type && data.blood_type !== data.donor_blood_type;
@@ -26,11 +81,8 @@ export function calculateRiskScore(organ: OrganType, data: Record<string, number
   else if (bloodMismatch && titerDone) score += 10;
 
   // ── Early post-transplant period (<90 days) ──
-  if (data.transplant_date) {
-    const daysSinceTx = Math.floor((Date.now() - new Date(String(data.transplant_date)).getTime()) / 86400000);
-    if (daysSinceTx >= 0 && daysSinceTx < 90) {
-      score += 10;
-    }
+  if (daysSinceTx !== null && daysSinceTx < 90) {
+    score += 10;
   }
 
   // ── Re-transplant ──
@@ -38,16 +90,16 @@ export function calculateRiskScore(organ: OrganType, data: Record<string, number
   if (txNum >= 2) score += 15;
 
   if (organ === "liver") {
-    score += liverRiskModel(data);
+    score += liverRiskModel(data, daysSinceTx);
   } else {
-    score += kidneyRiskModel(data);
+    score += kidneyRiskModel(data, daysSinceTx);
   }
 
   return Math.min(score, 100);
 }
 
-// ─── LIVER-SPECIFIC RISK MODEL ───
-function liverRiskModel(data: Record<string, number | string | boolean | null | undefined>): number {
+// ─── LIVER-SPECIFIC RISK MODEL (AASLD 2021/2023) ───
+function liverRiskModel(data: Record<string, number | string | boolean | null | undefined>, daysSinceTx: number | null): number {
   let pts = 0;
   const alt = parseFloat(String(data.alt ?? 0)) || 0;
   const ast = parseFloat(String(data.ast ?? 0)) || 0;
@@ -68,7 +120,7 @@ function liverRiskModel(data: Record<string, number | string | boolean | null | 
   else if (ast > 120) pts += 20;
   else if (ast > 60) pts += 8;
 
-  // Total Bilirubin (mg/dL) — normalized, with severe tier
+  // Total Bilirubin (mg/dL)
   if (bili > 10.0) pts += 30;
   else if (bili > 3.0) pts += 20;
   else if (bili > 1.5) pts += 10;
@@ -77,7 +129,7 @@ function liverRiskModel(data: Record<string, number | string | boolean | null | 
   if (dbili > 1.5) pts += 10;
   else if (dbili > 0.5) pts += 5;
 
-  // GGT (U/L) — biliary/cholestatic rejection marker, severe tier
+  // GGT (U/L) — biliary/cholestatic rejection marker
   if (ggt > 500) pts += 20;
   else if (ggt > 200) pts += 15;
   else if (ggt > 60) pts += 8;
@@ -86,17 +138,15 @@ function liverRiskModel(data: Record<string, number | string | boolean | null | 
   if (alp > 300) pts += 15;
   else if (alp > 120) pts += 8;
 
-  // Tacrolimus (ng/mL) — ISHLT 2023
-  if (tac > 0) {
-    if (tac < 5) pts += 25;      // sub-therapeutic → high rejection risk
-    else if (tac > 15) pts += 15; // toxic range
-  }
+  // Tacrolimus (ng/mL) — AASLD 2021/2023 time-dependent windows
+  const tacResult = liverTacrolimusScore(tac, daysSinceTx);
+  pts += tacResult.pts;
 
   return pts;
 }
 
-// ─── KIDNEY-SPECIFIC RISK MODEL ───
-function kidneyRiskModel(data: Record<string, number | string | boolean | null | undefined>): number {
+// ─── KIDNEY-SPECIFIC RISK MODEL (KDIGO 2009/2024) ───
+function kidneyRiskModel(data: Record<string, number | string | boolean | null | undefined>, daysSinceTx: number | null): number {
   let pts = 0;
   const cr = parseFloat(String(data.creatinine ?? 0)) || 0;
   const egfr = parseFloat(String(data.egfr ?? 999)) || 999;
@@ -109,6 +159,12 @@ function kidneyRiskModel(data: Record<string, number | string | boolean | null |
   if (cr > 4.0) pts += 35;
   else if (cr > 2.5) pts += 30;
   else if (cr > 1.5) pts += 12;
+
+  // Baseline-relative creatinine (KDIGO 2009): >25% above best → +35 pts
+  const bestCr = parseFloat(String(data.best_creatinine ?? 0)) || 0;
+  if (bestCr > 0 && cr > 0 && cr > bestCr * 1.25) {
+    pts += 35;
+  }
 
   // eGFR (mL/min/1.73m²) — severe tier
   if (egfr < 15) pts += 30;
@@ -124,11 +180,9 @@ function kidneyRiskModel(data: Record<string, number | string | boolean | null |
   if (k > 6.0) pts += 15;
   else if (k > 5.5 || (k > 0 && k < 3.5)) pts += 8;
 
-  // Tacrolimus (ng/mL)
-  if (tac > 0) {
-    if (tac < 5) pts += 20;
-    else if (tac > 15) pts += 12;
-  }
+  // Tacrolimus (ng/mL) — KDIGO 2009/2024 time-dependent windows
+  const tacResult = kidneyTacrolimusScore(tac, daysSinceTx);
+  pts += tacResult.pts;
 
   // Dialysis history
   if (dialysis) pts += 20;
@@ -152,3 +206,6 @@ export function getAge(dob: string | null) {
   if (!dob) return "—";
   return Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
 }
+
+// Export for use in other modules
+export { kidneyTacrolimusScore, liverTacrolimusScore };
