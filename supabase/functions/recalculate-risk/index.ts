@@ -27,15 +27,34 @@ const FN_NAME = "recalculate-risk";
 const ALGORITHM_VERSION = "v3.0-kdigo2024-aasld2023";
 const BATCH_SIZE = 20;
 
-// ─── Unit conversion helpers ───
-function detectAndConvert(param: string, value: number): number {
+// ─── Country-aware unit conversion ───
+// Uzbekistan stores creatinine/bilirubin in µmol/L; India uses mg/dL (standard).
+// Risk engine always operates in mg/dL (standard SI).
+function normalizeForCountry(param: string, value: number, country: string): number {
+  if (country === "india") {
+    // India values are already in mg/dL (standard) — no conversion needed
+    return value;
+  }
+  // Uzbekistan (default): convert µmol/L → mg/dL
   switch (param) {
-    case "total_bilirubin": case "direct_bilirubin": return value > 30 ? Math.round((value / 17.1) * 100) / 100 : value;
-    case "creatinine": return value > 30 ? Math.round((value / 88.4) * 100) / 100 : value;
-    case "hb": return value > 25 ? Math.round((value / 10) * 100) / 100 : value;
-    case "platelets": return value > 1000 ? Math.round((value / 1000) * 100) / 100 : value;
-    case "tlc": return value > 100 ? Math.round((value / 1000) * 100) / 100 : value;
-    default: return value;
+    case "total_bilirubin":
+    case "direct_bilirubin":
+      // µmol/L → mg/dL (÷ 17.1). Only convert if value looks like µmol/L (> 3 mg/dL boundary)
+      return value > 3 ? Math.round((value / 17.1) * 100) / 100 : value;
+    case "creatinine":
+      // µmol/L → mg/dL (÷ 88.4). Only convert if value looks like µmol/L
+      return value > 10 ? Math.round((value / 88.4) * 100) / 100 : value;
+    case "urea":
+      // mmol/L → mg/dL (× 6). Uzbekistan urea typically 2.5-8.2 mmol/L
+      return value < 15 ? Math.round(value * 6 * 100) / 100 : value;
+    case "hb":
+      return value > 25 ? Math.round((value / 10) * 100) / 100 : value;
+    case "platelets":
+      return value > 1000 ? Math.round((value / 1000) * 100) / 100 : value;
+    case "tlc":
+      return value > 100 ? Math.round((value / 1000) * 100) / 100 : value;
+    default:
+      return value;
   }
 }
 
