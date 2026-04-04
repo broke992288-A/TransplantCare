@@ -68,16 +68,18 @@ export default function SelectRole() {
     setSelecting(selectedRole);
     try {
       if (selectedRole === "patient") {
-        // register_patient_self now also assigns the 'patient' role server-side
+        // register_patient_self assigns 'patient' role server-side (SECURITY DEFINER)
         const meta = user.user_metadata || {};
         await registerPatientSelf({
           fullName: meta.full_name || user.email || "",
           phone: meta.phone || null,
         });
+        // Refresh role from DB
+        await setUserRole(selectedRole);
+      } else {
+        // Non-patient roles require admin — this will fail for regular users (by design)
+        await setUserRole(selectedRole);
       }
-      // For non-patient roles, admin must assign via dashboard
-      // setUserRole will fail for non-admins due to RLS
-      await setUserRole(selectedRole);
       navigate(getRoleRedirect(selectedRole), { replace: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
