@@ -145,7 +145,7 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
       if (organType === "liver") {
         ["tacrolimus_level", "alt", "ast", "total_bilirubin", "direct_bilirubin"].forEach(processField);
       } else {
-        ["creatinine", "egfr", "proteinuria", "potassium"].forEach(processField);
+        ["creatinine", "egfr", "proteinuria", "potassium", "bk_virus_load", "cmv_load", "dsa_mfi"].forEach(processField);
       }
 
       // Show conversion toast if any conversions happened
