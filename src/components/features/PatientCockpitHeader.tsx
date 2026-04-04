@@ -66,10 +66,20 @@ export default function PatientCockpitHeader({ patient, latestRisk, onUpdated }:
               <Badge className={`text-sm px-3 py-1 ${riskColorClass(riskLevel)}`}>
                 {t(`risk.${riskLevel}`)}
               </Badge>
+              {displaySchedule && (
+                <div className="text-center ml-2">
+                  <div className="flex items-center gap-1">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{new Date(displaySchedule.scheduled_date).toLocaleDateString()}</span>
+                  </div>
+                  {overdueSchedule ? (
+                    <Badge variant="destructive" className="text-[10px] mt-0.5">Overdue</Badge>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Next lab</span>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Under-review banner */}
           {patient.risk_level === "high" && (
             <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 flex items-center gap-2 text-sm">
               <Stethoscope className="h-4 w-4 text-warning" />
