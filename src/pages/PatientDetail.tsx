@@ -21,7 +21,7 @@ import { triggerRiskRecalculation } from "@/services/riskRecalculationService";
 import PatientCockpitHeader from "@/components/features/PatientCockpitHeader";
 import LatestLabsTable from "@/components/features/LatestLabsTable";
 import LabTrendCharts from "@/components/features/LabTrendCharts";
-import PatientAlertsCard from "@/components/features/PatientAlertsCard";
+
 import ActiveMedicationsCard from "@/components/features/ActiveMedicationsCard";
 import PredictionPanel from "@/components/features/PredictionPanel";
 import PatientLabScheduleCard from "@/components/features/PatientLabScheduleCard";
@@ -147,9 +147,8 @@ export default function PatientDetail() {
           </Card>
         </div>
 
-        {/* ROW 2: Alerts + Medications */}
+        {/* ROW 2: Medications */}
         <div className="grid gap-4 lg:grid-cols-2">
-          <PatientAlertsCard patientId={patient.id} />
           <ActiveMedicationsCard patientId={patient.id} />
         </div>
 
