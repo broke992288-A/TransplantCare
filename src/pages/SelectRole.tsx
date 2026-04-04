@@ -40,7 +40,7 @@ const ROLES: { role: AppRole; icon: typeof User; title: string; desc: string; re
 ];
 
 export default function SelectRole() {
-  const { user, role, setUserRole, loading: authLoading } = useAuth();
+  const { user, role, setUserRole, refreshRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -67,13 +67,18 @@ export default function SelectRole() {
   const handleSelect = async (selectedRole: AppRole) => {
     setSelecting(selectedRole);
     try {
-      await setUserRole(selectedRole);
       if (selectedRole === "patient") {
+        // register_patient_self assigns 'patient' role server-side (SECURITY DEFINER)
         const meta = user.user_metadata || {};
         await registerPatientSelf({
           fullName: meta.full_name || user.email || "",
           phone: meta.phone || null,
         });
+        // Refresh role from DB (role was set server-side)
+        await refreshRole();
+      } else {
+        // Non-patient roles require admin — this will fail for regular users (by design)
+        await setUserRole(selectedRole);
       }
       navigate(getRoleRedirect(selectedRole), { replace: true });
     } catch (err: unknown) {
