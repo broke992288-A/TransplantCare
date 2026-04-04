@@ -74,8 +74,8 @@ export default function SelectRole() {
           fullName: meta.full_name || user.email || "",
           phone: meta.phone || null,
         });
-        // Refresh role from DB
-        await setUserRole(selectedRole);
+        // Refresh role from DB (role was set server-side)
+        await refreshRole();
       } else {
         // Non-patient roles require admin — this will fail for regular users (by design)
         await setUserRole(selectedRole);
