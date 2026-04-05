@@ -122,6 +122,7 @@ const App = () => (
               <Route path="/patient/:id/medications" element={<DoctorOrAdminRoute><RouteWrap><PatientMedications /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/demo-setup" element={<DoctorOrAdminRoute><RouteWrap><DemoSetup /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><RouteWrap><PatientProfile /></RouteWrap></ProtectedRoute>} />
+              <Route path="/patient/profile" element={<ProtectedRoute allowedRole="patient"><RouteWrap><PatientProfile /></RouteWrap></ProtectedRoute>} />
               <Route path="/compare" element={<DoctorOrAdminRoute><RouteWrap><Compare /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/documentation" element={<DocumentationPDF />} />
               <Route path="/install" element={<Install />} />
