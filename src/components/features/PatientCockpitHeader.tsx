@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pill, Trash2, Stethoscope, CalendarClock } from "lucide-react";
+import { ArrowLeft, Pill, Trash2, Stethoscope, CalendarClock, AlertTriangle, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
@@ -12,6 +12,8 @@ import { riskColorClass } from "@/utils/risk";
 import { useLabSchedules } from "@/hooks/useLabSchedule";
 import patientPhotoAbdulhayot from "@/assets/patient-photo-edited.jpg";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
+import { useClinicalLogic } from "@/hooks/useClinicalLogic";
+import type { OrganType } from "@/types/patient";
 
 interface Props {
   patient: Record<string, any>;
