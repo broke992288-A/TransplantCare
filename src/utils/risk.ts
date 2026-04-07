@@ -129,6 +129,9 @@ export function calculateRiskScore(organ: OrganType, data: Record<string, number
   score += crpScore(num(data, "crp"));
   score += calciumScore(num(data, "calcium"), organ);
 
+  // ── Missing Tacrolimus warning ──
+  score += missingTacrolimusScore(num(data, "tacrolimus_level"), organ).pts;
+
   // ── Organ-specific models ──
   if (organ === "liver") {
     score += liverRiskModel(data, daysSinceTx);
