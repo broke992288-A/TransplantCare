@@ -133,7 +133,7 @@ export default function PatientDetail() {
     <DashboardLayout>
       <div className="space-y-4 overflow-hidden">
         {/* TOP HEADER CARD */}
-        <PatientCockpitHeader patient={patient} latestRisk={latestRisk} onUpdated={invalidateAll} />
+        <PatientCockpitHeader patient={patient} latestRisk={latestRisk} latestLab={latestLab} onUpdated={invalidateAll} />
 
         {/* ROW 1: Labs table + Trend charts — resizable */}
         <ResizablePanelGroup direction={direction} className="min-h-[350px] rounded-lg border">
