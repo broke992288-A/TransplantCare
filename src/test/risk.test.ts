@@ -338,7 +338,7 @@ describe("CRP scoring — inflammation marker (both organs)", () => {
 
   it("0 for CRP <= 0 or missing", () => {
     expect(calculateRiskScore("kidney", { crp: 0, tacrolimus_level: 5 })).toBe(0);
-    expect(calculateRiskScore("kidney", {})).toBe(0);
+    expect(calculateRiskScore("kidney", { tacrolimus_level: 5 })).toBe(0);
   });
 });
 
@@ -449,7 +449,7 @@ describe("Calcium scoring — KDIGO CKD-MBD 2024", () => {
 
   it("0 when calcium is 0 or missing", () => {
     expect(calculateRiskScore("kidney", { calcium: 0, tacrolimus_level: 5 })).toBe(0);
-    expect(calculateRiskScore("kidney", {})).toBe(0);
+    expect(calculateRiskScore("kidney", { tacrolimus_level: 5 })).toBe(0);
   });
 });
 
@@ -501,6 +501,7 @@ describe("Combined KDIGO/AASLD parameter interactions", () => {
       calcium: 3.0,     // +15
       phosphorus: 2.0,  // +15
       magnesium: 0.3,   // +12
+      tacrolimus_level: 5, // neutral
     });
     expect(score).toBe(77); // 20+15+15+15+12
   });
@@ -513,6 +514,7 @@ describe("Combined KDIGO/AASLD parameter interactions", () => {
       inr: 2.5,         // +20
       platelets: 30,    // +15
       albumin: 2.0,     // +20
+      tacrolimus_level: 5, // neutral
     });
     expect(score).toBe(95); // 15+15+10+20+15+20
   });
