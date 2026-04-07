@@ -99,7 +99,30 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
             </div>
           </div>
 
-          {patient.risk_level === "high" && (
+          {/* Tacrolimus target info */}
+          {tacrolimusTarget && (
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2 flex items-center gap-3 text-sm">
+              <Info className="h-4 w-4 text-primary flex-shrink-0" />
+              <span>
+                <span className="font-medium">Tacrolimus C0 target:</span>{" "}
+                <span className="text-primary font-bold">{tacrolimusTarget.target} ng/mL</span>
+                <span className="text-muted-foreground"> • {tacrolimusTarget.stage} • {tacrolimusTarget.guideline}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Clinical warnings from ClinicalLogic */}
+          {criticalCount > 0 && evaluation?.warnings
+            .filter((w) => w.severity === "critical")
+            .slice(0, 2)
+            .map((w, i) => (
+              <div key={i} className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 flex items-center gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+                <span className="font-medium">{w.title}: <span className="font-normal text-muted-foreground">{w.message}</span></span>
+              </div>
+            ))}
+
+          {riskLevel === "high" && criticalCount === 0 && (
             <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 flex items-center gap-2 text-sm">
               <Stethoscope className="h-4 w-4 text-warning" />
               <span className="font-medium">{t("detail.underReview")}</span>
