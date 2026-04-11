@@ -306,7 +306,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       const { base64, file: processedFile, fileType, textContent } = await preprocessLabImage(file);
 
       const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const path = `${user.id}/${Date.now()}.${ext}`;
+      const path = `${patientId}/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, processedFile);
       if (uploadErr) throw uploadErr;
 
