@@ -194,6 +194,75 @@ function getFileCategory(fileName: string): "image" | "pdf" | "text" | "office" 
   return "image";
 }
 
+/** Apply OCR-oriented cleanup to a canvas before export */
+function enhanceCanvasForOcr(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not initialize canvas context");
+
+  const crop = autoCrop(ctx, canvas.width, canvas.height);
+  if (crop.x !== 0 || crop.y !== 0 || crop.w !== canvas.width || crop.h !== canvas.height) {
+    const cropped = ctx.getImageData(crop.x, crop.y, crop.w, crop.h);
+    canvas.width = crop.w;
+    canvas.height = crop.h;
+    ctx.putImageData(cropped, 0, 0);
+  }
+
+  const width = canvas.width;
+  const height = canvas.height;
+
+  denoise(ctx, width, height);
+  enhanceContrast(ctx, width, height);
+  sharpen(ctx, width, height, 0.5);
+}
+
+/** Export a prepared canvas as JPEG/base64 for OCR */
+async function canvasToProcessedResult(
+  canvas: HTMLCanvasElement,
+  originalName: string
+): Promise<Pick<PreprocessResult, "base64" | "file" | "fileType">> {
+  enhanceCanvasForOcr(canvas);
+
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  const base64 = dataUrl.split(",")[1];
+
+  const blob = await (await fetch(dataUrl)).blob();
+  const processedFile = new File([blob], originalName.replace(/\.[^.]+$/, "_processed.jpg"), {
+    type: "image/jpeg",
+  });
+
+  return { base64, file: processedFile, fileType: "jpeg" };
+}
+
+/** Render the first page of a PDF to canvas for OCR */
+async function renderPdfFirstPage(file: File): Promise<HTMLCanvasElement> {
+  const pdfjs = await import("pdfjs-dist");
+  const pdfData = new Uint8Array(await file.arrayBuffer());
+  const loadingTask = pdfjs.getDocument({ data: pdfData, disableWorker: true } as any);
+  const pdf = await loadingTask.promise;
+
+  try {
+    const page = await pdf.getPage(1);
+    const initialViewport = page.getViewport({ scale: 1 });
+    const longestSide = Math.max(initialViewport.width, initialViewport.height) || 1;
+    const scale = Math.max(1.5, Math.min(2.5, 2200 / longestSide));
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not initialize PDF canvas");
+
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    await page.render({ canvasContext: ctx, viewport } as any).promise;
+    page.cleanup();
+
+    return canvas;
+  } finally {
+    await pdf.destroy();
+  }
+}
+
 /** Read text file content */
 async function readTextFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -219,6 +288,7 @@ async function fileToBase64(file: File): Promise<string> {
 export interface PreprocessResult {
   base64: string;
   file: File;
+  storageFile?: File;
   fileType: string;
   /** For text/office files, extracted text content sent directly */
   textContent?: string;
@@ -247,8 +317,9 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
 
   // ─── PDF: pass through without image preprocessing ───
   if (category === "pdf") {
-    const base64 = await fileToBase64(file);
-    return { base64, file, fileType: "pdf" };
+    const renderedCanvas = await renderPdfFirstPage(file);
+    const processed = await canvasToProcessedResult(renderedCanvas, file.name);
+    return { ...processed, storageFile: file };
   }
 
   // ─── Images: full preprocessing pipeline ───
@@ -269,32 +340,11 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
   canvas.height = drawH;
   ctx.drawImage(img, 0, 0, drawW, drawH);
 
-  const crop = autoCrop(ctx, canvas.width, canvas.height);
-  if (crop.x !== 0 || crop.y !== 0 || crop.w !== canvas.width || crop.h !== canvas.height) {
-    const cropped = ctx.getImageData(crop.x, crop.y, crop.w, crop.h);
-    canvas.width = crop.w;
-    canvas.height = crop.h;
-    ctx.putImageData(cropped, 0, 0);
-  }
-
-  const w = canvas.width;
-  const h = canvas.height;
-
-  denoise(ctx, w, h);
-  enhanceContrast(ctx, w, h);
-  sharpen(ctx, w, h, 0.5);
-
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-  const base64 = dataUrl.split(",")[1];
-
-  const blob = await (await fetch(dataUrl)).blob();
-  const processedFile = new File([blob], file.name.replace(/\.[^.]+$/, "_processed.jpg"), {
-    type: "image/jpeg",
-  });
+  const processed = await canvasToProcessedResult(canvas, file.name);
 
   URL.revokeObjectURL(img.src);
 
-  return { base64, file: processedFile, fileType: "jpeg" };
+  return processed;
 }
 
 /** Helper: encode plain text string to base64 */
