@@ -33,8 +33,11 @@ export default function Login() {
         setIsForgot(false);
       } else {
         await signIn(email, password);
-        logAudit({ action: "user_login", metadata: { email } });
-        navigate("/select-role");
+logAudit({ action: "user_login", metadata: { email } });
+
+setTimeout(() => {
+  navigate("/select-role");
+}, 300);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
