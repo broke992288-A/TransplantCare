@@ -190,20 +190,8 @@ serve(async (req) => {
           text: `I'm uploading a ${fileType.toUpperCase()} office document containing laboratory results. The file is provided as base64-encoded binary. Please analyze and extract all lab values from this document.\n\nIMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value.\n\nBase64 content (${fileType}):\n${imageBase64.substring(0, 50000)}`,
         },
       ];
-    } else if (fileType === "pdf") {
-      // PDFs: use Gemini which natively supports PDF via image_url
-      userContent = [
-        {
-          type: "text",
-          text: "Extract all lab values from this PDF laboratory report. IMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value.",
-        },
-        {
-          type: "image_url",
-          image_url: { url: `data:application/pdf;base64,${imageBase64}` },
-        },
-      ];
     } else {
-      // Images: send as image_url
+      // Images (including PDF rendered as JPEG on client): send as image_url
       const mediaType = fileType === "png" ? "image/png" : "image/jpeg";
       userContent = [
         {
@@ -217,9 +205,6 @@ serve(async (req) => {
       ];
     }
 
-    // Use Gemini for PDFs (native PDF support), GPT-5-mini for images/text
-    const model = fileType === "pdf" ? "google/gemini-2.5-flash" : "openai/gpt-5-mini";
-
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -227,7 +212,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
