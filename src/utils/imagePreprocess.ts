@@ -234,30 +234,58 @@ async function canvasToProcessedResult(
 }
 
 /** Render the first page of a PDF to canvas for OCR */
-async function renderPdfFirstPage(file: File): Promise<HTMLCanvasElement> {
+async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
   const pdfjs = await import("pdfjs-dist");
   const pdfData = new Uint8Array(await file.arrayBuffer());
   const loadingTask = pdfjs.getDocument({ data: pdfData, disableWorker: true } as any);
   const pdf = await loadingTask.promise;
 
   try {
-    const page = await pdf.getPage(1);
-    const initialViewport = page.getViewport({ scale: 1 });
-    const longestSide = Math.max(initialViewport.width, initialViewport.height) || 1;
-    const scale = Math.max(1.5, Math.min(2.5, 2200 / longestSide));
-    const viewport = page.getViewport({ scale });
+   const canvases: HTMLCanvasElement[] = [];
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Could not initialize PDF canvas");
+for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+  const page = await pdf.getPage(pageNum);
 
-    canvas.width = Math.ceil(viewport.width);
-    canvas.height = Math.ceil(viewport.height);
+  const initialViewport = page.getViewport({ scale: 1 });
+  const longestSide =
+    Math.max(initialViewport.width, initialViewport.height) || 1;
 
-    await page.render({ canvasContext: ctx, viewport } as any).promise;
-    page.cleanup();
+  const scale = Math.max(1.5, Math.min(2.5, 2200 / longestSide));
+  const viewport = page.getViewport({ scale });
 
-    return canvas;
+  const pageCanvas = document.createElement("canvas");
+  const pageCtx = pageCanvas.getContext("2d");
+
+  if (!pageCtx) throw new Error("Could not initialize PDF canvas");
+
+  pageCanvas.width = Math.ceil(viewport.width);
+  pageCanvas.height = Math.ceil(viewport.height);
+
+  await page.render({
+    canvasContext: pageCtx,
+    viewport,
+  } as any).promise;
+
+  canvases.push(pageCanvas);
+  page.cleanup();
+}
+
+const finalCanvas = document.createElement("canvas");
+const finalCtx = finalCanvas.getContext("2d");
+
+if (!finalCtx) throw new Error("Could not initialize final canvas");
+
+finalCanvas.width = Math.max(...canvases.map(c => c.width));
+finalCanvas.height = canvases.reduce((sum, c) => sum + c.height, 0);
+
+let yOffset = 0;
+
+for (const canvas of canvases) {
+  finalCtx.drawImage(canvas, 0, yOffset);
+  yOffset += canvas.height;
+}
+
+return finalCanvas;
   } finally {
     await pdf.destroy();
   }
@@ -317,7 +345,7 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
 
   // ─── PDF: pass through without image preprocessing ───
   if (category === "pdf") {
-    const renderedCanvas = await renderPdfFirstPage(file);
+    const renderedCanvas = await renderPdfAllPages(file);
     const processed = await canvasToProcessedResult(renderedCanvas, file.name);
     return { ...processed, storageFile: file };
   }

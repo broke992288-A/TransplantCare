@@ -303,11 +303,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { base64, file: processedFile, fileType, textContent } = await preprocessLabImage(file);
+      const { base64, file: processedFile, storageFile, fileType, textContent } = await preprocessLabImage(file);
 
       const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${patientId}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, processedFile);
+      const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, storageFile ?? processedFile);
       if (uploadErr) throw uploadErr;
 
       const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
