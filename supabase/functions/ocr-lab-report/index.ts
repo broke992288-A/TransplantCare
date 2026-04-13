@@ -191,9 +191,8 @@ serve(async (req) => {
         },
       ];
     } else {
-      // Images and PDFs: send as image_url
-      const mediaType = fileType === "pdf" ? "application/pdf" :
-                        fileType === "png" ? "image/png" : "image/jpeg";
+      // Images (including PDF rendered as JPEG on client): send as image_url
+      const mediaType = fileType === "png" ? "image/png" : "image/jpeg";
       userContent = [
         {
           type: "text",
