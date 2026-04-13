@@ -24,13 +24,13 @@ async function authenticateRequest(req: Request, corsHeaders: Record<string, str
     { global: { headers: { Authorization: authHeader } } }
   );
   const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims) {
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) {
     return new Response(JSON.stringify({ error: "Unauthorized: invalid token" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: data.claims.sub as string };
+  return { userId: data.user.id };
 }
 
 const FN_NAME = "ocr-lab-report";
