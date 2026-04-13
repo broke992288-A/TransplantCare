@@ -236,10 +236,10 @@ async function canvasToProcessedResult(
 /** Render the first page of a PDF to canvas for OCR */
 async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc =
-  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-    const pdfData = new Uint8Array(await file.arrayBuffer());
-  const loadingTask = pdfjs.getDocument({ data: pdfData, disableWorker: true } as any);
+  // Use fake (inline) worker to avoid cross-origin dynamic import issues
+  pdfjs.GlobalWorkerOptions.workerSrc = "";
+  const pdfData = new Uint8Array(await file.arrayBuffer());
+  const loadingTask = pdfjs.getDocument({ data: pdfData, isEvalSupported: false } as any);
   const pdf = await loadingTask.promise;
 
   try {
