@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 /**
  * Auto-notify edge function — called by pg_cron or manually.
@@ -15,9 +15,11 @@ function getServiceClient() {
   return createClient(supabaseUrl, serviceRoleKey);
 }
 
+type SC = SupabaseClient;
+
 // Send push to a list of user IDs
 async function sendPush(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SC,
   userIds: string[],
   title: string,
   body: string,
@@ -53,7 +55,7 @@ async function sendPush(
       if (res.ok || res.status === 201) {
         sent++;
       } else if (res.status === 410 || res.status === 404) {
-        await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+        await supabase.from("push_subscriptions").delete().eq("id", sub.id as string);
         failed++;
       } else {
         failed++;
@@ -67,8 +69,7 @@ async function sendPush(
 }
 
 // ── Handler: Critical alerts → notify assigned doctor ──
-async function handleCriticalAlerts(supabase: ReturnType<typeof createClient>) {
-  // Find unread critical alerts created in last 30 minutes
+async function handleCriticalAlerts(supabase: SC) {
   const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
   const { data: alerts } = await supabase
@@ -80,8 +81,7 @@ async function handleCriticalAlerts(supabase: ReturnType<typeof createClient>) {
 
   if (!alerts || alerts.length === 0) return { type: "critical_alerts", sent: 0 };
 
-  // Get assigned doctors for these patients
-  const patientIds = [...new Set(alerts.map((a: any) => a.patient_id))];
+  const patientIds = [...new Set(alerts.map((a: Record<string, unknown>) => a.patient_id as string))];
   const { data: patients } = await supabase
     .from("patients")
     .select("id, full_name, assigned_doctor_id")
@@ -90,15 +90,15 @@ async function handleCriticalAlerts(supabase: ReturnType<typeof createClient>) {
 
   if (!patients || patients.length === 0) return { type: "critical_alerts", sent: 0 };
 
-  // Group by doctor
   const doctorAlerts = new Map<string, string[]>();
   for (const patient of patients) {
-    const patientAlerts = alerts.filter((a: any) => a.patient_id === patient.id);
-    if (!doctorAlerts.has(patient.assigned_doctor_id)) {
-      doctorAlerts.set(patient.assigned_doctor_id, []);
+    const doctorId = patient.assigned_doctor_id as string;
+    const patientAlerts = alerts.filter((a: Record<string, unknown>) => a.patient_id === patient.id);
+    if (!doctorAlerts.has(doctorId)) {
+      doctorAlerts.set(doctorId, []);
     }
     for (const alert of patientAlerts) {
-      doctorAlerts.get(patient.assigned_doctor_id)!.push(
+      doctorAlerts.get(doctorId)!.push(
         `${patient.full_name}: ${alert.title}`
       );
     }
@@ -119,14 +119,11 @@ async function handleCriticalAlerts(supabase: ReturnType<typeof createClient>) {
 }
 
 // ── Handler: Lab reminders → notify patients ──
-async function handleLabReminders(supabase: ReturnType<typeof createClient>) {
+async function handleLabReminders(supabase: SC) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().slice(0, 10);
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Labs due tomorrow or overdue
   const { data: schedules } = await supabase
     .from("lab_schedules")
     .select("patient_id, scheduled_date, status")
@@ -135,7 +132,7 @@ async function handleLabReminders(supabase: ReturnType<typeof createClient>) {
 
   if (!schedules || schedules.length === 0) return { type: "lab_reminders", sent: 0 };
 
-  const patientIds = [...new Set(schedules.map((s: any) => s.patient_id))];
+  const patientIds = [...new Set(schedules.map((s: Record<string, unknown>) => s.patient_id as string))];
   const { data: patients } = await supabase
     .from("patients")
     .select("id, linked_user_id")
@@ -144,7 +141,7 @@ async function handleLabReminders(supabase: ReturnType<typeof createClient>) {
 
   if (!patients || patients.length === 0) return { type: "lab_reminders", sent: 0 };
 
-  const userIds = patients.map((p: any) => p.linked_user_id).filter(Boolean);
+  const userIds = patients.map((p: Record<string, unknown>) => p.linked_user_id as string).filter(Boolean);
 
   const result = await sendPush(
     supabase,
@@ -157,8 +154,7 @@ async function handleLabReminders(supabase: ReturnType<typeof createClient>) {
 }
 
 // ── Handler: Medication reminders → notify patients ──
-async function handleMedReminders(supabase: ReturnType<typeof createClient>) {
-  // Get all patients with active medications
+async function handleMedReminders(supabase: SC) {
   const { data: meds } = await supabase
     .from("medications")
     .select("patient_id, medication_name")
@@ -166,7 +162,7 @@ async function handleMedReminders(supabase: ReturnType<typeof createClient>) {
 
   if (!meds || meds.length === 0) return { type: "med_reminders", sent: 0 };
 
-  const patientIds = [...new Set(meds.map((m: any) => m.patient_id))];
+  const patientIds = [...new Set(meds.map((m: Record<string, unknown>) => m.patient_id as string))];
   const { data: patients } = await supabase
     .from("patients")
     .select("id, linked_user_id")
@@ -175,7 +171,7 @@ async function handleMedReminders(supabase: ReturnType<typeof createClient>) {
 
   if (!patients || patients.length === 0) return { type: "med_reminders", sent: 0 };
 
-  const userIds = patients.map((p: any) => p.linked_user_id).filter(Boolean);
+  const userIds = patients.map((p: Record<string, unknown>) => p.linked_user_id as string).filter(Boolean);
 
   const result = await sendPush(
     supabase,
@@ -188,19 +184,11 @@ async function handleMedReminders(supabase: ReturnType<typeof createClient>) {
 }
 
 Deno.serve(async (req: Request) => {
-  // Allow both POST and GET (for cron calls)
   if (req.method === "OPTIONS") {
     return new Response("ok", { status: 200 });
   }
 
   try {
-    // Verify this is called with service role key or from pg_cron
-    const authHeader = req.headers.get("Authorization");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    
-    // Accept service role key, anon key (from pg_cron), or no auth (internal)
-    // pg_cron sends anon key by default
-    
     let notifType = "all";
     try {
       const body = await req.json();
@@ -210,7 +198,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = getServiceClient();
-    const results: any[] = [];
+    const results: Record<string, unknown>[] = [];
 
     if (notifType === "all" || notifType === "critical_alerts") {
       results.push(await handleCriticalAlerts(supabase));
@@ -228,9 +216,10 @@ Deno.serve(async (req: Request) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("Auto-notify error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Auto-notify error:", message);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
