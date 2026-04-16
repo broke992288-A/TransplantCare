@@ -547,6 +547,12 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
       }
 
+      if (totalFilled === 0) {
+        toast({ title: t("common.error"), description: t("upload.noValuesExtracted") || "No lab values were extracted from the file. Please try a clearer image or enter values manually.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+
       await insertEvent({ patient_id: patientId, event_type: "lab_uploaded", description: `${t("upload.labUploadedEvent")} (${mergedGroups.length})` });
       logAudit({ action: "lab_upload", entityType: "patient", entityId: patientId, metadata: { dateCount: mergedGroups.length, totalFilled } });
       
