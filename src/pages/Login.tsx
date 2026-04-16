@@ -26,23 +26,29 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("[Login] submit start", { isForgot, email });
     try {
       if (isForgot) {
         await resetPasswordForEmail(email);
         toast({ title: t("login.resetSent"), description: t("login.resetSentDesc") });
         setIsForgot(false);
       } else {
+        console.log("[Login] calling signInWithPassword");
         await signIn(email, password);
-logAudit({ action: "user_login", metadata: { email } });
-
-setTimeout(() => {
-  navigate("/select-role");
-}, 300);
+        console.log("[Login] signIn success, navigating");
+        try {
+          logAudit({ action: "user_login", metadata: { email } });
+        } catch (auditErr) {
+          console.warn("[Login] audit log failed (non-blocking)", auditErr);
+        }
+        navigate("/select-role", { replace: true });
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
+      console.error("[Login] sign-in failed", err);
       toast({ title: t("common.error"), description: message, variant: "destructive" });
     } finally {
+      console.log("[Login] submit end, clearing loading");
       setLoading(false);
     }
   };
