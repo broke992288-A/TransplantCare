@@ -299,11 +299,13 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
   const processFile = async (file: File) => {
     setStep("processing");
+    console.log("[LabUpload] processFile start", { name: file.name, size: file.size, type: file.type });
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { base64, file: processedFile, storageFile, fileType, textContent } = await preprocessLabImage(file);
+      console.log("[LabUpload] preprocess done", { fileType, base64Len: base64?.length });
 
       const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${patientId}/${Date.now()}.${ext}`;
@@ -313,12 +315,37 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
       setReportUrl(urlData?.signedUrl ?? null);
 
-      const { data: ocrData, error: ocrErr } = await supabase.functions.invoke("ocr-lab-report", {
+      // OCR call with hard 90s timeout — prevents stuck modal if edge function hangs
+      const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
         body: { imageBase64: base64, fileType, textContent },
       });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("OCR_TIMEOUT")), 90000)
+      );
 
-      if (ocrErr) throw ocrErr;
-      if (ocrData?.error) throw new Error(ocrData.error);
+      let ocrData: any;
+      let ocrErr: any;
+      try {
+        const result = await Promise.race([ocrPromise, timeoutPromise]) as any;
+        ocrData = result?.data;
+        ocrErr = result?.error;
+      } catch (raceErr) {
+        if (raceErr instanceof Error && raceErr.message === "OCR_TIMEOUT") {
+          throw new Error("AI service timed out (90s). Please try again or use a smaller file.");
+        }
+        throw raceErr;
+      }
+
+      console.log("[LabUpload] OCR response", { hasData: !!ocrData, hasError: !!ocrErr, payload: ocrData });
+
+      if (ocrErr) {
+        console.error("[LabUpload] OCR edge function error payload:", ocrErr);
+        throw new Error(ocrErr.message || "AI service unavailable. Please try again.");
+      }
+      if (ocrData?.error) {
+        console.error("[LabUpload] OCR data error payload:", ocrData);
+        throw new Error(ocrData.error);
+      }
 
       let groups: DateGroup[] = [];
 
@@ -354,7 +381,6 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setDateGroups(groups);
       setReportType(ocrData?.reportType ?? "");
 
-      // Auto-detect country from extracted values
       for (const g of groups) {
         const detected = detectCountryFromValues(g.values);
         if (detected) {
@@ -379,17 +405,24 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       }
 
       if (groups.length > 1) {
-        toast({
-          title: `${groups.length} ${t("upload.datesDetected")}`,
-        });
+        toast({ title: `${groups.length} ${t("upload.datesDetected")}` });
       }
 
       setStep("confirm");
     } catch (err: unknown) {
-      console.error("Upload/OCR error:", err);
+      console.error("[LabUpload] Upload/OCR failed:", err);
       const message = err instanceof Error ? err.message : String(err);
-      toast({ title: t("common.error"), description: message, variant: "destructive" });
-      setStep("upload");
+      toast({
+        title: t("common.error"),
+        description: `${message} — Please try uploading again.`,
+        variant: "destructive",
+      });
+    } finally {
+      // CRITICAL: never leave modal stuck on "processing"
+      setStep((current) => (current === "processing" ? "upload" : current));
+      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+      console.log("[LabUpload] processFile end");
     }
   };
 
