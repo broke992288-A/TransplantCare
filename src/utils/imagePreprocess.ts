@@ -336,10 +336,18 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
     return { base64, file, fileType: ext };
   }
 
-  // ─── PDF: send directly as base64 (no client-side rendering) ───
+  // ─── PDF: render to image for OCR, keep original for storage ───
   if (category === "pdf") {
-    const base64 = await fileToBase64(file);
-    return { base64, file, storageFile: file, fileType: "pdf" };
+    try {
+      const pdfCanvas = await renderPdfAllPages(file);
+      const processed = await canvasToProcessedResult(pdfCanvas, file.name);
+      return { ...processed, storageFile: file };
+    } catch (pdfErr) {
+      console.warn("PDF rendering failed, sending as base64 text:", pdfErr);
+      // Fallback: extract text from PDF via FileReader and send as text
+      const base64 = await fileToBase64(file);
+      return { base64, file, storageFile: file, fileType: "pdf" };
+    }
   }
 
   // ─── Images: full preprocessing pipeline ───
