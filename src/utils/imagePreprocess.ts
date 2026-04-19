@@ -246,8 +246,14 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
 
   try {
     const canvases: HTMLCanvasElement[] = [];
+    // Cap at first 5 pages to keep OCR fast & cheap (avoid AI gateway timeouts on large PDFs)
+    const MAX_PAGES = 5;
+    const pagesToRender = Math.min(pdf.numPages, MAX_PAGES);
+    if (pdf.numPages > MAX_PAGES) {
+      console.warn(`[preprocessLabImage] PDF has ${pdf.numPages} pages, processing only first ${MAX_PAGES}`);
+    }
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    for (let pageNum = 1; pageNum <= pagesToRender; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const initialViewport = page.getViewport({ scale: 1 });
       const longestSide = Math.max(initialViewport.width, initialViewport.height) || 1;
