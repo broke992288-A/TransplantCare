@@ -236,9 +236,10 @@ async function canvasToProcessedResult(
 /** Render all pages of a PDF to a single canvas for OCR */
 async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
   const pdfjs = await import("pdfjs-dist");
-  // Use CDN worker matching the installed version
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-  
+  // Load worker from local node_modules via Vite (?url) — no CDN dependency, version-safe
+  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+
   const pdfData = new Uint8Array(await file.arrayBuffer());
   const loadingTask = pdfjs.getDocument({ data: pdfData });
   const pdf = await loadingTask.promise;
@@ -343,10 +344,12 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
       const processed = await canvasToProcessedResult(pdfCanvas, file.name);
       return { ...processed, storageFile: file };
     } catch (pdfErr) {
-      console.warn("PDF rendering failed, sending as base64 text:", pdfErr);
-      // Fallback: extract text from PDF via FileReader and send as text
-      const base64 = await fileToBase64(file);
-      return { base64, file, storageFile: file, fileType: "pdf" };
+      console.error("[preprocessLabImage] PDF rendering failed:", pdfErr);
+      // Do NOT send raw PDF binary to AI gateway — it always returns 400.
+      // Surface a clear error so the user can retry with an image or smaller PDF.
+      throw new Error(
+        "PDF could not be rendered in the browser. Please try: (1) export the PDF page as JPG/PNG, or (2) upload a smaller PDF."
+      );
     }
   }
 
