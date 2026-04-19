@@ -692,10 +692,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               >
                 <Upload className="h-8 w-8 text-primary" />
                 <span className="font-medium">{t("upload.uploadFile")}</span>
+                <span className="text-[10px] text-muted-foreground">1–5 ta fayl tanlang</span>
               </Button>
             </div>
             <input ref={cameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleFileChange} />
-            <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/msword" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/msword" className="hidden" onChange={handleFileChange} />
           </div>
         )}
 
