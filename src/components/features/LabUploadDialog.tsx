@@ -297,91 +297,127 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     setActiveTab("0");
   };
 
-  const processFile = async (file: File) => {
-    setStep("processing");
-    console.log("[LabUpload] processFile start", { name: file.name, size: file.size, type: file.type });
+  const MAX_FILES = 5;
+
+  /** Process a single file → returns extracted DateGroup[] */
+  const processSingleFile = async (file: File, fileIndex: number, totalFiles: number): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+    console.log(`[LabUpload] processFile ${fileIndex + 1}/${totalFiles}`, { name: file.name, size: file.size, type: file.type });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { base64, file: processedFile, storageFile, fileType, textContent } = await preprocessLabImage(file);
+    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length });
+
+    const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, storageFile ?? processedFile);
+    if (uploadErr) throw uploadErr;
+
+    const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
+    const fileReportUrl = urlData?.signedUrl ?? null;
+
+    // OCR call with hard 90s timeout per file
+    const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
+      body: { imageBase64: base64, fileType, textContent },
+    });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("OCR_TIMEOUT")), 90000)
+    );
+
+    let ocrData: any;
+    let ocrErr: any;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { base64, file: processedFile, storageFile, fileType, textContent } = await preprocessLabImage(file);
-      console.log("[LabUpload] preprocess done", { fileType, base64Len: base64?.length });
-
-      const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const path = `${patientId}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, storageFile ?? processedFile);
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
-      setReportUrl(urlData?.signedUrl ?? null);
-
-      // OCR call with hard 90s timeout — prevents stuck modal if edge function hangs
-      const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
-        body: { imageBase64: base64, fileType, textContent },
-      });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("OCR_TIMEOUT")), 90000)
-      );
-
-      let ocrData: any;
-      let ocrErr: any;
-      try {
-        const result = await Promise.race([ocrPromise, timeoutPromise]) as any;
-        ocrData = result?.data;
-        ocrErr = result?.error;
-      } catch (raceErr) {
-        if (raceErr instanceof Error && raceErr.message === "OCR_TIMEOUT") {
-          throw new Error("AI service timed out (90s). Please try again or use a smaller file.");
-        }
-        throw raceErr;
+      const result = await Promise.race([ocrPromise, timeoutPromise]) as any;
+      ocrData = result?.data;
+      ocrErr = result?.error;
+    } catch (raceErr) {
+      if (raceErr instanceof Error && raceErr.message === "OCR_TIMEOUT") {
+        throw new Error(`File ${fileIndex + 1}: AI service timed out (90s).`);
       }
+      throw raceErr;
+    }
 
-      console.log("[LabUpload] OCR response", { hasData: !!ocrData, hasError: !!ocrErr, payload: ocrData });
+    if (ocrErr) throw new Error(ocrErr.message || `File ${fileIndex + 1}: AI service unavailable.`);
+    if (ocrData?.error) throw new Error(`File ${fileIndex + 1}: ${ocrData.error}`);
 
-      if (ocrErr) {
-        console.error("[LabUpload] OCR edge function error payload:", ocrErr);
-        throw new Error(ocrErr.message || "AI service unavailable. Please try again.");
-      }
-      if (ocrData?.error) {
-        console.error("[LabUpload] OCR data error payload:", ocrData);
-        throw new Error(ocrData.error);
-      }
-
-      let groups: DateGroup[] = [];
-
-      if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
-        groups = ocrData.dateGroups.map((g: any) => {
-          const values: Record<string, string> = {};
-          for (const field of LAB_FIELDS) {
-            const v = g.data?.[field.key];
-            values[field.key] = v != null ? String(v) : "";
-          }
-          return {
-            date: g.date ?? "unknown",
-            values,
-            confidence: g.confidence ?? {},
-            originalText: g.originalText ?? {},
-          };
-        });
-      } else {
-        const extracted = ocrData?.data ?? {};
+    let groups: DateGroup[] = [];
+    if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
+      groups = ocrData.dateGroups.map((g: any) => {
         const values: Record<string, string> = {};
         for (const field of LAB_FIELDS) {
-          const v = extracted[field.key];
+          const v = g.data?.[field.key];
           values[field.key] = v != null ? String(v) : "";
         }
-        groups = [{
-          date: "unknown",
+        return {
+          date: g.date ?? "unknown",
           values,
-          confidence: ocrData?.confidence ?? {},
-          originalText: ocrData?.originalText ?? {},
-        }];
+          confidence: g.confidence ?? {},
+          originalText: g.originalText ?? {},
+        };
+      });
+    } else {
+      const extracted = ocrData?.data ?? {};
+      const values: Record<string, string> = {};
+      for (const field of LAB_FIELDS) {
+        const v = extracted[field.key];
+        values[field.key] = v != null ? String(v) : "";
+      }
+      groups = [{
+        date: "unknown",
+        values,
+        confidence: ocrData?.confidence ?? {},
+        originalText: ocrData?.originalText ?? {},
+      }];
+    }
+
+    return { groups, reportType: ocrData?.reportType ?? "", reportUrl: fileReportUrl };
+  };
+
+  /** Process one or more files (up to MAX_FILES) sequentially */
+  const processFiles = async (files: File[]) => {
+    setStep("processing");
+    const limited = files.slice(0, MAX_FILES);
+    if (files.length > MAX_FILES) {
+      toast({
+        title: t("common.info"),
+        description: `Faqat birinchi ${MAX_FILES} ta fayl qabul qilindi (${files.length} dan).`,
+      });
+    }
+
+    const allGroups: DateGroup[] = [];
+    let lastReportType = "";
+    let lastReportUrl: string | null = null;
+    const errors: string[] = [];
+
+    for (let i = 0; i < limited.length; i++) {
+      try {
+        toast({ title: `📄 ${i + 1}/${limited.length}`, description: limited[i].name });
+        const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length);
+        allGroups.push(...groups);
+        if (rt) lastReportType = rt;
+        if (ru) lastReportUrl = ru;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[LabUpload] File ${i + 1} failed:`, err);
+        errors.push(message);
+      }
+    }
+
+    try {
+      if (allGroups.length === 0) {
+        toast({
+          title: t("common.error"),
+          description: errors.length > 0 ? errors.join(" | ") : "No values extracted from any file.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      setDateGroups(groups);
-      setReportType(ocrData?.reportType ?? "");
+      setDateGroups(allGroups);
+      setReportType(lastReportType);
+      setReportUrl(lastReportUrl);
 
-      for (const g of groups) {
+      for (const g of allGroups) {
         const detected = detectCountryFromValues(g.values);
         if (detected) {
           setCountry(detected.country);
@@ -390,7 +426,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
       }
 
-      const totalLowConf = groups.reduce((sum, g) => {
+      const totalLowConf = allGroups.reduce((sum, g) => {
         return sum + LAB_FIELDS.filter(
           (f) => g.values[f.key] && g.confidence[f.key] != null && g.confidence[f.key] < 80
         ).length;
@@ -404,31 +440,27 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         });
       }
 
-      if (groups.length > 1) {
-        toast({ title: `${groups.length} ${t("upload.datesDetected")}` });
+      if (errors.length > 0) {
+        toast({
+          title: `⚠ ${errors.length} fayl ishlanmadi`,
+          description: errors.join(" | "),
+          variant: "destructive",
+        });
       }
 
+      toast({ title: `✓ ${limited.length - errors.length}/${limited.length} fayl, ${allGroups.length} sana topildi` });
       setStep("confirm");
-    } catch (err: unknown) {
-      console.error("[LabUpload] Upload/OCR failed:", err);
-      const message = err instanceof Error ? err.message : String(err);
-      toast({
-        title: t("common.error"),
-        description: `${message} — Please try uploading again.`,
-        variant: "destructive",
-      });
     } finally {
-      // CRITICAL: never leave modal stuck on "processing"
       setStep((current) => (current === "processing" ? "upload" : current));
       if (fileRef.current) fileRef.current.value = "";
       if (cameraRef.current) cameraRef.current.value = "";
-      console.log("[LabUpload] processFile end");
+      console.log("[LabUpload] processFiles end");
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) processFiles(files);
   };
 
   const updateGroupValue = (groupIndex: number, key: string, value: string) => {
@@ -660,10 +692,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               >
                 <Upload className="h-8 w-8 text-primary" />
                 <span className="font-medium">{t("upload.uploadFile")}</span>
+                <span className="text-[10px] text-muted-foreground">1–5 ta fayl tanlang</span>
               </Button>
             </div>
             <input ref={cameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleFileChange} />
-            <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/msword" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/jpg,image/png,application/pdf,.txt,.csv,.tsv,.docx,.xlsx,.xls,.doc,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/msword" className="hidden" onChange={handleFileChange} />
           </div>
         )}
 
