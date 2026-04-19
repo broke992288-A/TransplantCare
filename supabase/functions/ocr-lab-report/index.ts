@@ -191,13 +191,11 @@ serve(async (req) => {
         },
       ];
     } else if (fileType === "pdf") {
-      // PDF: send base64 content as text for extraction (AI Gateway doesn't support PDF in image_url)
-      userContent = [
-        {
-          type: "text",
-          text: `I'm uploading a PDF document containing laboratory results. The file is provided as base64-encoded PDF binary. Please analyze and extract all lab values from this document.\n\nIMPORTANT: If the document contains results from multiple dates, return EACH date as a separate group. Detect the layout, normalize test names across languages (English, Russian, Uzbek), and provide confidence scores for each value.\n\nBase64 PDF content:\n${imageBase64.substring(0, 100000)}`,
-        },
-      ];
+      // Defensive: client should always pre-render PDF → JPEG. Raw PDF binary fails on AI gateway (400).
+      log("error", FN_NAME, "Raw PDF received — client preprocessing failed", { requestId, userId });
+      return new Response(JSON.stringify({
+        error: "PDF was not rendered in the browser. Please retry the upload, or export the page as JPG/PNG."
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else {
       // Images: send as image_url
       const mediaType = fileType === "png" ? "image/png" : "image/jpeg";
