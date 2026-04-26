@@ -135,8 +135,12 @@ export default function PatientDetail() {
         {/* TOP HEADER CARD */}
         <PatientCockpitHeader patient={patient} latestRisk={latestRisk} latestLab={latestLab} onUpdated={invalidateAll} />
 
-        {/* ROW 1: Labs table + Trend charts — resizable */}
-        <ResizablePanelGroup direction={direction} className="min-h-[350px] rounded-lg border">
+        {/* ROW 1: Labs table + Trend charts — resizable (horizontal split + vertical height resize) */}
+        <ResizablePanelGroup
+          direction={direction}
+          className="rounded-lg border resize-y overflow-hidden"
+          style={{ height: 500, minHeight: 300, maxHeight: 1200 }}
+        >
           <ResizablePanel defaultSize={50} minSize={25}>
             <div className="p-3 space-y-2 h-full overflow-auto">
               <LatestLabsTable labs={allLabs} organType={patient.organ_type} />
