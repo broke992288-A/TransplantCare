@@ -89,6 +89,7 @@ export default function NotificationSettings() {
           </>
         )}
       </CardContent>
+      <FixNotificationDialog open={fixOpen} onOpenChange={setFixOpen} />
     </Card>
   );
 }
