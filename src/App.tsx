@@ -14,6 +14,7 @@ import { handleError } from "@/utils/errorHandler";
 
 // Lazy-loaded pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
 const SelectRole = lazy(() => import("./pages/SelectRole"));
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const AddPatient = lazy(() => import("./pages/AddPatient"));
@@ -109,6 +110,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-role" element={<SelectRole />} />
               <Route path="/doctor-dashboard" element={<DoctorOrAdminRoute><RouteWrap><DoctorDashboard /></RouteWrap></DoctorOrAdminRoute>} />
