@@ -1,9 +1,11 @@
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Bell, BellOff, Loader2, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
+import FixNotificationDialog from "@/components/features/FixNotificationDialog";
 
 export default function NotificationSettings() {
   const { t } = useLanguage();
