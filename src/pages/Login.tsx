@@ -159,7 +159,7 @@ export default function Login() {
                 {isForgot ? t("login.sendResetLink") : t("login.signIn")}
               </Button>
             </form>
-            {isForgot && (
+            {isForgot ? (
               <div className="mt-4 text-center text-sm text-muted-foreground">
                 <button
                   className="font-medium text-primary hover:underline"
@@ -167,6 +167,13 @@ export default function Login() {
                 >
                   {t("login.backToLogin")}
                 </button>
+              </div>
+            ) : (
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                {t("login.dontHave")}{" "}
+                <Link to="/signup" className="font-medium text-primary hover:underline">
+                  {t("login.signUp")}
+                </Link>
               </div>
             )}
           </CardContent>
