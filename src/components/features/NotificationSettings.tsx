@@ -46,9 +46,15 @@ export default function NotificationSettings() {
             </div>
 
             {permission === "denied" ? (
-              <p className="text-xs text-destructive">
-                {t("notif.denied") || "Bildirishnoma ruxsati brauzer sozlamalarida rad etilgan. Iltimos, brauzer sozlamalarini tekshiring."}
-              </p>
+              <div className="space-y-2">
+                <p className="text-xs text-destructive">
+                  {t("notif.denied") || "Bildirishnoma ruxsati brauzer sozlamalarida rad etilgan. Iltimos, brauzer sozlamalarini tekshiring."}
+                </p>
+                <Button size="sm" variant="default" onClick={() => setFixOpen(true)} className="w-full">
+                  <Wrench className="h-4 w-4 mr-2" />
+                  {t("notif.fixIt") || "How to fix this →"}
+                </Button>
+              </div>
             ) : isSubscribed ? (
               <Button
                 variant="outline"
