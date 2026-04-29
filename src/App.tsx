@@ -14,6 +14,7 @@ import { handleError } from "@/utils/errorHandler";
 
 // Lazy-loaded pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
 const SelectRole = lazy(() => import("./pages/SelectRole"));
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const AddPatient = lazy(() => import("./pages/AddPatient"));
