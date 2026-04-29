@@ -10,6 +10,7 @@ import FixNotificationDialog from "@/components/features/FixNotificationDialog";
 export default function NotificationSettings() {
   const { t } = useLanguage();
   const { permission, isSubscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+  const [fixOpen, setFixOpen] = useState(false);
 
   const notSupported = typeof Notification === "undefined" || !("serviceWorker" in navigator);
 
