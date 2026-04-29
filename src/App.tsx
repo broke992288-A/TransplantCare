@@ -110,6 +110,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-role" element={<SelectRole />} />
               <Route path="/doctor-dashboard" element={<DoctorOrAdminRoute><RouteWrap><DoctorDashboard /></RouteWrap></DoctorOrAdminRoute>} />
