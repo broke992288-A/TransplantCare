@@ -1,13 +1,16 @@
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Bell, BellOff, Loader2, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
+import FixNotificationDialog from "@/components/features/FixNotificationDialog";
 
 export default function NotificationSettings() {
   const { t } = useLanguage();
   const { permission, isSubscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+  const [fixOpen, setFixOpen] = useState(false);
 
   const notSupported = typeof Notification === "undefined" || !("serviceWorker" in navigator);
 
@@ -43,9 +46,15 @@ export default function NotificationSettings() {
             </div>
 
             {permission === "denied" ? (
-              <p className="text-xs text-destructive">
-                {t("notif.denied") || "Bildirishnoma ruxsati brauzer sozlamalarida rad etilgan. Iltimos, brauzer sozlamalarini tekshiring."}
-              </p>
+              <div className="space-y-2">
+                <p className="text-xs text-destructive">
+                  {t("notif.denied") || "Bildirishnoma ruxsati brauzer sozlamalarida rad etilgan. Iltimos, brauzer sozlamalarini tekshiring."}
+                </p>
+                <Button size="sm" variant="default" onClick={() => setFixOpen(true)} className="w-full">
+                  <Wrench className="h-4 w-4 mr-2" />
+                  {t("notif.fixIt") || "How to fix this →"}
+                </Button>
+              </div>
             ) : isSubscribed ? (
               <Button
                 variant="outline"
@@ -80,6 +89,7 @@ export default function NotificationSettings() {
           </>
         )}
       </CardContent>
+      <FixNotificationDialog open={fixOpen} onOpenChange={setFixOpen} />
     </Card>
   );
 }
