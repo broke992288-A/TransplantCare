@@ -62,11 +62,13 @@ export function usePushNotifications() {
           const sub = e.data.subscription as PushSubscriptionJSON;
           if (!sub.endpoint) return;
           await supabase.from("push_subscriptions").upsert(
-            {
-              user_id: user.id,
-              endpoint: sub.endpoint,
-              subscription: sub as unknown as Record<string, unknown>,
-            },
+            [
+              {
+                user_id: user.id,
+                endpoint: sub.endpoint,
+                subscription: sub as unknown as Record<string, unknown>,
+              },
+            ],
             { onConflict: "user_id,endpoint" }
           );
           setIsSubscribed(true);
@@ -135,17 +137,26 @@ export function usePushNotifications() {
       if (!subscription) {
         const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         const subscribeOpts: PushSubscriptionOptionsInit = { userVisibleOnly: true };
-        if (vapidKey) subscribeOpts.applicationServerKey = urlBase64ToUint8Array(vapidKey);
+        if (vapidKey) {
+          const arr = urlBase64ToUint8Array(vapidKey);
+          // Cast through ArrayBuffer to satisfy DOM lib types in some TS versions.
+          subscribeOpts.applicationServerKey = arr.buffer.slice(
+            arr.byteOffset,
+            arr.byteOffset + arr.byteLength
+          ) as ArrayBuffer;
+        }
         subscription = await registration.pushManager.subscribe(subscribeOpts);
       }
 
       const json = subscription.toJSON();
       const { error } = await supabase.from("push_subscriptions").upsert(
-        {
-          user_id: user.id,
-          endpoint: subscription.endpoint,
-          subscription: json as unknown as Record<string, unknown>,
-        },
+        [
+          {
+            user_id: user.id,
+            endpoint: subscription.endpoint!,
+            subscription: json as unknown as Record<string, unknown>,
+          },
+        ],
         { onConflict: "user_id,endpoint" }
       );
       if (error) throw error;
