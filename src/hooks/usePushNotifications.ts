@@ -135,16 +135,19 @@ export function usePushNotifications() {
       let subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
-        const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-        const subscribeOpts: PushSubscriptionOptionsInit = { userVisibleOnly: true };
-        if (vapidKey) {
-          const arr = urlBase64ToUint8Array(vapidKey);
+        // VAPID public key is safe to expose in client code — it is sent with every push request.
+        // The matching private key is stored as a backend secret and used by the send-push edge function.
+        const VAPID_PUBLIC_KEY =
+          "BESenczV7nbE35U7T8moJbH4vmXypq8gijuBKLr9dWs3BqukRBqoeFWk-80qwzIgnh0OO7t-xcGCckVhMIEA7Hw";
+        const arr = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+        const subscribeOpts: PushSubscriptionOptionsInit = {
+          userVisibleOnly: true,
           // Cast through ArrayBuffer to satisfy DOM lib types in some TS versions.
-          subscribeOpts.applicationServerKey = arr.buffer.slice(
+          applicationServerKey: arr.buffer.slice(
             arr.byteOffset,
             arr.byteOffset + arr.byteLength
-          ) as ArrayBuffer;
-        }
+          ) as ArrayBuffer,
+        };
         subscription = await registration.pushManager.subscribe(subscribeOpts);
       }
 
