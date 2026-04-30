@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
 import FixNotificationDialog from "@/components/features/FixNotificationDialog";
+import TestPushButton from "@/components/features/TestPushButton";
 
 export default function NotificationSettings() {
   const { t } = useLanguage();
