@@ -66,7 +66,7 @@ export function usePushNotifications() {
               {
                 user_id: user.id,
                 endpoint: sub.endpoint,
-                subscription: sub as unknown as Record<string, unknown>,
+                subscription: sub as never,
               },
             ],
             { onConflict: "user_id,endpoint" }
@@ -154,7 +154,7 @@ export function usePushNotifications() {
           {
             user_id: user.id,
             endpoint: subscription.endpoint!,
-            subscription: json as unknown as Record<string, unknown>,
+            subscription: json as never,
           },
         ],
         { onConflict: "user_id,endpoint" }
