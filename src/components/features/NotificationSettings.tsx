@@ -79,6 +79,8 @@ export default function NotificationSettings() {
               </Button>
             )}
 
+            {isSubscribed && permission === "granted" && <TestPushButton />}
+
             <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
               <p className="font-medium">{t("notif.whatYouGet") || "Quyidagi bildirishnomalar yuboriladi:"}</p>
               <ul className="list-disc pl-4 space-y-0.5">
