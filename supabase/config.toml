@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.send-push]
 verify_jwt = false
+
+[functions.auto-notify]
+verify_jwt = false
+
+[functions.system-health]
+verify_jwt = false

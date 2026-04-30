@@ -40,6 +40,22 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // Authorization: only privileged roles can see aggregate system stats.
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const allowedRoles = new Set(["doctor", "admin", "support"]);
+    const isAuthorized = (roles ?? []).some((r: { role: string }) => allowedRoles.has(r.role));
+    if (!isAuthorized) {
+      log("info", FN_NAME, "Unprivileged caller — returning minimal status", { requestId, userId });
+      return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     const { count: patientCount, error: dbErr } = await supabase
       .from("patients")
       .select("id", { count: "exact", head: true });

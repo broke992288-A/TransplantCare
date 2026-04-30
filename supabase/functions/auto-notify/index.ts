@@ -188,6 +188,24 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { status: 200 });
   }
 
+  // Authentication: require shared secret (set via AUTO_NOTIFY_SECRET) so only
+  // pg_cron / trusted callers can trigger mass notifications.
+  const expectedSecret = Deno.env.get("AUTO_NOTIFY_SECRET");
+  if (!expectedSecret) {
+    console.error("auto-notify: AUTO_NOTIFY_SECRET not configured");
+    return new Response(JSON.stringify({ error: "Server not configured" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const incoming = req.headers.get("Authorization")?.replace("Bearer ", "").trim();
+  if (!incoming || incoming !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     let notifType = "all";
     try {
