@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Pill, AlertTriangle, FileText, Activity } from "lucide-react";
+import { LayoutDashboard, Users, Pill, AlertTriangle, FileText, Activity, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/logo.png";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -19,6 +19,7 @@ export function Sidebar() {
     { icon: AlertTriangle, label: t("nav.alerts"), path: "/alerts", roles: ["admin", "doctor", "support"] },
     { icon: FileText, label: t("nav.reports"), path: "/reports", roles: ["admin", "doctor"] },
     { icon: Activity, label: t("nav.analytics"), path: "/analytics", roles: ["admin", "doctor"] },
+    { icon: Sparkles, label: "AI Chat", path: "/ai-chat", roles: ["admin", "doctor", "support", "patient"] },
   ];
 
   const navItems = allNavItems.filter(item => !role || item.roles.includes(role));
