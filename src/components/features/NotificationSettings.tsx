@@ -7,6 +7,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
 import FixNotificationDialog from "@/components/features/FixNotificationDialog";
 import TestPushButton from "@/components/features/TestPushButton";
+import ResubscribePushButton from "@/components/features/ResubscribePushButton";
 
 export default function NotificationSettings() {
   const { t } = useLanguage();
@@ -79,7 +80,12 @@ export default function NotificationSettings() {
               </Button>
             )}
 
-            {isSubscribed && permission === "granted" && <TestPushButton />}
+            {isSubscribed && permission === "granted" && (
+              <>
+                <TestPushButton />
+                <ResubscribePushButton />
+              </>
+            )}
 
             <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
               <p className="font-medium">{t("notif.whatYouGet") || "Quyidagi bildirishnomalar yuboriladi:"}</p>
