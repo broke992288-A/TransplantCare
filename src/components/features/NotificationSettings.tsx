@@ -81,10 +81,10 @@ export default function NotificationSettings() {
             )}
 
             {isSubscribed && permission === "granted" && (
-              <div className="space-y-2 border-t pt-3">
+              <>
                 <TestPushButton />
                 <ResubscribePushButton />
-              </div>
+              </>
             )}
 
             <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
