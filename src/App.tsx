@@ -32,6 +32,7 @@ const DemoSetup = lazy(() => import("./pages/DemoSetup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Install = lazy(() => import("./pages/Install"));
 const DocumentationPDF = lazy(() => import("./pages/DocumentationPDF"));
+const AIChat = lazy(() => import("./pages/AIChat"));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -127,6 +128,7 @@ const App = () => (
               {/* Legacy alias — redirect to canonical /patient/home */}
               <Route path="/patient/profile" element={<Navigate to="/patient/home" replace />} />
               <Route path="/compare" element={<DoctorOrAdminRoute><RouteWrap><Compare /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/ai-chat" element={<ProtectedRoute><RouteWrap><AIChat /></RouteWrap></ProtectedRoute>} />
               <Route path="/documentation" element={<DocumentationPDF />} />
               <Route path="/install" element={<Install />} />
               <Route path="/" element={<Navigate to="/login" replace />} />
