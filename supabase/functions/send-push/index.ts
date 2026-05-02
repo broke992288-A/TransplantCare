@@ -110,33 +110,94 @@ Deno.serve(async (req: Request) => {
       timestamp: new Date().toISOString(),
     });
 
+    const rows = (subs ?? []) as PushSubscriptionRecord[];
+    const total = rows.length;
+    const wantsStream = req.headers.get("accept")?.includes("text/event-stream");
+
+    // Helper that performs one delivery and returns its result.
+    const deliverOne = async (row: PushSubscriptionRecord) => {
+      try {
+        await webpush.sendNotification(row.subscription, payload, {
+          TTL: 60 * 60 * 24,
+          urgency: "high",
+        });
+        return { ok: true as const, id: row.id };
+      } catch (err: unknown) {
+        const status = (err as { statusCode?: number }).statusCode;
+        const message = err instanceof Error ? err.message : String(err);
+        if (status === 404 || status === 410) {
+          await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
+        }
+        console.warn("[send-push] delivery failed", { id: row.id, status, message });
+        return { ok: false as const, id: row.id, status, message };
+      }
+    };
+
+    // ---- Streaming (SSE) branch ----------------------------------------
+    if (wantsStream) {
+      const stream = new ReadableStream({
+        async start(controller) {
+          const enc = new TextEncoder();
+          const send = (event: string, data: unknown) => {
+            controller.enqueue(
+              enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+            );
+          };
+
+          send("start", { total });
+          let sent = 0;
+          let failed = 0;
+          const errors: Array<{ id: string; status?: number; message: string }> = [];
+
+          for (let i = 0; i < rows.length; i++) {
+            const res = await deliverOne(rows[i]);
+            if (res.ok) {
+              sent++;
+            } else {
+              failed++;
+              errors.push({ id: res.id, status: res.status, message: res.message });
+            }
+            send("progress", {
+              index: i + 1,
+              total,
+              sent,
+              failed,
+              last: res,
+            });
+          }
+
+          send("done", { total, sent, failed, errors });
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          ...headers,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    }
+
+    // ---- Standard JSON branch (backward compatible) --------------------
     let sent = 0;
     let failed = 0;
     const errors: Array<{ id: string; status?: number; message: string }> = [];
 
-    for (const row of (subs ?? []) as PushSubscriptionRecord[]) {
-      try {
-        await webpush.sendNotification(row.subscription, payload, {
-          TTL: 60 * 60 * 24, // 24h
-          urgency: "high",
-        });
-        sent++;
-      } catch (err: unknown) {
-        const status = (err as { statusCode?: number }).statusCode;
-        const message = err instanceof Error ? err.message : String(err);
-
-        if (status === 404 || status === 410) {
-          // Endpoint no longer valid — remove from DB.
-          await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
-        }
+    for (const row of rows) {
+      const res = await deliverOne(row);
+      if (res.ok) sent++;
+      else {
         failed++;
-        errors.push({ id: row.id, status, message });
-        console.warn("[send-push] delivery failed", { id: row.id, status, message });
+        errors.push({ id: res.id, status: res.status, message: res.message });
       }
     }
 
     return new Response(
-      JSON.stringify({ sent, failed, total: (subs ?? []).length, errors }),
+      JSON.stringify({ sent, failed, total, errors }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
     );
   } catch (err: unknown) {
