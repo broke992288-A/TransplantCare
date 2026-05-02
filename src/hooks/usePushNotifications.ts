@@ -83,27 +83,40 @@ export function usePushNotifications() {
   }, [user, support]);
 
   const checkSubscription = useCallback(async () => {
-    if (!user) return;
+    if (!user || support !== "ok") {
+      setIsSubscribed(false);
+      return;
+    }
     try {
-      // Prefer the live PushManager state — DB rows can be stale across browsers.
-      if (navigator.serviceWorker) {
-        const reg = await navigator.serviceWorker.getRegistration();
-        const sub = await reg?.pushManager.getSubscription();
-        if (sub) {
-          setIsSubscribed(true);
-          return;
-        }
+      setPermission(Notification.permission);
+      if (Notification.permission !== "granted") {
+        setIsSubscribed(false);
+        return;
       }
-      const { data } = await supabase
-        .from("push_subscriptions")
-        .select("id")
-        .eq("user_id", user.id)
-        .limit(1);
-      setIsSubscribed((data?.length ?? 0) > 0);
+      // Only trust the current browser's live PushManager state. DB rows may
+      // belong to another domain/browser and can make preview look "enabled" falsely.
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        setIsSubscribed(false);
+        return;
+      }
+      const { error } = await supabase.from("push_subscriptions").upsert(
+        [
+          {
+            user_id: user.id,
+            endpoint: sub.endpoint,
+            subscription: sub.toJSON() as never,
+          },
+        ],
+        { onConflict: "user_id,endpoint" }
+      );
+      if (error) throw error;
+      setIsSubscribed(true);
     } catch {
       setIsSubscribed(false);
     }
-  }, [user]);
+  }, [user, support]);
 
   const subscribe = useCallback(async () => {
     if (!user) return;
@@ -207,5 +220,5 @@ export function usePushNotifications() {
     }
   }, [user]);
 
-  return { permission, isSubscribed, loading, support, subscribe, unsubscribe };
+  return { permission, isSubscribed, loading, support, subscribe, unsubscribe, refresh: checkSubscription };
 }
