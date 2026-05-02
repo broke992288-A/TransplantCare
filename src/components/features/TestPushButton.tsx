@@ -10,9 +10,19 @@ interface DeliveryError {
   message: string;
 }
 
+interface ProgressState {
+  total: number;
+  index: number;
+  sent: number;
+  failed: number;
+  last?:
+    | { ok: true; id: string }
+    | { ok: false; id: string; status?: number; message: string };
+}
+
 type Status =
   | { kind: "idle" }
-  | { kind: "loading" }
+  | { kind: "loading"; progress?: ProgressState }
   | {
       kind: "success";
       sent: number;
@@ -21,6 +31,8 @@ type Status =
       errors: DeliveryError[];
     }
   | { kind: "error"; httpStatus?: number; message: string; raw?: string };
+
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`;
 
 export default function TestPushButton() {
   const { user } = useAuth();
@@ -34,43 +46,108 @@ export default function TestPushButton() {
     }
     setStatus({ kind: "loading" });
     setShowDetails(false);
+
     try {
-      const { data, error } = await supabase.functions.invoke("send-push", {
-        body: {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        setStatus({ kind: "error", message: "Sessiya topilmadi" });
+        return;
+      }
+
+      const resp = await fetch(FUNCTIONS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+        },
+        body: JSON.stringify({
           user_ids: [user.id],
           title: "Test bildirishnoma 🔔",
           body: "Push notification ishlayapti!",
           url: "/patient/home",
-        },
+        }),
       });
 
-      if (error) {
-        // FunctionsHttpError exposes the underlying Response on `context`.
-        const ctx = (error as unknown as { context?: Response }).context;
-        let httpStatus: number | undefined = ctx?.status;
-        let raw: string | undefined;
-        let message = error.message ?? "Edge function xatosi";
-        if (ctx && typeof ctx.text === "function") {
-          try {
-            raw = await ctx.text();
-            try {
-              const parsed = JSON.parse(raw);
-              if (parsed?.error) message = String(parsed.error);
-            } catch {
-              /* raw text only */
-            }
-          } catch {
-            /* ignore */
-          }
+      if (!resp.ok || !resp.body) {
+        const raw = await resp.text().catch(() => "");
+        let message = `Edge function xatosi (${resp.status})`;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.error) message = String(parsed.error);
+        } catch {
+          /* ignore */
         }
-        setStatus({ kind: "error", httpStatus, message, raw });
+        setStatus({ kind: "error", httpStatus: resp.status, message, raw });
         return;
       }
 
-      const sent = Number(data?.sent ?? 0);
-      const failed = Number(data?.failed ?? 0);
-      const total = Number(data?.total ?? 0);
-      const errors: DeliveryError[] = Array.isArray(data?.errors) ? data.errors : [];
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let total = 0;
+      let sent = 0;
+      let failed = 0;
+      const errors: DeliveryError[] = [];
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE blocks separated by blank line
+        let sepIdx;
+        while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
+          const block = buffer.slice(0, sepIdx);
+          buffer = buffer.slice(sepIdx + 2);
+
+          let event = "message";
+          let dataStr = "";
+          for (const line of block.split("\n")) {
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) dataStr += line.slice(5).trim();
+          }
+          if (!dataStr) continue;
+          let payload: Record<string, unknown>;
+          try {
+            payload = JSON.parse(dataStr);
+          } catch {
+            continue;
+          }
+
+          if (event === "start") {
+            total = Number(payload.total ?? 0);
+            setStatus({
+              kind: "loading",
+              progress: { total, index: 0, sent: 0, failed: 0 },
+            });
+          } else if (event === "progress") {
+            const p: ProgressState = {
+              total: Number(payload.total ?? total),
+              index: Number(payload.index ?? 0),
+              sent: Number(payload.sent ?? 0),
+              failed: Number(payload.failed ?? 0),
+              last: payload.last as ProgressState["last"],
+            };
+            sent = p.sent;
+            failed = p.failed;
+            if (p.last && !p.last.ok) {
+              errors.push({
+                id: p.last.id,
+                status: p.last.status,
+                message: p.last.message,
+              });
+            }
+            setStatus({ kind: "loading", progress: p });
+          } else if (event === "done") {
+            total = Number(payload.total ?? total);
+            sent = Number(payload.sent ?? sent);
+            failed = Number(payload.failed ?? failed);
+          }
+        }
+      }
 
       if (total === 0) {
         setStatus({
@@ -91,6 +168,12 @@ export default function TestPushButton() {
     (status.kind === "success" && status.errors.length > 0) ||
     (status.kind === "error" && (status.raw || status.httpStatus));
 
+  const progress = status.kind === "loading" ? status.progress : undefined;
+  const pct =
+    progress && progress.total > 0
+      ? Math.round((progress.index / progress.total) * 100)
+      : 0;
+
   return (
     <div className="space-y-2 border-t pt-3">
       <Button
@@ -107,6 +190,50 @@ export default function TestPushButton() {
         )}
         Test push yuborish
       </Button>
+
+      {status.kind === "loading" && (
+        <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">
+              {progress
+                ? `Yuborilmoqda: ${progress.index} / ${progress.total}`
+                : "Obunalar yuklanmoqda…"}
+            </span>
+            {progress && (
+              <span className="font-mono font-semibold">{pct}%</span>
+            )}
+          </div>
+          <div
+            className="h-1.5 w-full overflow-hidden rounded-full bg-border"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+          >
+            <div
+              className="h-full bg-primary transition-all duration-200 ease-out"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          {progress && (progress.sent > 0 || progress.failed > 0) && (
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="inline-flex items-center gap-1 text-success">
+                <CheckCircle2 className="h-3 w-3" />
+                {progress.sent}
+              </span>
+              <span className="inline-flex items-center gap-1 text-destructive">
+                <XCircle className="h-3 w-3" />
+                {progress.failed}
+              </span>
+              {progress.last && !progress.last.ok && (
+                <span className="font-mono text-muted-foreground truncate">
+                  · {progress.last.status ?? "—"}: {progress.last.message.slice(0, 40)}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {status.kind === "success" && (
         <div
