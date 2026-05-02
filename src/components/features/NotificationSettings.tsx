@@ -11,7 +11,7 @@ import ResubscribePushButton from "@/components/features/ResubscribePushButton";
 
 export default function NotificationSettings() {
   const { t } = useLanguage();
-  const { permission, isSubscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+  const { permission, isSubscribed, loading, subscribe, unsubscribe, refresh } = usePushNotifications();
   const [fixOpen, setFixOpen] = useState(false);
 
   const notSupported = typeof Notification === "undefined" || !("serviceWorker" in navigator);
@@ -31,7 +31,7 @@ export default function NotificationSettings() {
           </p>
         ) : (
           <>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">
                   {t("notif.pushStatus") || "Push bildirishnomalar"}
@@ -42,10 +42,21 @@ export default function NotificationSettings() {
                     : t("notif.disabled") || "O'chirilgan"}
                 </p>
               </div>
-              <Badge variant={isSubscribed ? "default" : "secondary"}>
+              <Badge variant={permission === "granted" && isSubscribed ? "default" : "secondary"}>
                 {permission === "granted" ? "Ruxsat berilgan" : permission === "denied" ? "Rad etilgan" : "So'ralmagan"}
               </Badge>
             </div>
+
+            {permission === "granted" && !isSubscribed && (
+              <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning-foreground space-y-2">
+                <p>
+                  Ruxsat bor, lekin bu domen uchun faol push obuna topilmadi. “Bildirishnomalarni yoqish”ni bosing.
+                </p>
+                <Button size="sm" variant="outline" onClick={refresh} className="w-full">
+                  Holatni qayta tekshirish
+                </Button>
+              </div>
+            )}
 
             {permission === "denied" ? (
               <div className="space-y-2">
@@ -83,7 +94,7 @@ export default function NotificationSettings() {
             {isSubscribed && permission === "granted" && (
               <>
                 <TestPushButton />
-                <ResubscribePushButton />
+                <ResubscribePushButton onResubscribed={refresh} />
               </>
             )}
 
