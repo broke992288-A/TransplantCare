@@ -50,10 +50,10 @@ export default function NotificationSettings() {
             {permission === "granted" && !isSubscribed && (
               <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning-foreground space-y-2">
                 <p>
-                  Ruxsat bor, lekin bu domen uchun faol push obuna topilmadi. “Bildirishnomalarni yoqish”ni bosing.
+                  {t("notif.permissionButNoSubscription")}
                 </p>
                 <Button size="sm" variant="outline" onClick={refresh} className="w-full">
-                  Holatni qayta tekshirish
+                  {t("notif.recheckStatus")}
                 </Button>
               </div>
             )}
