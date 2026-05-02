@@ -79,6 +79,7 @@ export default function TestPushButton() {
         });
         return;
       }
+      setShowDetails(errors.length > 0);
       setStatus({ kind: "success", sent, failed, total, errors });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -112,18 +113,27 @@ export default function TestPushButton() {
           className={`rounded-md border px-3 py-2 text-xs space-y-1 ${
             status.failed === 0
               ? "border-success/30 bg-success/5"
-              : "border-warning/30 bg-warning/5"
+              : status.sent === 0
+                ? "border-destructive/30 bg-destructive/5"
+                : "border-warning/30 bg-warning/5"
           }`}
         >
           <div className="flex items-start gap-2">
             {status.failed === 0 ? (
               <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
             ) : (
-              <XCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+              <XCircle
+                className={`h-4 w-4 shrink-0 mt-0.5 ${
+                  status.sent === 0 ? "text-destructive" : "text-warning"
+                }`}
+              />
             )}
             <span>
-              HTTP <span className="font-mono font-semibold">200</span> · Yuborildi:{" "}
-              <span className="font-semibold">{status.sent}</span> / {status.total}
+              HTTP <span className="font-mono font-semibold">200</span> ·{" "}
+              {status.failed > 0
+                ? "Server qabul qildi, lekin push yetkazilmadi"
+                : "Push yetkazildi"}{" "}
+              · Yuborildi: <span className="font-semibold">{status.sent}</span> / {status.total}
               {status.failed > 0 && (
                 <>
                   {" "}
