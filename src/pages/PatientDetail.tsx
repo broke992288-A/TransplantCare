@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import PatientCockpitHeader from "@/components/features/PatientCockpitHeader";
 import LatestLabsTable from "@/components/features/LatestLabsTable";
-import LabTrendCharts from "@/components/features/LabTrendCharts";
+const LabTrendCharts = lazy(() => import("@/components/features/LabTrendCharts"));
 
 import ActiveMedicationsCard from "@/components/features/ActiveMedicationsCard";
 import PredictionPanel from "@/components/features/PredictionPanel";
@@ -154,7 +154,9 @@ export default function PatientDetail() {
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={50} minSize={25}>
             <div className="p-3 h-full overflow-auto">
-              <LabTrendCharts labs={allLabs} />
+              <Suspense fallback={<div className="flex items-center justify-center h-32"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
+                <LabTrendCharts labs={allLabs} />
+              </Suspense>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

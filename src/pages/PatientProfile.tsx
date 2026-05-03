@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import TranslatedText from "@/components/features/TranslatedText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import LabUploadDialog from "@/components/features/LabUploadDialog";
 import NotificationSettings from "@/components/features/NotificationSettings";
 import LabResultsTable from "@/components/features/LabResultsTable";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
-import LabTrendCharts from "@/components/features/LabTrendCharts";
+const LabTrendCharts = lazy(() => import("@/components/features/LabTrendCharts"));
 import PatientRiskCard from "@/components/features/PatientRiskCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
 import { usePatientMedications } from "@/hooks/useMedications";
@@ -172,7 +172,9 @@ export default function PatientProfile() {
 
           {/* Trends */}
           <TabsContent value="trends">
-            <LabTrendCharts labs={allLabs} />
+            <Suspense fallback={<div className="flex items-center justify-center h-32 text-sm text-muted-foreground">…</div>}>
+              <LabTrendCharts labs={allLabs} />
+            </Suspense>
           </TabsContent>
 
           {/* Risk */}
