@@ -96,10 +96,25 @@ export function usePushNotifications() {
       // Only trust the current browser's live PushManager state. DB rows may
       // belong to another domain/browser and can make preview look "enabled" falsely.
       const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
+      let sub = await reg.pushManager.getSubscription();
       if (!sub) {
-        setIsSubscribed(false);
-        return;
+        // Auto-create subscription since permission is already granted.
+        try {
+          const VAPID_PUBLIC_KEY =
+            "BESenczV7nbE35U7T8moJbH4vmXypq8gijuBKLr9dWs3BqukRBqoeFWk-80qwzIgnh0OO7t-xcGCckVhMIEA7Hw";
+          const arr = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: arr.buffer.slice(
+              arr.byteOffset,
+              arr.byteOffset + arr.byteLength
+            ) as ArrayBuffer,
+          });
+        } catch (subErr) {
+          console.error("Auto-subscribe failed:", subErr);
+          setIsSubscribed(false);
+          return;
+        }
       }
       const { error } = await supabase.from("push_subscriptions").upsert(
         [
