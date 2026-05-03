@@ -91,6 +91,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Authorization: doctor/admin/support may target any user; patients only themselves.
+    const { data: rolesData } = await serviceClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id);
+    const roles = (rolesData ?? []).map((r: { role: string }) => r.role);
+    const isPrivileged = roles.some((r) => ["doctor", "admin", "support"].includes(r));
+    if (!isPrivileged) {
+      const onlySelf = user_ids.every((uid: string) => uid === userData.user.id);
+      if (!onlySelf) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden: insufficient role to send notifications to other users" }),
+          { status: 403, headers: { ...headers, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const { data: subs, error: subError } = await serviceClient
       .from("push_subscriptions")
       .select("id, user_id, subscription")
