@@ -172,7 +172,9 @@ export default function PatientProfile() {
 
           {/* Trends */}
           <TabsContent value="trends">
-            <LabTrendCharts labs={allLabs} />
+            <Suspense fallback={<div className="flex items-center justify-center h-32 text-sm text-muted-foreground">…</div>}>
+              <LabTrendCharts labs={allLabs} />
+            </Suspense>
           </TabsContent>
 
           {/* Risk */}
