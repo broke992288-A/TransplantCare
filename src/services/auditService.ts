@@ -16,16 +16,13 @@ export async function logAudit(params: {
   metadata?: Record<string, unknown>;
 }) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("audit_logs").insert([{
-      user_id: user.id,
-      action: params.action,
-      entity_type: params.entityType ?? null,
-      entity_id: params.entityId ?? null,
-      metadata: (params.metadata ?? {}) as Record<string, string>,
-    }]);
+    const { error } = await supabase.rpc("log_audit_event", {
+      _action: params.action,
+      _entity_type: params.entityType ?? undefined,
+      _entity_id: params.entityId ?? undefined,
+      _metadata: (params.metadata ?? {}) as never,
+    });
+    if (error) throw error;
   } catch (err) {
     console.error("[Audit] Failed to log:", params.action, err);
   }
