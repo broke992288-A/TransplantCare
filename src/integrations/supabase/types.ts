@@ -886,6 +886,15 @@ export type Database = {
         }
         Returns: Json
       }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _entity_id?: string
+          _entity_type?: string
+          _metadata?: Json
+        }
+        Returns: string
+      }
       normalize_lab_value: {
         Args: { _test_name: string; _unit: string; _value: number }
         Returns: number
