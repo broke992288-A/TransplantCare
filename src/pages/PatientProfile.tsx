@@ -16,7 +16,7 @@ import LabUploadDialog from "@/components/features/LabUploadDialog";
 import NotificationSettings from "@/components/features/NotificationSettings";
 import LabResultsTable from "@/components/features/LabResultsTable";
 import LabHistoryTable from "@/components/features/LabHistoryTable";
-import LabTrendCharts from "@/components/features/LabTrendCharts";
+const LabTrendCharts = lazy(() => import("@/components/features/LabTrendCharts"));
 import PatientRiskCard from "@/components/features/PatientRiskCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
 import { usePatientMedications } from "@/hooks/useMedications";
