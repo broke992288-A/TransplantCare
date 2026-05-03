@@ -58,11 +58,19 @@ export default function AIChat() {
     abortRef.current = controller;
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast({ title: "Auth error", description: "Please sign in again", variant: "destructive" });
+        setIsStreaming(false);
+        return;
+      }
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
         },
         body: JSON.stringify({ messages: next }),
         signal: controller.signal,
