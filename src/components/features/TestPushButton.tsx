@@ -3,6 +3,7 @@ import { Send, Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lu
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface DeliveryError {
   id: string;
@@ -36,12 +37,13 @@ const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-pu
 
 export default function TestPushButton() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [showDetails, setShowDetails] = useState(false);
 
   const sendTest = async () => {
     if (!user) {
-      setStatus({ kind: "error", message: "Tizimga kiring" });
+      setStatus({ kind: "error", message: t("testPush.loginRequired") });
       return;
     }
     setStatus({ kind: "loading" });
@@ -51,7 +53,7 @@ export default function TestPushButton() {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        setStatus({ kind: "error", message: "Sessiya topilmadi" });
+        setStatus({ kind: "error", message: t("testPush.noSession") });
         return;
       }
 
@@ -65,15 +67,15 @@ export default function TestPushButton() {
         },
         body: JSON.stringify({
           user_ids: [user.id],
-          title: "Test bildirishnoma 🔔",
-          body: "Push notification ishlayapti!",
+          title: t("testPush.testTitle"),
+          body: t("testPush.testBody"),
           url: "/patient/home",
         }),
       });
 
       if (!resp.ok || !resp.body) {
         const raw = await resp.text().catch(() => "");
-        let message = `Edge function xatosi (${resp.status})`;
+        let message = `${t("testPush.fnError")} (${resp.status})`;
         try {
           const parsed = JSON.parse(raw);
           if (parsed?.error) message = String(parsed.error);
@@ -152,7 +154,7 @@ export default function TestPushButton() {
       if (total === 0) {
         setStatus({
           kind: "error",
-          message: "Obuna topilmadi. Avval bildirishnomalarni yoqing.",
+          message: t("testPush.noSubs"),
         });
         return;
       }
@@ -188,7 +190,7 @@ export default function TestPushButton() {
         ) : (
           <Send className="h-4 w-4 mr-2" />
         )}
-        Test push yuborish
+        {t("testPush.btn")}
       </Button>
 
       {status.kind === "loading" && (
@@ -196,8 +198,8 @@ export default function TestPushButton() {
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">
               {progress
-                ? `Yuborilmoqda: ${progress.index} / ${progress.total}`
-                : "Obunalar yuklanmoqda…"}
+                ? `${t("testPush.sending")}: ${progress.index} / ${progress.total}`
+                : t("testPush.loadingSubs")}
             </span>
             {progress && (
               <span className="font-mono font-semibold">{pct}%</span>
@@ -258,13 +260,13 @@ export default function TestPushButton() {
             <span>
               HTTP <span className="font-mono font-semibold">200</span> ·{" "}
               {status.failed > 0
-                ? "Server qabul qildi, lekin push yetkazilmadi"
-                : "Push yetkazildi"}{" "}
-              · Yuborildi: <span className="font-semibold">{status.sent}</span> / {status.total}
+                ? t("testPush.serverOkNotDelivered")
+                : t("testPush.delivered")}{" "}
+              · {t("testPush.sent")}: <span className="font-semibold">{status.sent}</span> / {status.total}
               {status.failed > 0 && (
                 <>
                   {" "}
-                  · Xato:{" "}
+                  · {t("testPush.errors")}:{" "}
                   <span className="font-semibold text-destructive">
                     {status.failed}
                   </span>
@@ -284,7 +286,7 @@ export default function TestPushButton() {
               ) : (
                 <ChevronDown className="h-3 w-3" />
               )}
-              {showDetails ? "Tafsilotni yashirish" : "Tafsilotlarni ko'rsatish"}
+              {showDetails ? t("testPush.hideDetails") : t("testPush.showDetails")}
             </button>
           )}
 
@@ -339,7 +341,7 @@ export default function TestPushButton() {
               ) : (
                 <ChevronDown className="h-3 w-3" />
               )}
-              {showDetails ? "Xom javobni yashirish" : "Xom javobni ko'rsatish"}
+              {showDetails ? t("testPush.hideRaw") : t("testPush.showRaw")}
             </button>
           )}
 
