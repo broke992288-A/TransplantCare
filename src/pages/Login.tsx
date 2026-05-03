@@ -55,7 +55,9 @@ export default function Login() {
         navigate("/select-role", { replace: true });
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const anyErr = err as { message?: unknown; error_description?: unknown; msg?: unknown };
+      const raw = anyErr?.message ?? anyErr?.error_description ?? anyErr?.msg ?? err;
+      const message = typeof raw === "string" ? raw : JSON.stringify(raw);
       console.error("[Login] sign-in failed", err);
       toast({ title: t("common.error"), description: message, variant: "destructive" });
     } finally {
