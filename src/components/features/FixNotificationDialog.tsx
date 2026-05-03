@@ -23,10 +23,15 @@ function detectBrowser(): Browser {
 function isStandalonePWA(): boolean {
   if (typeof window === "undefined") return false;
   // iOS
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const iosStandalone = (window.navigator as any).standalone === true;
+  const iosNavigator = window.navigator as Navigator & { standalone?: boolean };
+  const iosStandalone = iosNavigator.standalone === true;
   const displayStandalone = window.matchMedia?.("(display-mode: standalone)").matches ?? false;
   return iosStandalone || displayStandalone;
+}
+
+function isEmbeddedPreview(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.self !== window.top;
 }
 
 interface Props {
@@ -39,6 +44,8 @@ export default function FixNotificationDialog({ open, onOpenChange }: Props) {
   const navigate = useNavigate();
   const browser = useMemo(detectBrowser, []);
   const standalone = useMemo(isStandalonePWA, []);
+  const embeddedPreview = useMemo(isEmbeddedPreview, []);
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const [tab, setTab] = useState<"pwa" | "browser">(standalone ? "browser" : "pwa");
 
   const browserSteps: Record<Browser, string[]> = {
@@ -103,8 +110,27 @@ export default function FixNotificationDialog({ open, onOpenChange }: Props) {
             <Lock className="h-5 w-5 text-primary" />
             {t("fixNotif.title")}
           </DialogTitle>
-          <DialogDescription>{t("fixNotif.subtitle")}</DialogDescription>
+          <DialogDescription>{embeddedPreview ? t("fixNotif.frameSubtitle") : t("fixNotif.subtitle")}</DialogDescription>
         </DialogHeader>
+
+        {embeddedPreview && (
+          <div className="rounded-lg border bg-warning/5 p-3 space-y-2 text-sm">
+            <p className="font-medium">{t("fixNotif.frameTitle")}</p>
+            <p className="text-xs text-muted-foreground">{t("fixNotif.frameDesc")}</p>
+            <p className="text-xs text-muted-foreground break-all">
+              {t("fixNotif.frameOrigin")}: <span className="font-mono">{currentOrigin}</span>
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
+            >
+              {t("fixNotif.openDirectPreview")}
+              <ExternalLink className="h-3 w-3 ml-1.5" />
+            </Button>
+          </div>
+        )}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as "pwa" | "browser")}>
           <TabsList className="grid w-full grid-cols-2">
