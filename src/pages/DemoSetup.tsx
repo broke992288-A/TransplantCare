@@ -9,8 +9,8 @@ export default function DemoSetup() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Demo Setup</h1>
-          <p className="text-muted-foreground">Тизимни тест қилиш учун демо маълумотлар яратинг</p>
+          <h1 className="text-2xl font-bold">{t("demoSetup.title")}</h1>
+          <p className="text-muted-foreground">{t("demoSetup.subtitle")}</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           <DemoDataGenerator />

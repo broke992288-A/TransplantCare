@@ -43,7 +43,7 @@ export default function NotificationSettings() {
                 </p>
               </div>
               <Badge variant={permission === "granted" && isSubscribed ? "default" : "secondary"}>
-                {permission === "granted" ? "Ruxsat berilgan" : permission === "denied" ? "Rad etilgan" : "So'ralmagan"}
+                {permission === "granted" ? t("notif.permGranted") : permission === "denied" ? t("notif.permDenied") : t("notif.permNotAsked")}
               </Badge>
             </div>
 
