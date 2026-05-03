@@ -154,7 +154,9 @@ export default function PatientDetail() {
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={50} minSize={25}>
             <div className="p-3 h-full overflow-auto">
-              <LabTrendCharts labs={allLabs} />
+              <Suspense fallback={<div className="flex items-center justify-center h-32"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
+                <LabTrendCharts labs={allLabs} />
+              </Suspense>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
