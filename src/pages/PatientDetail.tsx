@@ -22,7 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import PatientCockpitHeader from "@/components/features/PatientCockpitHeader";
 import LatestLabsTable from "@/components/features/LatestLabsTable";
-import LabTrendCharts from "@/components/features/LabTrendCharts";
+const LabTrendCharts = lazy(() => import("@/components/features/LabTrendCharts"));
 
 import ActiveMedicationsCard from "@/components/features/ActiveMedicationsCard";
 import PredictionPanel from "@/components/features/PredictionPanel";
