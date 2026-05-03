@@ -3,6 +3,7 @@ import { RefreshCw, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 
 /**
  * Re-registers the push subscription against the CURRENT VAPID public key.
@@ -44,35 +45,36 @@ interface Props {
 
 export default function ResubscribePushButton({ onResubscribed }: Props) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   const resubscribe = async () => {
     if (!user) {
-      setStatus({ kind: "error", message: "Tizimga kiring" });
+      setStatus({ kind: "error", message: t("resub.loginRequired") });
       return;
     }
     if (typeof Notification === "undefined" || !("serviceWorker" in navigator)) {
-      setStatus({ kind: "error", message: "Brauzer push'ni qo'llab-quvvatlamaydi" });
+      setStatus({ kind: "error", message: t("resub.unsupported") });
       return;
     }
 
     try {
       // 1. Ensure permission is still granted.
-      setStatus({ kind: "loading", step: "Ruxsat tekshirilmoqda…" });
+      setStatus({ kind: "loading", step: t("resub.checkPerm") });
       if (Notification.permission !== "granted") {
         const perm = await Notification.requestPermission();
         if (perm !== "granted") {
-          setStatus({ kind: "error", message: "Bildirishnoma ruxsati berilmadi" });
+          setStatus({ kind: "error", message: t("resub.permDenied") });
           return;
         }
       }
 
       // 2. Get the active SW registration (VitePWA owns registration).
-      setStatus({ kind: "loading", step: "Service worker tayyorlanmoqda…" });
+      setStatus({ kind: "loading", step: t("resub.swReady") });
       const registration = await navigator.serviceWorker.ready;
 
       // 3. Unsubscribe any existing browser-side subscription.
-      setStatus({ kind: "loading", step: "Eski obuna o'chirilmoqda…" });
+      setStatus({ kind: "loading", step: t("resub.removeOld") });
       const existing = await registration.pushManager.getSubscription();
       const oldEndpoint = existing?.endpoint;
       if (existing) {
@@ -84,11 +86,11 @@ export default function ResubscribePushButton({ onResubscribed }: Props) {
       }
 
       // 4. Drop ALL stale rows for this user (covers cross-key/cross-device cruft).
-      setStatus({ kind: "loading", step: "Bazadan eski yozuvlar olib tashlanmoqda…" });
+      setStatus({ kind: "loading", step: t("resub.cleanDb") });
       await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
 
       // 5. Re-subscribe with the current VAPID public key.
-      setStatus({ kind: "loading", step: "Yangi obuna yaratilmoqda…" });
+      setStatus({ kind: "loading", step: t("resub.createNew") });
       const arr = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       const subscribeOpts: PushSubscriptionOptionsInit = {
         userVisibleOnly: true,
@@ -100,7 +102,7 @@ export default function ResubscribePushButton({ onResubscribed }: Props) {
       const fresh = await registration.pushManager.subscribe(subscribeOpts);
 
       // 6. Persist the fresh subscription.
-      setStatus({ kind: "loading", step: "Yangi obuna saqlanmoqda…" });
+      setStatus({ kind: "loading", step: t("resub.saveNew") });
       const json = fresh.toJSON();
       const { error } = await supabase.from("push_subscriptions").upsert(
         [
@@ -147,7 +149,7 @@ export default function ResubscribePushButton({ onResubscribed }: Props) {
         ) : (
           <RefreshCw className="h-4 w-4 mr-2" />
         )}
-        VAPID kalitini qayta ro'yxatdan o'tkazish
+        {t("resub.btn")}
       </Button>
 
       {status.kind === "loading" && (
@@ -158,7 +160,7 @@ export default function ResubscribePushButton({ onResubscribed }: Props) {
         <div className="rounded-md border border-success/30 bg-success/5 px-3 py-2 flex items-start gap-2 text-xs">
           <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
           <span>
-            Yangi obuna yaratildi ✅ Endi “Test push yuborish” tugmasini bosib tekshiring.
+            {t("resub.success")}
           </span>
         </div>
       )}
