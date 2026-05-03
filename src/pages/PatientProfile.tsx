@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import TranslatedText from "@/components/features/TranslatedText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
