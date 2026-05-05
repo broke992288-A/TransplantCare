@@ -19,6 +19,7 @@ import LabHistoryTable from "@/components/features/LabHistoryTable";
 const LabTrendCharts = lazy(() => import("@/components/features/LabTrendCharts"));
 import PatientRiskCard from "@/components/features/PatientRiskCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
+import DoctorNotesCard from "@/components/features/DoctorNotesCard";
 import { usePatientMedications } from "@/hooks/useMedications";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -135,6 +136,8 @@ export default function PatientProfile() {
                 {t("profile.highRiskWarning")}
               </div>
             )}
+            <DoctorNotesCard patientId={patient.id} readOnly />
+            <PatientAlertsCard patientId={patient.id} />
             <NotificationSettings />
           </TabsContent>
 

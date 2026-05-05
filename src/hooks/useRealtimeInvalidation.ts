@@ -8,6 +8,7 @@ const WATCHED_TABLES = [
   { table: "risk_snapshots", queryKeys: ["risk-snapshots", "risk-snapshot-latest"] },
   { table: "patient_alerts", queryKeys: ["patient-alerts", "patient-alerts-unread"] },
   { table: "lab_schedules", queryKeys: ["lab-schedules", "overdue-lab-schedules"] },
+  { table: "doctor_notes", queryKeys: ["doctor-notes"] },
 ] as const;
 
 export function useRealtimeInvalidation() {
@@ -30,6 +31,9 @@ export function useRealtimeInvalidation() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "lab_schedules" }, () => {
         WATCHED_TABLES[4].queryKeys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "doctor_notes" }, () => {
+        WATCHED_TABLES[5].queryKeys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       })
       .subscribe();
 
