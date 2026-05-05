@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAddDoctorNote } from "@/hooks/useDoctorNotes";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   patientId: string;
