@@ -83,6 +83,30 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
         plan: plan.trim() || undefined,
         follow_up_date: followUpDate || null,
       });
+
+      // Notify patient (linked user) via push if available
+      try {
+        const { data: pat } = await supabase
+          .from("patients")
+          .select("linked_user_id, full_name")
+          .eq("id", patientId)
+          .maybeSingle();
+        const linkedUserId = (pat as { linked_user_id?: string } | null)?.linked_user_id;
+        if (linkedUserId) {
+          const bodyText = (assessment.trim() || plan.trim()).slice(0, 140);
+          await supabase.functions.invoke("send-push", {
+            body: {
+              user_ids: [linkedUserId],
+              title: "👨‍⚕️ Shifokor yangi yozuv qo'shdi",
+              body: bodyText || "Yangi klinik yozuv mavjud.",
+              url: "/patient/home",
+            },
+          });
+        }
+      } catch (pushErr) {
+        console.warn("[AddDoctorNote] push notify failed", pushErr);
+      }
+
       toast({ title: "Note added" });
       setAssessment("");
       setPlan("");
