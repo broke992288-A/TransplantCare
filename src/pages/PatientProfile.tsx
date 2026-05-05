@@ -136,6 +136,8 @@ export default function PatientProfile() {
                 {t("profile.highRiskWarning")}
               </div>
             )}
+            <DoctorNotesCard patientId={patient.id} readOnly />
+            <PatientAlertsCard patientId={patient.id} />
             <NotificationSettings />
           </TabsContent>
 
