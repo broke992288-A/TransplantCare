@@ -32,6 +32,9 @@ export function useRealtimeInvalidation() {
       .on("postgres_changes", { event: "*", schema: "public", table: "lab_schedules" }, () => {
         WATCHED_TABLES[4].queryKeys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "doctor_notes" }, () => {
+        WATCHED_TABLES[5].queryKeys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      })
       .subscribe();
 
     return () => {
