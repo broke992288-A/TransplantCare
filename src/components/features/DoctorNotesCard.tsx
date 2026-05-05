@@ -39,7 +39,7 @@ export default function DoctorNotesCard({ patientId, readOnly = false }: Props) 
               <Badge variant="secondary">{notes.length}</Badge>
             )}
           </div>
-          <AddDoctorNoteDialog patientId={patientId} />
+          {!readOnly && <AddDoctorNoteDialog patientId={patientId} />}
         </div>
       </CardHeader>
       <CardContent>
