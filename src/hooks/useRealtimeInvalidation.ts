@@ -8,6 +8,7 @@ const WATCHED_TABLES = [
   { table: "risk_snapshots", queryKeys: ["risk-snapshots", "risk-snapshot-latest"] },
   { table: "patient_alerts", queryKeys: ["patient-alerts", "patient-alerts-unread"] },
   { table: "lab_schedules", queryKeys: ["lab-schedules", "overdue-lab-schedules"] },
+  { table: "doctor_notes", queryKeys: ["doctor-notes"] },
 ] as const;
 
 export function useRealtimeInvalidation() {
