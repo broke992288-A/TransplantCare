@@ -9,12 +9,13 @@ import AddDoctorNoteDialog from "@/components/features/AddDoctorNoteDialog";
 
 interface Props {
   patientId: string;
+  readOnly?: boolean;
 }
 
-export default function DoctorNotesCard({ patientId }: Props) {
+export default function DoctorNotesCard({ patientId, readOnly = false }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: notes = [], isLoading } = useDoctorNotes(patientId, 3);
+  const { data: notes = [], isLoading } = useDoctorNotes(patientId, readOnly ? 10 : 3);
   const deleteNote = useDeleteDoctorNote(patientId);
 
   const handleDelete = async (noteId: string) => {
