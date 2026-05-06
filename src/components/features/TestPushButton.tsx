@@ -33,7 +33,12 @@ type Status =
     }
   | { kind: "error"; httpStatus?: number; message: string; raw?: string };
 
-const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`;
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ?? "https://uszimflqyqmhlxbizcre.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3VzemltZmxxeXFtaGx4Yml6Y3JlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJ1c3ppbWZscXlxbWhseGJpemNyZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzcyNjIwNzU2LCJleHAiOjIwODgxOTY3NTZ9.hc4NlCD0vREddq4OtfbekcrqRbsXbGx0e_o9ns7dtRA";
+const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/send-push`;
 
 export default function TestPushButton() {
   const { user } = useAuth();
@@ -63,7 +68,7 @@ export default function TestPushButton() {
           "Content-Type": "application/json",
           Accept: "text/event-stream",
           Authorization: `Bearer ${accessToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+          apikey: SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           user_ids: [user.id],
