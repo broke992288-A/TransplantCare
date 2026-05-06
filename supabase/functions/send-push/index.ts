@@ -2,7 +2,7 @@ import { getCorsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import webpush from "npm:web-push@3.6.7";
 
-const corsHeaders = (req: Request) => getCorsHeaders(req, "POST, OPTIONS");
+const corsHeaders = (req: Request) => getCorsHeaders(req, "GET, POST, OPTIONS");
 
 /**
  * Push notification dispatcher.
