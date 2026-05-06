@@ -2,7 +2,7 @@ import { getCorsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import webpush from "npm:web-push@3.6.7";
 
-const corsHeaders = (req: Request) => getCorsHeaders(req, "POST, OPTIONS");
+const corsHeaders = (req: Request) => getCorsHeaders(req, "GET, POST, OPTIONS");
 
 /**
  * Push notification dispatcher.
@@ -23,6 +23,60 @@ const corsHeaders = (req: Request) => getCorsHeaders(req, "POST, OPTIONS");
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@transplantcare.uz";
+
+function base64UrlToBytes(value: string) {
+  const padded = value + "=".repeat((4 - (value.length % 4)) % 4);
+  const binary = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function validateVapidKeyPair() {
+  try {
+    const publicBytes = base64UrlToBytes(VAPID_PUBLIC_KEY);
+    const privateBytes = base64UrlToBytes(VAPID_PRIVATE_KEY);
+    if (publicBytes.length !== 65 || publicBytes[0] !== 4 || privateBytes.length !== 32) {
+      return false;
+    }
+
+    const x = bytesToBase64Url(publicBytes.slice(1, 33));
+    const y = bytesToBase64Url(publicBytes.slice(33, 65));
+    const d = bytesToBase64Url(privateBytes);
+    const privateKey = await crypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", x, y, d },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
+    const publicKey = await crypto.subtle.importKey(
+      "raw",
+      publicBytes,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"],
+    );
+    const message = new TextEncoder().encode("vapid-key-check");
+    const signature = await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      privateKey,
+      message,
+    );
+    return crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      publicKey,
+      signature,
+      message,
+    );
+  } catch {
+    return false;
+  }
+}
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   try {
@@ -48,7 +102,24 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers });
   }
 
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({
+        publicKey: VAPID_PUBLIC_KEY,
+        keyPairValid: await validateVapidKeyPair(),
+      }),
+      { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
+    );
+  }
+
   try {
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       return new Response(
         JSON.stringify({ error: "VAPID keys not configured on server" }),
@@ -143,7 +214,7 @@ Deno.serve(async (req: Request) => {
       } catch (err: unknown) {
         const status = (err as { statusCode?: number }).statusCode;
         const message = err instanceof Error ? err.message : String(err);
-        if (status === 404 || status === 410) {
+        if (status === 403 || status === 404 || status === 410) {
           await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
         }
         console.warn("[send-push] delivery failed", { id: row.id, status, message });
