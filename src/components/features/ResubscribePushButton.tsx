@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
+import { getVapidPublicKey } from "@/lib/pushConfig";
 
 /**
  * Re-registers the push subscription against the CURRENT VAPID public key.
@@ -20,9 +21,6 @@ import { useLanguage } from "@/hooks/useLanguage";
  *
  * After this runs, the test-push button (and cron-driven pushes) should deliver.
  */
-
-const VAPID_PUBLIC_KEY =
-  "BESenczV7nbE35U7T8moJbH4vmXypq8gijuBKLr9dWs3BqukRBqoeFWk-80qwzIgnh0OO7t-xcGCckVhMIEA7Hw";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -91,7 +89,7 @@ export default function ResubscribePushButton({ onResubscribed }: Props) {
 
       // 5. Re-subscribe with the current VAPID public key.
       setStatus({ kind: "loading", step: t("resub.createNew") });
-      const arr = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const arr = urlBase64ToUint8Array(await getVapidPublicKey());
       const subscribeOpts: PushSubscriptionOptionsInit = {
         userVisibleOnly: true,
         applicationServerKey: arr.buffer.slice(
