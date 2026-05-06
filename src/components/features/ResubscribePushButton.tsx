@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
-import { getVapidPublicKey } from "@/lib/pushConfig";
+import { subscribeWithCurrentVapidKey } from "@/lib/pushConfig";
 
 /**
  * Re-registers the push subscription against the CURRENT VAPID public key.
@@ -21,15 +21,6 @@ import { getVapidPublicKey } from "@/lib/pushConfig";
  *
  * After this runs, the test-push button (and cron-driven pushes) should deliver.
  */
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const out = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) out[i] = rawData.charCodeAt(i);
-  return out;
-}
 
 type Status =
   | { kind: "idle" }
@@ -89,15 +80,7 @@ export default function ResubscribePushButton({ onResubscribed }: Props) {
 
       // 5. Re-subscribe with the current VAPID public key.
       setStatus({ kind: "loading", step: t("resub.createNew") });
-      const arr = urlBase64ToUint8Array(await getVapidPublicKey());
-      const subscribeOpts: PushSubscriptionOptionsInit = {
-        userVisibleOnly: true,
-        applicationServerKey: arr.buffer.slice(
-          arr.byteOffset,
-          arr.byteOffset + arr.byteLength,
-        ) as ArrayBuffer,
-      };
-      const fresh = await registration.pushManager.subscribe(subscribeOpts);
+      const fresh = await subscribeWithCurrentVapidKey(registration);
 
       // 6. Persist the fresh subscription.
       setStatus({ kind: "loading", step: t("resub.saveNew") });
