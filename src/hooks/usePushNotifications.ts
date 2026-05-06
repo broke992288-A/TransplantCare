@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getVapidPublicKey } from "@/lib/pushConfig";
 import { toast } from "sonner";
 
 /**
@@ -100,9 +101,7 @@ export function usePushNotifications() {
       if (!sub) {
         // Auto-create subscription since permission is already granted.
         try {
-          const VAPID_PUBLIC_KEY =
-            "BESenczV7nbE35U7T8moJbH4vmXypq8gijuBKLr9dWs3BqukRBqoeFWk-80qwzIgnh0OO7t-xcGCckVhMIEA7Hw";
-          const arr = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+          const arr = urlBase64ToUint8Array(await getVapidPublicKey());
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: arr.buffer.slice(
@@ -165,9 +164,7 @@ export function usePushNotifications() {
       if (!subscription) {
         // VAPID public key is safe to expose in client code — it is sent with every push request.
         // The matching private key is stored as a backend secret and used by the send-push edge function.
-        const VAPID_PUBLIC_KEY =
-          "BESenczV7nbE35U7T8moJbH4vmXypq8gijuBKLr9dWs3BqukRBqoeFWk-80qwzIgnh0OO7t-xcGCckVhMIEA7Hw";
-        const arr = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+        const arr = urlBase64ToUint8Array(await getVapidPublicKey());
         const subscribeOpts: PushSubscriptionOptionsInit = {
           userVisibleOnly: true,
           // Cast through ArrayBuffer to satisfy DOM lib types in some TS versions.
