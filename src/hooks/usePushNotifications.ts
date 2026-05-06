@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { getVapidPublicKey } from "@/lib/pushConfig";
+import { arrayBufferToBase64Url, getVapidPublicKey, subscribeWithCurrentVapidKey } from "@/lib/pushConfig";
 import { toast } from "sonner";
 
 /**
@@ -18,15 +18,6 @@ import { toast } from "sonner";
  *  - On `pushsubscriptionchange` (rotation/expiry) the SW posts a message; we listen
  *    and persist the new subscription transparently.
  */
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
-  return outputArray;
-}
 
 export type PushSupport =
   | "ok"
@@ -98,17 +89,19 @@ export function usePushNotifications() {
       // belong to another domain/browser and can make preview look "enabled" falsely.
       const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
+      const currentPublicKey = await getVapidPublicKey();
+      const subscriptionPublicKey = sub
+        ? arrayBufferToBase64Url(sub.options.applicationServerKey)
+        : null;
+      if (sub && subscriptionPublicKey !== currentPublicKey) {
+        await sub.unsubscribe().catch(() => undefined);
+        await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
+        sub = null;
+      }
       if (!sub) {
         // Auto-create subscription since permission is already granted.
         try {
-          const arr = urlBase64ToUint8Array(await getVapidPublicKey());
-          sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: arr.buffer.slice(
-              arr.byteOffset,
-              arr.byteOffset + arr.byteLength
-            ) as ArrayBuffer,
-          });
+          sub = await subscribeWithCurrentVapidKey(reg);
         } catch (subErr) {
           console.error("Auto-subscribe failed:", subErr);
           setIsSubscribed(false);
@@ -160,20 +153,21 @@ export function usePushNotifications() {
 
       // Reuse existing subscription if present (idempotent enable).
       let subscription = await registration.pushManager.getSubscription();
+      const currentPublicKey = await getVapidPublicKey();
+      const subscriptionPublicKey = subscription
+        ? arrayBufferToBase64Url(subscription.options.applicationServerKey)
+        : null;
+
+      if (subscription && subscriptionPublicKey !== currentPublicKey) {
+        await subscription.unsubscribe().catch(() => undefined);
+        await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
+        subscription = null;
+      }
 
       if (!subscription) {
         // VAPID public key is safe to expose in client code — it is sent with every push request.
         // The matching private key is stored as a backend secret and used by the send-push edge function.
-        const arr = urlBase64ToUint8Array(await getVapidPublicKey());
-        const subscribeOpts: PushSubscriptionOptionsInit = {
-          userVisibleOnly: true,
-          // Cast through ArrayBuffer to satisfy DOM lib types in some TS versions.
-          applicationServerKey: arr.buffer.slice(
-            arr.byteOffset,
-            arr.byteOffset + arr.byteLength
-          ) as ArrayBuffer,
-        };
-        subscription = await registration.pushManager.subscribe(subscribeOpts);
+        subscription = await subscribeWithCurrentVapidKey(registration);
       }
 
       const json = subscription.toJSON();
