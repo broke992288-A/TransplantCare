@@ -48,7 +48,21 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers });
   }
 
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({ publicKey: VAPID_PUBLIC_KEY }),
+      { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
+    );
+  }
+
   try {
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       return new Response(
         JSON.stringify({ error: "VAPID keys not configured on server" }),
@@ -143,7 +157,7 @@ Deno.serve(async (req: Request) => {
       } catch (err: unknown) {
         const status = (err as { statusCode?: number }).statusCode;
         const message = err instanceof Error ? err.message : String(err);
-        if (status === 404 || status === 410) {
+        if (status === 403 || status === 404 || status === 410) {
           await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
         }
         console.warn("[send-push] delivery failed", { id: row.id, status, message });
