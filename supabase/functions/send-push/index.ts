@@ -24,6 +24,60 @@ const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@transplantcare.uz";
 
+function base64UrlToBytes(value: string) {
+  const padded = value + "=".repeat((4 - (value.length % 4)) % 4);
+  const binary = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function validateVapidKeyPair() {
+  try {
+    const publicBytes = base64UrlToBytes(VAPID_PUBLIC_KEY);
+    const privateBytes = base64UrlToBytes(VAPID_PRIVATE_KEY);
+    if (publicBytes.length !== 65 || publicBytes[0] !== 4 || privateBytes.length !== 32) {
+      return false;
+    }
+
+    const x = bytesToBase64Url(publicBytes.slice(1, 33));
+    const y = bytesToBase64Url(publicBytes.slice(33, 65));
+    const d = bytesToBase64Url(privateBytes);
+    const privateKey = await crypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", x, y, d },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
+    const publicKey = await crypto.subtle.importKey(
+      "raw",
+      publicBytes,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"],
+    );
+    const message = new TextEncoder().encode("vapid-key-check");
+    const signature = await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      privateKey,
+      message,
+    );
+    return crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      publicKey,
+      signature,
+      message,
+    );
+  } catch {
+    return false;
+  }
+}
+
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   try {
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -50,7 +104,10 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     return new Response(
-      JSON.stringify({ publicKey: VAPID_PUBLIC_KEY }),
+      JSON.stringify({
+        publicKey: VAPID_PUBLIC_KEY,
+        keyPairValid: await validateVapidKeyPair(),
+      }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
     );
   }
