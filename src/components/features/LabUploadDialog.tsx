@@ -454,6 +454,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
   /** Process one or more files (up to MAX_FILES) sequentially */
   const processFiles = async (files: File[]) => {
+    processAbortRef.current?.abort();
+    const controller = new AbortController();
+    const processId = processIdRef.current + 1;
+    processIdRef.current = processId;
+    processAbortRef.current = controller;
     setStep("processing");
     const limited = files.slice(0, MAX_FILES);
     if (files.length > MAX_FILES) {
@@ -470,12 +475,14 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
     for (let i = 0; i < limited.length; i++) {
       try {
+        throwIfCancelled(controller.signal);
         toast({ title: `📄 ${i + 1}/${limited.length}`, description: limited[i].name });
         const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length, controller);
         allGroups.push(...groups);
         if (rt) lastReportType = rt;
         if (ru) lastReportUrl = ru;
       } catch (err: unknown) {
+        if (isCancelledError(err)) break;
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[LabUpload] File ${i + 1} failed:`, err);
         errors.push(message);
@@ -530,7 +537,10 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       toast({ title: `✓ ${limited.length - errors.length}/${limited.length} fayl, ${allGroups.length} sana topildi` });
       setStep("confirm");
     } finally {
-      setStep((current) => (current === "processing" ? "upload" : current));
+      if (processIdRef.current === processId) {
+        processAbortRef.current = null;
+        setStep((current) => (current === "processing" ? "upload" : current));
+      }
       if (fileRef.current) fileRef.current.value = "";
       if (cameraRef.current) cameraRef.current.value = "";
       console.log("[LabUpload] processFiles end");
