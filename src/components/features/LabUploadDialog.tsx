@@ -299,14 +299,37 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
   const MAX_FILES = 5;
 
+  /** Wrap any promise with a hard timeout */
+  const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
+    Promise.race<T>([
+      p,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label}_TIMEOUT_${ms}ms`)), ms)
+      ),
+    ]);
+
   /** Process a single file → returns extracted DateGroup[] */
   const processSingleFile = async (file: File, fileIndex: number, totalFiles: number): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+    const t0 = performance.now();
     console.log(`[LabUpload] processFile ${fileIndex + 1}/${totalFiles}`, { name: file.name, size: file.size, type: file.type });
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    const { base64, file: processedFile, storageFile, fileType, textContent } = await preprocessLabImage(file);
-    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length });
+    // Hard 60s cap on preprocessing (PDF rendering can hang on bad worker)
+    const preStart = performance.now();
+    let preprocessed;
+    try {
+      preprocessed = await withTimeout(preprocessLabImage(file), 60000, "PREPROCESS");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[LabUpload] preprocess FAILED ${fileIndex + 1}/${totalFiles}`, msg);
+      if (msg.includes("PREPROCESS_TIMEOUT")) {
+        throw new Error(`File ${fileIndex + 1}: preprocessing timed out (60s). Try a smaller PDF or convert to JPG.`);
+      }
+      throw new Error(`File ${fileIndex + 1}: ${msg}`);
+    }
+    const { base64, file: processedFile, storageFile, fileType, textContent } = preprocessed;
+    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart) });
 
     const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
@@ -317,21 +340,22 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const fileReportUrl = urlData?.signedUrl ?? null;
 
     // OCR call with hard 90s timeout per file
+    const ocrStart = performance.now();
     const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
       body: { imageBase64: base64, fileType, textContent },
     });
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("OCR_TIMEOUT")), 90000)
-    );
 
     let ocrData: any;
     let ocrErr: any;
     try {
-      const result = await Promise.race([ocrPromise, timeoutPromise]) as any;
+      const result = await withTimeout(ocrPromise, 90000, "OCR") as any;
       ocrData = result?.data;
       ocrErr = result?.error;
+      console.log(`[LabUpload] OCR done ${fileIndex + 1}/${totalFiles}`, { ms: Math.round(performance.now() - ocrStart) });
     } catch (raceErr) {
-      if (raceErr instanceof Error && raceErr.message === "OCR_TIMEOUT") {
+      const msg = raceErr instanceof Error ? raceErr.message : String(raceErr);
+      console.error(`[LabUpload] OCR FAILED ${fileIndex + 1}/${totalFiles}`, msg);
+      if (msg.includes("OCR_TIMEOUT")) {
         throw new Error(`File ${fileIndex + 1}: AI service timed out (90s).`);
       }
       throw raceErr;
@@ -339,6 +363,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
     if (ocrErr) throw new Error(ocrErr.message || `File ${fileIndex + 1}: AI service unavailable.`);
     if (ocrData?.error) throw new Error(`File ${fileIndex + 1}: ${ocrData.error}`);
+    if (!ocrData || typeof ocrData !== "object") {
+      throw new Error(`File ${fileIndex + 1}: invalid AI response.`);
+    }
 
     let groups: DateGroup[] = [];
     if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
