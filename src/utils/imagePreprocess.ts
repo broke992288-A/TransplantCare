@@ -2,7 +2,13 @@
  * Client-side image preprocessing for OCR accuracy improvement.
  * Pipeline: Auto-crop → Contrast enhancement → Sharpen → Denoise → Export
  * Also supports text-based files (TXT, CSV) and Office documents (DOCX, XLSX).
+ *
+ * For PDFs and text files we first run a deterministic native-text extractor.
+ * If it produces enough lab markers, we skip AI OCR entirely.
  */
+
+import { extractPdfText, readTextFileAsString } from "@/services/ocr/pdfTextExtractor";
+import { parseLabText, type ParsedDateGroup } from "@/services/ocr/deterministicLabParser";
 
 export interface PreprocessOptions {
   signal?: AbortSignal;
