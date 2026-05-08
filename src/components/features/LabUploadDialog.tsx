@@ -340,21 +340,22 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const fileReportUrl = urlData?.signedUrl ?? null;
 
     // OCR call with hard 90s timeout per file
+    const ocrStart = performance.now();
     const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
       body: { imageBase64: base64, fileType, textContent },
     });
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("OCR_TIMEOUT")), 90000)
-    );
 
     let ocrData: any;
     let ocrErr: any;
     try {
-      const result = await Promise.race([ocrPromise, timeoutPromise]) as any;
+      const result = await withTimeout(ocrPromise, 90000, "OCR") as any;
       ocrData = result?.data;
       ocrErr = result?.error;
+      console.log(`[LabUpload] OCR done ${fileIndex + 1}/${totalFiles}`, { ms: Math.round(performance.now() - ocrStart) });
     } catch (raceErr) {
-      if (raceErr instanceof Error && raceErr.message === "OCR_TIMEOUT") {
+      const msg = raceErr instanceof Error ? raceErr.message : String(raceErr);
+      console.error(`[LabUpload] OCR FAILED ${fileIndex + 1}/${totalFiles}`, msg);
+      if (msg.includes("OCR_TIMEOUT")) {
         throw new Error(`File ${fileIndex + 1}: AI service timed out (90s).`);
       }
       throw raceErr;
@@ -362,6 +363,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
     if (ocrErr) throw new Error(ocrErr.message || `File ${fileIndex + 1}: AI service unavailable.`);
     if (ocrData?.error) throw new Error(`File ${fileIndex + 1}: ${ocrData.error}`);
+    if (!ocrData || typeof ocrData !== "object") {
+      throw new Error(`File ${fileIndex + 1}: invalid AI response.`);
+    }
 
     let groups: DateGroup[] = [];
     if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
