@@ -68,6 +68,23 @@ interface DateGroup {
   originalText: Record<string, string>;
 }
 
+interface OcrDateGroupResponse {
+  date?: string;
+  data?: Record<string, number | null>;
+  confidence?: Record<string, number>;
+  originalText?: Record<string, string>;
+}
+
+interface OcrResponse {
+  error?: string;
+  multiDate?: boolean;
+  dateGroups?: OcrDateGroupResponse[];
+  data?: Record<string, number | null>;
+  confidence?: Record<string, number>;
+  originalText?: Record<string, string>;
+  reportType?: string;
+}
+
 function ConfidenceBadge({ confidence }: { confidence: number }) {
   if (confidence >= 95) return null;
   if (confidence >= 80) {
