@@ -328,7 +328,7 @@ async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTML
       pageCanvas.width = Math.ceil(viewport.width);
       pageCanvas.height = Math.ceil(viewport.height);
 
-      const renderTask = page.render({ canvasContext: pageCtx, viewport });
+      const renderTask = page.render({ canvas: pageCanvas, canvasContext: pageCtx, viewport });
       const abortRender = () => renderTask.cancel();
       signal?.addEventListener("abort", abortRender, { once: true });
       try {
