@@ -528,7 +528,7 @@ export async function preprocessLabImage(file: File, options: PreprocessOptions 
 
   URL.revokeObjectURL(img.src);
 
-  return processed;
+  return { ...processed, extractionSource: "ai-image" };
 }
 
 /** Helper: encode plain text string to base64 */
