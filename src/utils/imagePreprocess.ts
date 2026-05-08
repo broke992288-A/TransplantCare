@@ -4,13 +4,59 @@
  * Also supports text-based files (TXT, CSV) and Office documents (DOCX, XLSX).
  */
 
+export interface PreprocessOptions {
+  signal?: AbortSignal;
+}
+
+function createAbortError(): Error {
+  if (typeof DOMException !== "undefined") {
+    return new DOMException("OCR preprocessing was cancelled", "AbortError");
+  }
+  return new Error("OCR preprocessing was cancelled");
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw createAbortError();
+}
+
+async function yieldToBrowser(signal?: AbortSignal): Promise<void> {
+  throwIfAborted(signal);
+  await new Promise<void>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, 0);
+    const onAbort = () => {
+      window.clearTimeout(timeoutId);
+      reject(createAbortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+  throwIfAborted(signal);
+}
+
 /** Load an image file into an HTMLImageElement */
-function loadImage(file: File): Promise<HTMLImageElement> {
+function loadImage(file: File, signal?: AbortSignal): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
+    throwIfAborted(signal);
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
     const url = URL.createObjectURL(file);
+    const cleanup = () => signal?.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      cleanup();
+      URL.revokeObjectURL(url);
+      reject(createAbortError());
+    };
+    img.onload = () => {
+      cleanup();
+      resolve(img);
+    };
+    img.onerror = () => {
+      cleanup();
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not load image for OCR preprocessing"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
     img.src = url;
   });
 }
@@ -195,10 +241,11 @@ function getFileCategory(fileName: string): "image" | "pdf" | "text" | "office" 
 }
 
 /** Apply OCR-oriented cleanup to a canvas before export */
-function enhanceCanvasForOcr(canvas: HTMLCanvasElement) {
+async function enhanceCanvasForOcr(canvas: HTMLCanvasElement, signal?: AbortSignal) {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not initialize canvas context");
 
+  throwIfAborted(signal);
   const crop = autoCrop(ctx, canvas.width, canvas.height);
   if (crop.x !== 0 || crop.y !== 0 || crop.w !== canvas.width || crop.h !== canvas.height) {
     const cropped = ctx.getImageData(crop.x, crop.y, crop.w, crop.h);
@@ -210,21 +257,27 @@ function enhanceCanvasForOcr(canvas: HTMLCanvasElement) {
   const width = canvas.width;
   const height = canvas.height;
 
+  await yieldToBrowser(signal);
   denoise(ctx, width, height);
+  await yieldToBrowser(signal);
   enhanceContrast(ctx, width, height);
+  await yieldToBrowser(signal);
   sharpen(ctx, width, height, 0.5);
 }
 
 /** Export a prepared canvas as JPEG/base64 for OCR */
 async function canvasToProcessedResult(
   canvas: HTMLCanvasElement,
-  originalName: string
+  originalName: string,
+  signal?: AbortSignal
 ): Promise<Pick<PreprocessResult, "base64" | "file" | "fileType">> {
-  enhanceCanvasForOcr(canvas);
+  await enhanceCanvasForOcr(canvas, signal);
 
+  throwIfAborted(signal);
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
   const base64 = dataUrl.split(",")[1];
 
+  throwIfAborted(signal);
   const blob = await (await fetch(dataUrl)).blob();
   const processedFile = new File([blob], originalName.replace(/\.[^.]+$/, "_processed.jpg"), {
     type: "image/jpeg",
@@ -234,15 +287,21 @@ async function canvasToProcessedResult(
 }
 
 /** Render all pages of a PDF to a single canvas for OCR */
-async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
+async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTMLCanvasElement> {
   const pdfjs = await import("pdfjs-dist");
   // Load worker from local node_modules via Vite (?url) — no CDN dependency, version-safe
   const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
+  throwIfAborted(signal);
   const pdfData = new Uint8Array(await file.arrayBuffer());
   const loadingTask = pdfjs.getDocument({ data: pdfData });
-  const pdf = await loadingTask.promise;
+  const abortLoading = () => loadingTask.destroy();
+  signal?.addEventListener("abort", abortLoading, { once: true });
+  const pdf = await loadingTask.promise.catch((error: unknown) => {
+    signal?.removeEventListener("abort", abortLoading);
+    throw error;
+  });
 
   try {
     const canvases: HTMLCanvasElement[] = [];
@@ -254,6 +313,8 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
     }
 
     for (let pageNum = 1; pageNum <= pagesToRender; pageNum++) {
+      throwIfAborted(signal);
+      await yieldToBrowser(signal);
       const page = await pdf.getPage(pageNum);
       const initialViewport = page.getViewport({ scale: 1 });
       const longestSide = Math.max(initialViewport.width, initialViewport.height) || 1;
@@ -267,9 +328,16 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
       pageCanvas.width = Math.ceil(viewport.width);
       pageCanvas.height = Math.ceil(viewport.height);
 
-      await page.render({ canvasContext: pageCtx, viewport } as any).promise;
+      const renderTask = page.render({ canvas: pageCanvas, canvasContext: pageCtx, viewport });
+      const abortRender = () => renderTask.cancel();
+      signal?.addEventListener("abort", abortRender, { once: true });
+      try {
+        await renderTask.promise;
+      } finally {
+        signal?.removeEventListener("abort", abortRender);
+        page.cleanup();
+      }
       canvases.push(pageCanvas);
-      page.cleanup();
     }
 
     const finalCanvas = document.createElement("canvas");
@@ -287,27 +355,45 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
 
     return finalCanvas;
   } finally {
+    signal?.removeEventListener("abort", abortLoading);
     await pdf.destroy();
   }
 }
 
 /** Read text file content */
-async function readTextFile(file: File): Promise<string> {
+async function readTextFile(file: File, signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
+    throwIfAborted(signal);
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
+    const cleanup = () => signal?.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      cleanup();
+      reader.abort();
+      reject(createAbortError());
+    };
+    reader.onload = () => {
+      cleanup();
+      resolve(reader.result as string);
+    };
+    reader.onerror = () => {
+      cleanup();
+      reject(reader.error ?? new Error("Could not read text file"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
     reader.readAsText(file);
   });
 }
 
 /** Convert file to base64 */
-async function fileToBase64(file: File): Promise<string> {
+async function fileToBase64(file: File, signal?: AbortSignal): Promise<string> {
+  throwIfAborted(signal);
   const arrayBuffer = await file.arrayBuffer();
+  throwIfAborted(signal);
   const bytes = new Uint8Array(arrayBuffer);
   let binary = "";
   const chunkSize = 8192;
   for (let i = 0; i < bytes.length; i += chunkSize) {
+    if (i > 0 && i % (chunkSize * 64) === 0) await yieldToBrowser(signal);
     binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
   }
   return btoa(binary);
@@ -326,28 +412,31 @@ export interface PreprocessResult {
  * Full preprocessing pipeline.
  * Supports: images, PDFs, text files (TXT/CSV), Office files (DOCX/XLSX).
  */
-export async function preprocessLabImage(file: File): Promise<PreprocessResult> {
+export async function preprocessLabImage(file: File, options: PreprocessOptions = {}): Promise<PreprocessResult> {
+  const { signal } = options;
+  throwIfAborted(signal);
   const category = getFileCategory(file.name);
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 
   // ─── Text files: read content directly ───
   if (category === "text") {
-    const textContent = await readTextFile(file);
+    const textContent = await readTextFile(file, signal);
+    throwIfAborted(signal);
     const base64 = fileToBase64ToString(textContent);
     return { base64, file, fileType: ext, textContent };
   }
 
   // ─── Office files: send as binary for server-side parsing ───
   if (category === "office") {
-    const base64 = await fileToBase64(file);
+    const base64 = await fileToBase64(file, signal);
     return { base64, file, fileType: ext };
   }
 
   // ─── PDF: render to image for OCR, keep original for storage ───
   if (category === "pdf") {
     try {
-      const pdfCanvas = await renderPdfAllPages(file);
-      const processed = await canvasToProcessedResult(pdfCanvas, file.name);
+      const pdfCanvas = await renderPdfAllPages(file, signal);
+      const processed = await canvasToProcessedResult(pdfCanvas, file.name, signal);
       return { ...processed, storageFile: file };
     } catch (pdfErr) {
       console.error("[preprocessLabImage] PDF rendering failed:", pdfErr);
@@ -360,7 +449,7 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
   }
 
   // ─── Images: full preprocessing pipeline ───
-  const img = await loadImage(file);
+  const img = await loadImage(file, signal);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
 
@@ -377,7 +466,7 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
   canvas.height = drawH;
   ctx.drawImage(img, 0, 0, drawW, drawH);
 
-  const processed = await canvasToProcessedResult(canvas, file.name);
+  const processed = await canvasToProcessedResult(canvas, file.name, signal);
 
   URL.revokeObjectURL(img.src);
 

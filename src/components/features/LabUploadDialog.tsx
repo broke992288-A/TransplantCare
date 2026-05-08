@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,23 @@ interface DateGroup {
   values: Record<string, string>;
   confidence: Record<string, number>;
   originalText: Record<string, string>;
+}
+
+interface OcrDateGroupResponse {
+  date?: string;
+  data?: Record<string, number | null>;
+  confidence?: Record<string, number>;
+  originalText?: Record<string, string>;
+}
+
+interface OcrResponse {
+  error?: string;
+  multiDate?: boolean;
+  dateGroups?: OcrDateGroupResponse[];
+  data?: Record<string, number | null>;
+  confidence?: Record<string, number>;
+  originalText?: Record<string, string>;
+  reportType?: string;
 }
 
 function ConfidenceBadge({ confidence }: { confidence: number }) {
@@ -273,11 +290,17 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const processAbortRef = useRef<AbortController | null>(null);
+  const processIdRef = useRef(0);
   const { toast } = useToast();
   const { t } = useLanguage();
 
   const { data: countries } = useLabCountries();
   const { data: refProfiles } = useLabReferenceProfiles(country, organType ?? null);
+
+  useEffect(() => {
+    return () => processAbortRef.current?.abort();
+  }, []);
 
   /** Map test_name → reference profile for quick lookup */
   const refMap = useMemo(() => {
@@ -289,6 +312,8 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   }, [refProfiles]);
 
   const reset = () => {
+    processAbortRef.current?.abort();
+    processAbortRef.current = null;
     setStep("upload");
     setDateGroups([]);
     setReportType("");
@@ -297,21 +322,48 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     setActiveTab("0");
   };
 
+  const cancelProcessing = () => {
+    processAbortRef.current?.abort();
+    processAbortRef.current = null;
+    setStep("upload");
+    if (fileRef.current) fileRef.current.value = "";
+    if (cameraRef.current) cameraRef.current.value = "";
+  };
+
   const MAX_FILES = 5;
 
-  /** Wrap any promise with a hard timeout */
-  const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
-    Promise.race<T>([
-      p,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error(`${label}_TIMEOUT_${ms}ms`)), ms)
-      ),
-    ]);
+  const isCancelledError = (error: unknown): boolean => {
+    if (error instanceof DOMException && error.name === "AbortError") return true;
+    return error instanceof Error && error.name === "AbortError";
+  };
+
+  const throwIfCancelled = (signal: AbortSignal): void => {
+    if (signal.aborted) throw new DOMException("OCR processing was cancelled", "AbortError");
+  };
+
+  /** Wrap any promise with a hard timeout and abort the underlying operation when possible. */
+  const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string, controller?: AbortController): Promise<T> => {
+    let timeoutId: number | undefined;
+    const timeout = new Promise<T>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        console.warn(JSON.stringify({ scope: "lab-upload", event: "timeout", label, ms, ts: new Date().toISOString() }));
+        controller?.abort();
+        reject(new Error(`${label}_TIMEOUT_${ms}ms`));
+      }, ms);
+    });
+    try {
+      return await Promise.race([p, timeout]);
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    }
+  };
 
   /** Process a single file → returns extracted DateGroup[] */
-  const processSingleFile = async (file: File, fileIndex: number, totalFiles: number): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+  const processSingleFile = async (file: File, fileIndex: number, totalFiles: number, controller: AbortController): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+    const { signal } = controller;
     const t0 = performance.now();
     console.log(`[LabUpload] processFile ${fileIndex + 1}/${totalFiles}`, { name: file.name, size: file.size, type: file.type });
+    throwIfCancelled(signal);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
@@ -319,8 +371,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const preStart = performance.now();
     let preprocessed;
     try {
-      preprocessed = await withTimeout(preprocessLabImage(file), 60000, "PREPROCESS");
+      preprocessed = await withTimeout(preprocessLabImage(file, { signal }), 60000, "PREPROCESS", controller);
     } catch (e) {
+      if (isCancelledError(e)) throw e;
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`[LabUpload] preprocess FAILED ${fileIndex + 1}/${totalFiles}`, msg);
       if (msg.includes("PREPROCESS_TIMEOUT")) {
@@ -328,6 +381,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       }
       throw new Error(`File ${fileIndex + 1}: ${msg}`);
     }
+    throwIfCancelled(signal);
     const { base64, file: processedFile, storageFile, fileType, textContent } = preprocessed;
     console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart) });
 
@@ -335,24 +389,29 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, storageFile ?? processedFile);
     if (uploadErr) throw uploadErr;
+    throwIfCancelled(signal);
 
     const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
     const fileReportUrl = urlData?.signedUrl ?? null;
+    throwIfCancelled(signal);
 
     // OCR call with hard 90s timeout per file
     const ocrStart = performance.now();
-    const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
+    const ocrPromise = supabase.functions.invoke<OcrResponse>("ocr-lab-report", {
       body: { imageBase64: base64, fileType, textContent },
+      signal,
+      timeout: 90000,
     });
 
-    let ocrData: any;
-    let ocrErr: any;
+    let ocrData: OcrResponse | null;
+    let ocrErr: Error | null;
     try {
-      const result = await withTimeout(ocrPromise, 90000, "OCR") as any;
-      ocrData = result?.data;
-      ocrErr = result?.error;
+      const result = await withTimeout(ocrPromise, 90000, "OCR", controller);
+      ocrData = result.data;
+      ocrErr = result.error;
       console.log(`[LabUpload] OCR done ${fileIndex + 1}/${totalFiles}`, { ms: Math.round(performance.now() - ocrStart) });
     } catch (raceErr) {
+      if (isCancelledError(raceErr)) throw raceErr;
       const msg = raceErr instanceof Error ? raceErr.message : String(raceErr);
       console.error(`[LabUpload] OCR FAILED ${fileIndex + 1}/${totalFiles}`, msg);
       if (msg.includes("OCR_TIMEOUT")) {
@@ -368,8 +427,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     }
 
     let groups: DateGroup[] = [];
-    if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
-      groups = ocrData.dateGroups.map((g: any) => {
+    const responseDateGroups = Array.isArray(ocrData.dateGroups) ? ocrData.dateGroups : [];
+    if (ocrData.multiDate && responseDateGroups.length > 0) {
+      groups = responseDateGroups.map((g) => {
         const values: Record<string, string> = {};
         for (const field of LAB_FIELDS) {
           const v = g.data?.[field.key];
@@ -402,6 +462,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
   /** Process one or more files (up to MAX_FILES) sequentially */
   const processFiles = async (files: File[]) => {
+    processAbortRef.current?.abort();
+    const controller = new AbortController();
+    const processId = processIdRef.current + 1;
+    processIdRef.current = processId;
+    processAbortRef.current = controller;
     setStep("processing");
     const limited = files.slice(0, MAX_FILES);
     if (files.length > MAX_FILES) {
@@ -418,12 +483,14 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
     for (let i = 0; i < limited.length; i++) {
       try {
+        throwIfCancelled(controller.signal);
         toast({ title: `📄 ${i + 1}/${limited.length}`, description: limited[i].name });
-        const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length);
+        const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length, controller);
         allGroups.push(...groups);
         if (rt) lastReportType = rt;
         if (ru) lastReportUrl = ru;
       } catch (err: unknown) {
+        if (isCancelledError(err)) break;
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[LabUpload] File ${i + 1} failed:`, err);
         errors.push(message);
@@ -431,6 +498,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     }
 
     try {
+      if (controller.signal.aborted) return;
       if (allGroups.length === 0) {
         toast({
           title: t("common.error"),
@@ -478,7 +546,10 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       toast({ title: `✓ ${limited.length - errors.length}/${limited.length} fayl, ${allGroups.length} sana topildi` });
       setStep("confirm");
     } finally {
-      setStep((current) => (current === "processing" ? "upload" : current));
+      if (processIdRef.current === processId) {
+        processAbortRef.current = null;
+        setStep((current) => (current === "processing" ? "upload" : current));
+      }
       if (fileRef.current) fileRef.current.value = "";
       if (cameraRef.current) cameraRef.current.value = "";
       console.log("[LabUpload] processFiles end");
@@ -732,6 +803,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="text-muted-foreground">{t("upload.aiProcessing")}</p>
             <p className="text-xs text-muted-foreground">{t("upload.detectingDates")}</p>
+            <Button type="button" variant="outline" size="sm" onClick={cancelProcessing}>
+              {t("common.cancel")}
+            </Button>
           </div>
         )}
 
