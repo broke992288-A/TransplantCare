@@ -290,11 +290,17 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const processAbortRef = useRef<AbortController | null>(null);
+  const processIdRef = useRef(0);
   const { toast } = useToast();
   const { t } = useLanguage();
 
   const { data: countries } = useLabCountries();
   const { data: refProfiles } = useLabReferenceProfiles(country, organType ?? null);
+
+  useEffect(() => {
+    return () => processAbortRef.current?.abort();
+  }, []);
 
   /** Map test_name → reference profile for quick lookup */
   const refMap = useMemo(() => {
