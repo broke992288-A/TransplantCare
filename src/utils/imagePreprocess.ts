@@ -287,14 +287,17 @@ async function canvasToProcessedResult(
 }
 
 /** Render all pages of a PDF to a single canvas for OCR */
-async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
+async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTMLCanvasElement> {
   const pdfjs = await import("pdfjs-dist");
   // Load worker from local node_modules via Vite (?url) — no CDN dependency, version-safe
   const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
+  throwIfAborted(signal);
   const pdfData = new Uint8Array(await file.arrayBuffer());
   const loadingTask = pdfjs.getDocument({ data: pdfData });
+  const abortLoading = () => loadingTask.destroy();
+  signal?.addEventListener("abort", abortLoading, { once: true });
   const pdf = await loadingTask.promise;
 
   try {
@@ -307,6 +310,8 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
     }
 
     for (let pageNum = 1; pageNum <= pagesToRender; pageNum++) {
+      throwIfAborted(signal);
+      await yieldToBrowser(signal);
       const page = await pdf.getPage(pageNum);
       const initialViewport = page.getViewport({ scale: 1 });
       const longestSide = Math.max(initialViewport.width, initialViewport.height) || 1;
@@ -320,7 +325,14 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
       pageCanvas.width = Math.ceil(viewport.width);
       pageCanvas.height = Math.ceil(viewport.height);
 
-      await page.render({ canvasContext: pageCtx, viewport } as any).promise;
+      const renderTask = page.render({ canvasContext: pageCtx, viewport } as never);
+      const abortRender = () => renderTask.cancel();
+      signal?.addEventListener("abort", abortRender, { once: true });
+      try {
+        await renderTask.promise;
+      } finally {
+        signal?.removeEventListener("abort", abortRender);
+      }
       canvases.push(pageCanvas);
       page.cleanup();
     }
@@ -340,6 +352,7 @@ async function renderPdfAllPages(file: File): Promise<HTMLCanvasElement> {
 
     return finalCanvas;
   } finally {
+    signal?.removeEventListener("abort", abortLoading);
     await pdf.destroy();
   }
 }
