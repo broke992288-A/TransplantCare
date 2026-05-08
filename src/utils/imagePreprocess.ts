@@ -412,28 +412,31 @@ export interface PreprocessResult {
  * Full preprocessing pipeline.
  * Supports: images, PDFs, text files (TXT/CSV), Office files (DOCX/XLSX).
  */
-export async function preprocessLabImage(file: File): Promise<PreprocessResult> {
+export async function preprocessLabImage(file: File, options: PreprocessOptions = {}): Promise<PreprocessResult> {
+  const { signal } = options;
+  throwIfAborted(signal);
   const category = getFileCategory(file.name);
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 
   // ─── Text files: read content directly ───
   if (category === "text") {
-    const textContent = await readTextFile(file);
+    const textContent = await readTextFile(file, signal);
+    throwIfAborted(signal);
     const base64 = fileToBase64ToString(textContent);
     return { base64, file, fileType: ext, textContent };
   }
 
   // ─── Office files: send as binary for server-side parsing ───
   if (category === "office") {
-    const base64 = await fileToBase64(file);
+    const base64 = await fileToBase64(file, signal);
     return { base64, file, fileType: ext };
   }
 
   // ─── PDF: render to image for OCR, keep original for storage ───
   if (category === "pdf") {
     try {
-      const pdfCanvas = await renderPdfAllPages(file);
-      const processed = await canvasToProcessedResult(pdfCanvas, file.name);
+      const pdfCanvas = await renderPdfAllPages(file, signal);
+      const processed = await canvasToProcessedResult(pdfCanvas, file.name, signal);
       return { ...processed, storageFile: file };
     } catch (pdfErr) {
       console.error("[preprocessLabImage] PDF rendering failed:", pdfErr);
@@ -446,7 +449,7 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
   }
 
   // ─── Images: full preprocessing pipeline ───
-  const img = await loadImage(file);
+  const img = await loadImage(file, signal);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
 
@@ -463,7 +466,7 @@ export async function preprocessLabImage(file: File): Promise<PreprocessResult> 
   canvas.height = drawH;
   ctx.drawImage(img, 0, 0, drawW, drawH);
 
-  const processed = await canvasToProcessedResult(canvas, file.name);
+  const processed = await canvasToProcessedResult(canvas, file.name, signal);
 
   URL.revokeObjectURL(img.src);
 
