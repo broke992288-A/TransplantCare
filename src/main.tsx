@@ -1,7 +1,12 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
+import { installAuthLockPatch } from "./lib/authLockPatch";
 import App from "./App.tsx";
 import "./index.css";
+
+// Install BEFORE any module that constructs a Supabase client touches
+// `navigator.locks`. Prevents `AbortError: Lock broken … 'steal'` across tabs.
+installAuthLockPatch();
 
 const PREVIEW_SW_CLEANUP_KEY = "__lovable_preview_sw_cleanup__";
 
