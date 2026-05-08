@@ -361,22 +361,39 @@ async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTML
 }
 
 /** Read text file content */
-async function readTextFile(file: File): Promise<string> {
+async function readTextFile(file: File, signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
+    throwIfAborted(signal);
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
+    const cleanup = () => signal?.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      cleanup();
+      reader.abort();
+      reject(createAbortError());
+    };
+    reader.onload = () => {
+      cleanup();
+      resolve(reader.result as string);
+    };
+    reader.onerror = () => {
+      cleanup();
+      reject(reader.error ?? new Error("Could not read text file"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
     reader.readAsText(file);
   });
 }
 
 /** Convert file to base64 */
-async function fileToBase64(file: File): Promise<string> {
+async function fileToBase64(file: File, signal?: AbortSignal): Promise<string> {
+  throwIfAborted(signal);
   const arrayBuffer = await file.arrayBuffer();
+  throwIfAborted(signal);
   const bytes = new Uint8Array(arrayBuffer);
   let binary = "";
   const chunkSize = 8192;
   for (let i = 0; i < bytes.length; i += chunkSize) {
+    if (i > 0 && i % (chunkSize * 64) === 0) await yieldToBrowser(signal);
     binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
   }
   return btoa(binary);
