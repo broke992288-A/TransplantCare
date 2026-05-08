@@ -398,6 +398,28 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const fileReportUrl = urlData?.signedUrl ?? null;
     throwIfCancelled(signal);
 
+    // ─── Deterministic short-circuit: skip AI when native parser produced enough markers ───
+    if (deterministicGroups && deterministicGroups.length > 0) {
+      const groups: DateGroup[] = deterministicGroups.map((g) => {
+        const values: Record<string, string> = {};
+        for (const field of LAB_FIELDS) {
+          const v = g.data?.[field.key as keyof typeof g.data];
+          values[field.key] = v != null ? String(v) : "";
+        }
+        return {
+          date: g.date ?? "unknown",
+          values,
+          confidence: (g.confidence ?? {}) as Record<string, number>,
+          originalText: (g.originalText ?? {}) as Record<string, string>,
+        };
+      });
+      console.info(JSON.stringify({
+        scope: "lab-upload", event: "deterministic_used", file: file.name,
+        source: extractionSource, groups: groups.length,
+      }));
+      return { groups, reportType: "deterministic", reportUrl: fileReportUrl };
+    }
+
     // OCR call with hard 90s timeout per file
     const ocrStart = performance.now();
     const ocrPromise = supabase.functions.invoke<OcrResponse>("ocr-lab-report", {
