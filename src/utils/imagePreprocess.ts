@@ -4,13 +4,59 @@
  * Also supports text-based files (TXT, CSV) and Office documents (DOCX, XLSX).
  */
 
+export interface PreprocessOptions {
+  signal?: AbortSignal;
+}
+
+function createAbortError(): Error {
+  if (typeof DOMException !== "undefined") {
+    return new DOMException("OCR preprocessing was cancelled", "AbortError");
+  }
+  return new Error("OCR preprocessing was cancelled");
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw createAbortError();
+}
+
+async function yieldToBrowser(signal?: AbortSignal): Promise<void> {
+  throwIfAborted(signal);
+  await new Promise<void>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, 0);
+    const onAbort = () => {
+      window.clearTimeout(timeoutId);
+      reject(createAbortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+  throwIfAborted(signal);
+}
+
 /** Load an image file into an HTMLImageElement */
-function loadImage(file: File): Promise<HTMLImageElement> {
+function loadImage(file: File, signal?: AbortSignal): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
+    throwIfAborted(signal);
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
     const url = URL.createObjectURL(file);
+    const cleanup = () => signal?.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      cleanup();
+      URL.revokeObjectURL(url);
+      reject(createAbortError());
+    };
+    img.onload = () => {
+      cleanup();
+      resolve(img);
+    };
+    img.onerror = () => {
+      cleanup();
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not load image for OCR preprocessing"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
     img.src = url;
   });
 }
