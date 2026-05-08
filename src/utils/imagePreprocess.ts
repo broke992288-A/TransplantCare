@@ -2,7 +2,13 @@
  * Client-side image preprocessing for OCR accuracy improvement.
  * Pipeline: Auto-crop → Contrast enhancement → Sharpen → Denoise → Export
  * Also supports text-based files (TXT, CSV) and Office documents (DOCX, XLSX).
+ *
+ * For PDFs and text files we first run a deterministic native-text extractor.
+ * If it produces enough lab markers, we skip AI OCR entirely.
  */
+
+import { extractPdfText, readTextFileAsString } from "@/services/ocr/pdfTextExtractor";
+import { parseLabText, type ParsedDateGroup } from "@/services/ocr/deterministicLabParser";
 
 export interface PreprocessOptions {
   signal?: AbortSignal;
@@ -360,29 +366,8 @@ async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTML
   }
 }
 
-/** Read text file content */
-async function readTextFile(file: File, signal?: AbortSignal): Promise<string> {
-  return new Promise((resolve, reject) => {
-    throwIfAborted(signal);
-    const reader = new FileReader();
-    const cleanup = () => signal?.removeEventListener("abort", onAbort);
-    const onAbort = () => {
-      cleanup();
-      reader.abort();
-      reject(createAbortError());
-    };
-    reader.onload = () => {
-      cleanup();
-      resolve(reader.result as string);
-    };
-    reader.onerror = () => {
-      cleanup();
-      reject(reader.error ?? new Error("Could not read text file"));
-    };
-    signal?.addEventListener("abort", onAbort, { once: true });
-    reader.readAsText(file);
-  });
-}
+// (readTextFile removed — use readTextFileAsString from services/ocr/pdfTextExtractor)
+
 
 /** Convert file to base64 */
 async function fileToBase64(file: File, signal?: AbortSignal): Promise<string> {
@@ -406,6 +391,13 @@ export interface PreprocessResult {
   fileType: string;
   /** For text/office files, extracted text content sent directly */
   textContent?: string;
+  /**
+   * Lab values extracted deterministically (no AI). When present, the caller
+   * MUST skip the AI OCR call and use these groups directly.
+   */
+  deterministicGroups?: ParsedDateGroup[];
+  /** Diagnostic source label for logging. */
+  extractionSource?: "deterministic-pdf" | "deterministic-text" | "ai-image" | "ai-pdf" | "ai-office";
 }
 
 /**
@@ -418,26 +410,71 @@ export async function preprocessLabImage(file: File, options: PreprocessOptions 
   const category = getFileCategory(file.name);
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 
-  // ─── Text files: read content directly ───
+  // ─── Text files: try deterministic parse first; fall back to AI text path ───
   if (category === "text") {
-    const textContent = await readTextFile(file, signal);
+    const textContent = await readTextFileAsString(file, signal);
     throwIfAborted(signal);
+    const parsed = parseLabText(textContent);
+    console.info(JSON.stringify({
+      scope: "preprocess", event: "text_parse", file: file.name,
+      markers: parsed.markerCount, sufficient: parsed.sufficient, ms: parsed.durationMs,
+    }));
     const base64 = fileToBase64ToString(textContent);
-    return { base64, file, fileType: ext, textContent };
+    if (parsed.sufficient) {
+      return {
+        base64, file, fileType: ext, textContent,
+        deterministicGroups: parsed.dateGroups,
+        extractionSource: "deterministic-text",
+      };
+    }
+    return { base64, file, fileType: ext, textContent, extractionSource: "ai-image" };
   }
 
   // ─── Office files: send as binary for server-side parsing ───
   if (category === "office") {
     const base64 = await fileToBase64(file, signal);
-    return { base64, file, fileType: ext };
+    return { base64, file, fileType: ext, extractionSource: "ai-office" };
   }
 
-  // ─── PDF: render to image for OCR, keep original for storage ───
+  // ─── PDF: try native text extraction → deterministic parse → fallback to render+OCR ───
   if (category === "pdf") {
+    // Step 1: cheap native text extraction
+    try {
+      const textResult = await extractPdfText(file, signal);
+      console.info(JSON.stringify({
+        scope: "preprocess", event: "pdf_text_extract", file: file.name,
+        quality: textResult.quality, chars: textResult.charCount,
+        letters: textResult.letterCount, pages: textResult.processedPages,
+        totalPages: textResult.totalPages, ms: textResult.durationMs,
+      }));
+      if (textResult.quality === "good") {
+        const parsed = parseLabText(textResult.text);
+        console.info(JSON.stringify({
+          scope: "preprocess", event: "pdf_deterministic_parse", file: file.name,
+          markers: parsed.markerCount, sufficient: parsed.sufficient, ms: parsed.durationMs,
+        }));
+        if (parsed.sufficient) {
+          // Encode the original PDF small payload so the upload step still works.
+          const base64 = await fileToBase64(file, signal);
+          return {
+            base64, file, fileType: "pdf", storageFile: file,
+            textContent: textResult.text,
+            deterministicGroups: parsed.dateGroups,
+            extractionSource: "deterministic-pdf",
+          };
+        }
+      }
+    } catch (textErr) {
+      if (textErr instanceof DOMException && textErr.name === "AbortError") throw textErr;
+      console.warn("[preprocessLabImage] PDF text extraction failed, falling back to render:", textErr);
+    }
+
+    throwIfAborted(signal);
+    // Step 2: render to image for AI OCR fallback
     try {
       const pdfCanvas = await renderPdfAllPages(file, signal);
       const processed = await canvasToProcessedResult(pdfCanvas, file.name, signal);
-      return { ...processed, storageFile: file };
+      return { ...processed, storageFile: file, extractionSource: "ai-pdf" };
     } catch (pdfErr) {
       console.error("[preprocessLabImage] PDF rendering failed:", pdfErr);
       // Do NOT send raw PDF binary to AI gateway — it always returns 400.
@@ -470,7 +507,7 @@ export async function preprocessLabImage(file: File, options: PreprocessOptions 
 
   URL.revokeObjectURL(img.src);
 
-  return processed;
+  return { ...processed, extractionSource: "ai-image" };
 }
 
 /** Helper: encode plain text string to base64 */

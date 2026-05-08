@@ -382,8 +382,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       throw new Error(`File ${fileIndex + 1}: ${msg}`);
     }
     throwIfCancelled(signal);
-    const { base64, file: processedFile, storageFile, fileType, textContent } = preprocessed;
-    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart) });
+    const { base64, file: processedFile, storageFile, fileType, textContent, deterministicGroups, extractionSource } = preprocessed;
+    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, {
+      fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart),
+      source: extractionSource, deterministicMarkers: deterministicGroups?.reduce((s, g) => s + Object.keys(g.data).length, 0) ?? 0,
+    });
 
     const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
@@ -394,6 +397,28 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
     const fileReportUrl = urlData?.signedUrl ?? null;
     throwIfCancelled(signal);
+
+    // ─── Deterministic short-circuit: skip AI when native parser produced enough markers ───
+    if (deterministicGroups && deterministicGroups.length > 0) {
+      const groups: DateGroup[] = deterministicGroups.map((g) => {
+        const values: Record<string, string> = {};
+        for (const field of LAB_FIELDS) {
+          const v = g.data?.[field.key as keyof typeof g.data];
+          values[field.key] = v != null ? String(v) : "";
+        }
+        return {
+          date: g.date ?? "unknown",
+          values,
+          confidence: (g.confidence ?? {}) as Record<string, number>,
+          originalText: (g.originalText ?? {}) as Record<string, string>,
+        };
+      });
+      console.info(JSON.stringify({
+        scope: "lab-upload", event: "deterministic_used", file: file.name,
+        source: extractionSource, groups: groups.length,
+      }));
+      return { groups, reportType: "deterministic", reportUrl: fileReportUrl };
+    }
 
     // OCR call with hard 90s timeout per file
     const ocrStart = performance.now();
