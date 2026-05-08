@@ -382,8 +382,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       throw new Error(`File ${fileIndex + 1}: ${msg}`);
     }
     throwIfCancelled(signal);
-    const { base64, file: processedFile, storageFile, fileType, textContent } = preprocessed;
-    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart) });
+    const { base64, file: processedFile, storageFile, fileType, textContent, deterministicGroups, extractionSource } = preprocessed;
+    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, {
+      fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart),
+      source: extractionSource, deterministicMarkers: deterministicGroups?.reduce((s, g) => s + Object.keys(g.data).length, 0) ?? 0,
+    });
 
     const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
