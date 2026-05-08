@@ -312,6 +312,8 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   }, [refProfiles]);
 
   const reset = () => {
+    processAbortRef.current?.abort();
+    processAbortRef.current = null;
     setStep("upload");
     setDateGroups([]);
     setReportType("");
@@ -322,14 +324,27 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
   const MAX_FILES = 5;
 
-  /** Wrap any promise with a hard timeout */
-  const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
-    Promise.race<T>([
-      p,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error(`${label}_TIMEOUT_${ms}ms`)), ms)
-      ),
-    ]);
+  const isCancelledError = (error: unknown): boolean => {
+    if (error instanceof DOMException && error.name === "AbortError") return true;
+    return error instanceof Error && error.name === "AbortError";
+  };
+
+  /** Wrap any promise with a hard timeout and abort the underlying operation when possible. */
+  const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string, controller?: AbortController): Promise<T> => {
+    let timeoutId: number | undefined;
+    const timeout = new Promise<T>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        console.warn(JSON.stringify({ scope: "lab-upload", event: "timeout", label, ms, ts: new Date().toISOString() }));
+        controller?.abort();
+        reject(new Error(`${label}_TIMEOUT_${ms}ms`));
+      }, ms);
+    });
+    try {
+      return await Promise.race([p, timeout]);
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    }
+  };
 
   /** Process a single file → returns extracted DateGroup[] */
   const processSingleFile = async (file: File, fileIndex: number, totalFiles: number): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
