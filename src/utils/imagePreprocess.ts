@@ -366,29 +366,8 @@ async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTML
   }
 }
 
-/** Read text file content */
-async function readTextFile(file: File, signal?: AbortSignal): Promise<string> {
-  return new Promise((resolve, reject) => {
-    throwIfAborted(signal);
-    const reader = new FileReader();
-    const cleanup = () => signal?.removeEventListener("abort", onAbort);
-    const onAbort = () => {
-      cleanup();
-      reader.abort();
-      reject(createAbortError());
-    };
-    reader.onload = () => {
-      cleanup();
-      resolve(reader.result as string);
-    };
-    reader.onerror = () => {
-      cleanup();
-      reject(reader.error ?? new Error("Could not read text file"));
-    };
-    signal?.addEventListener("abort", onAbort, { once: true });
-    reader.readAsText(file);
-  });
-}
+// (readTextFile removed — use readTextFileAsString from services/ocr/pdfTextExtractor)
+
 
 /** Convert file to base64 */
 async function fileToBase64(file: File, signal?: AbortSignal): Promise<string> {
