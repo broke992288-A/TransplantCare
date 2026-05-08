@@ -241,10 +241,11 @@ function getFileCategory(fileName: string): "image" | "pdf" | "text" | "office" 
 }
 
 /** Apply OCR-oriented cleanup to a canvas before export */
-function enhanceCanvasForOcr(canvas: HTMLCanvasElement) {
+async function enhanceCanvasForOcr(canvas: HTMLCanvasElement, signal?: AbortSignal) {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not initialize canvas context");
 
+  throwIfAborted(signal);
   const crop = autoCrop(ctx, canvas.width, canvas.height);
   if (crop.x !== 0 || crop.y !== 0 || crop.w !== canvas.width || crop.h !== canvas.height) {
     const cropped = ctx.getImageData(crop.x, crop.y, crop.w, crop.h);
@@ -256,21 +257,27 @@ function enhanceCanvasForOcr(canvas: HTMLCanvasElement) {
   const width = canvas.width;
   const height = canvas.height;
 
+  await yieldToBrowser(signal);
   denoise(ctx, width, height);
+  await yieldToBrowser(signal);
   enhanceContrast(ctx, width, height);
+  await yieldToBrowser(signal);
   sharpen(ctx, width, height, 0.5);
 }
 
 /** Export a prepared canvas as JPEG/base64 for OCR */
 async function canvasToProcessedResult(
   canvas: HTMLCanvasElement,
-  originalName: string
+  originalName: string,
+  signal?: AbortSignal
 ): Promise<Pick<PreprocessResult, "base64" | "file" | "fileType">> {
-  enhanceCanvasForOcr(canvas);
+  await enhanceCanvasForOcr(canvas, signal);
 
+  throwIfAborted(signal);
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
   const base64 = dataUrl.split(",")[1];
 
+  throwIfAborted(signal);
   const blob = await (await fetch(dataUrl)).blob();
   const processedFile = new File([blob], originalName.replace(/\.[^.]+$/, "_processed.jpg"), {
     type: "image/jpeg",
