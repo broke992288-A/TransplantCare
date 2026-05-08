@@ -419,8 +419,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     }
 
     let groups: DateGroup[] = [];
-    if (ocrData?.multiDate && ocrData?.dateGroups?.length > 0) {
-      groups = ocrData.dateGroups.map((g: any) => {
+    const responseDateGroups = Array.isArray(ocrData.dateGroups) ? ocrData.dateGroups : [];
+    if (ocrData.multiDate && responseDateGroups.length > 0) {
+      groups = responseDateGroups.map((g) => {
         const values: Record<string, string> = {};
         for (const field of LAB_FIELDS) {
           const v = g.data?.[field.key];
@@ -470,7 +471,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     for (let i = 0; i < limited.length; i++) {
       try {
         toast({ title: `📄 ${i + 1}/${limited.length}`, description: limited[i].name });
-        const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length);
+        const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length, controller);
         allGroups.push(...groups);
         if (rt) lastReportType = rt;
         if (ru) lastReportUrl = ru;
