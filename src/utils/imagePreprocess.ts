@@ -298,7 +298,10 @@ async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTML
   const loadingTask = pdfjs.getDocument({ data: pdfData });
   const abortLoading = () => loadingTask.destroy();
   signal?.addEventListener("abort", abortLoading, { once: true });
-  const pdf = await loadingTask.promise;
+  const pdf = await loadingTask.promise.catch((error: unknown) => {
+    signal?.removeEventListener("abort", abortLoading);
+    throw error;
+  });
 
   try {
     const canvases: HTMLCanvasElement[] = [];
@@ -325,16 +328,16 @@ async function renderPdfAllPages(file: File, signal?: AbortSignal): Promise<HTML
       pageCanvas.width = Math.ceil(viewport.width);
       pageCanvas.height = Math.ceil(viewport.height);
 
-      const renderTask = page.render({ canvasContext: pageCtx, viewport } as never);
+      const renderTask = page.render({ canvasContext: pageCtx, viewport });
       const abortRender = () => renderTask.cancel();
       signal?.addEventListener("abort", abortRender, { once: true });
       try {
         await renderTask.promise;
       } finally {
         signal?.removeEventListener("abort", abortRender);
+        page.cleanup();
       }
       canvases.push(pageCanvas);
-      page.cleanup();
     }
 
     const finalCanvas = document.createElement("canvas");
