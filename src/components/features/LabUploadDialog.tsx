@@ -322,6 +322,14 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     setActiveTab("0");
   };
 
+  const cancelProcessing = () => {
+    processAbortRef.current?.abort();
+    processAbortRef.current = null;
+    setStep("upload");
+    if (fileRef.current) fileRef.current.value = "";
+    if (cameraRef.current) cameraRef.current.value = "";
+  };
+
   const MAX_FILES = 5;
 
   const isCancelledError = (error: unknown): boolean => {
@@ -490,6 +498,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     }
 
     try {
+      if (controller.signal.aborted) return;
       if (allGroups.length === 0) {
         toast({
           title: t("common.error"),
@@ -794,6 +803,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="text-muted-foreground">{t("upload.aiProcessing")}</p>
             <p className="text-xs text-muted-foreground">{t("upload.detectingDates")}</p>
+            <Button type="button" variant="outline" size="sm" onClick={cancelProcessing}>
+              {t("common.cancel")}
+            </Button>
           </div>
         )}
 
