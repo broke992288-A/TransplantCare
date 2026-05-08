@@ -329,6 +329,10 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     return error instanceof Error && error.name === "AbortError";
   };
 
+  const throwIfCancelled = (signal: AbortSignal): void => {
+    if (signal.aborted) throw new DOMException("OCR processing was cancelled", "AbortError");
+  };
+
   /** Wrap any promise with a hard timeout and abort the underlying operation when possible. */
   const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string, controller?: AbortController): Promise<T> => {
     let timeoutId: number | undefined;
@@ -347,9 +351,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   };
 
   /** Process a single file → returns extracted DateGroup[] */
-  const processSingleFile = async (file: File, fileIndex: number, totalFiles: number): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+  const processSingleFile = async (file: File, fileIndex: number, totalFiles: number, controller: AbortController): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+    const { signal } = controller;
     const t0 = performance.now();
     console.log(`[LabUpload] processFile ${fileIndex + 1}/${totalFiles}`, { name: file.name, size: file.size, type: file.type });
+    throwIfCancelled(signal);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
@@ -357,8 +363,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const preStart = performance.now();
     let preprocessed;
     try {
-      preprocessed = await withTimeout(preprocessLabImage(file), 60000, "PREPROCESS");
+      preprocessed = await withTimeout(preprocessLabImage(file, { signal }), 60000, "PREPROCESS", controller);
     } catch (e) {
+      if (isCancelledError(e)) throw e;
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`[LabUpload] preprocess FAILED ${fileIndex + 1}/${totalFiles}`, msg);
       if (msg.includes("PREPROCESS_TIMEOUT")) {
@@ -366,6 +373,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       }
       throw new Error(`File ${fileIndex + 1}: ${msg}`);
     }
+    throwIfCancelled(signal);
     const { base64, file: processedFile, storageFile, fileType, textContent } = preprocessed;
     console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, { fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart) });
 
@@ -373,24 +381,29 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, storageFile ?? processedFile);
     if (uploadErr) throw uploadErr;
+    throwIfCancelled(signal);
 
     const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
     const fileReportUrl = urlData?.signedUrl ?? null;
+    throwIfCancelled(signal);
 
     // OCR call with hard 90s timeout per file
     const ocrStart = performance.now();
-    const ocrPromise = supabase.functions.invoke("ocr-lab-report", {
+    const ocrPromise = supabase.functions.invoke<OcrResponse>("ocr-lab-report", {
       body: { imageBase64: base64, fileType, textContent },
+      signal,
+      timeout: 90000,
     });
 
-    let ocrData: any;
-    let ocrErr: any;
+    let ocrData: OcrResponse | null;
+    let ocrErr: Error | null;
     try {
-      const result = await withTimeout(ocrPromise, 90000, "OCR") as any;
-      ocrData = result?.data;
-      ocrErr = result?.error;
+      const result = await withTimeout(ocrPromise, 90000, "OCR", controller);
+      ocrData = result.data;
+      ocrErr = result.error;
       console.log(`[LabUpload] OCR done ${fileIndex + 1}/${totalFiles}`, { ms: Math.round(performance.now() - ocrStart) });
     } catch (raceErr) {
+      if (isCancelledError(raceErr)) throw raceErr;
       const msg = raceErr instanceof Error ? raceErr.message : String(raceErr);
       console.error(`[LabUpload] OCR FAILED ${fileIndex + 1}/${totalFiles}`, msg);
       if (msg.includes("OCR_TIMEOUT")) {
