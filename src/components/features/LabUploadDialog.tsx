@@ -14,6 +14,7 @@ import { logAudit } from "@/services/auditService";
 import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
 import { preprocessLabImage } from "@/utils/imagePreprocess";
+import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
@@ -388,7 +389,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
     for (let i = 0; i < limited.length; i++) {
       try {
-        throwIfCancelled(controller.signal);
+        if (controller.signal.aborted) break;
         toast({ title: `📄 ${i + 1}/${limited.length}`, description: limited[i].name });
         const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length, controller);
         allGroups.push(...groups);
