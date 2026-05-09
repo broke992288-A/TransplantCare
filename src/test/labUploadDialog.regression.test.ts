@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// Load the component source as a raw string via Vite's ?raw import.
+// This avoids needing Node fs typings and is the recommended Vitest pattern.
+import source from "@/components/features/LabUploadDialog.tsx?raw";
 
 /**
  * Regression test for LabUploadDialog.
@@ -17,9 +15,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * This test guards against accidental reintroduction of unit conversion at save time.
  */
 describe("LabUploadDialog — raw country-unit save (regression)", () => {
-  const filePath = resolve(__dirname, "../components/features/LabUploadDialog.tsx");
-  const source = readFileSync(filePath, "utf8");
-
   // Isolate the handleConfirm function body
   const handleConfirmMatch = source.match(/const handleConfirm\s*=\s*async\s*\(\)\s*=>\s*\{([\s\S]*?)\n  \};/);
   const handleConfirmBody = handleConfirmMatch?.[1] ?? "";
@@ -41,7 +36,7 @@ describe("LabUploadDialog — raw country-unit save (regression)", () => {
   });
 
   it("assigns the raw parsed value directly to labData[field.key]", () => {
-    // Must contain the raw assignment — no transformation between parseFloat and assignment.
+    // Must contain the raw assignment — no transformation between parseFloat and DB write.
     expect(handleConfirmBody).toMatch(/labData\[field\.key\]\s*=\s*v\s*;/);
   });
 
