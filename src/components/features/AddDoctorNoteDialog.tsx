@@ -80,8 +80,8 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
       await addNote.mutateAsync({
         patient_id: patientId,
         doctor_id: user.id,
-        assessment: assessment.trim() || undefined,
-        plan: plan.trim() || undefined,
+        assessment: assessment.trim() ? encodeSourceLang(assessment.trim(), lang) : undefined,
+        plan: plan.trim() ? encodeSourceLang(plan.trim(), lang) : undefined,
         follow_up_date: followUpDate || null,
       });
 
