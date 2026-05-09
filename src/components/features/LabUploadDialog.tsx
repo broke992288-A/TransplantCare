@@ -13,7 +13,6 @@ import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
 import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
-import { preprocessLabImage } from "@/utils/imagePreprocess";
 import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
