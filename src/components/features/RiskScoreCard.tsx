@@ -9,6 +9,7 @@ import type { RiskExplanation } from "@/services/riskSnapshotService";
 interface RiskScoreCardProps {
   snapshot: RiskSnapshot | null;
   prevSnapshot?: RiskSnapshot | null;
+  lastEvaluation?: string | null;
   loading?: boolean;
 }
 
@@ -64,7 +65,7 @@ function translateExplanation(exp: RiskExplanation, t: (key: string) => string):
     .replace("{change}", exp.change_pct !== undefined ? Math.abs(exp.change_pct).toFixed(0) : "");
 }
 
-export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskScoreCardProps) {
+export default function RiskScoreCard({ snapshot, prevSnapshot, lastEvaluation, loading }: RiskScoreCardProps) {
   const { t } = useLanguage();
 
   if (loading) {
@@ -194,7 +195,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, loading }: RiskS
         )}
 
         <p className="text-xs text-muted-foreground">
-          {t("risk.lastEvaluation")}: {new Date(snapshot.created_at).toLocaleString()}
+          {t("risk.lastEvaluation")}: {new Date(lastEvaluation ?? snapshot.created_at).toLocaleString()}
         </p>
       </CardContent>
     </Card>
