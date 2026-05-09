@@ -17,7 +17,7 @@ import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
-import { STANDARD_UNITS } from "@/utils/unitConversion";
+
 
 const LAB_FIELDS = [
   { key: "hb", label: "HB (Hemoglobin)", unit: "g/dL" },
@@ -146,21 +146,10 @@ function isSuspicious(key: string, value: number): boolean {
   return threshold != null && value > threshold;
 }
 
-/** Unit conversion: country-specific → standard */
-function convertToStandard(key: string, value: number, countryUnit: string): { converted: number; wasConverted: boolean; fromUnit: string; toUnit: string } {
-  const standardUnit = STANDARD_UNITS[key] ?? "";
-  if (!countryUnit || !standardUnit || countryUnit === standardUnit) {
-    return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
-  }
-  if (countryUnit === "µmol/L" && standardUnit === "mg/dL") {
-    if (key === "creatinine") return { converted: Math.round((value / 88.4) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
-    if (key === "total_bilirubin" || key === "direct_bilirubin") return { converted: Math.round((value / 17.1) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
-  }
-  if (key === "urea" && countryUnit === "mmol/L" && standardUnit === "mg/dL") {
-    return { converted: Math.round(value * 6 * 100) / 100, wasConverted: true, fromUnit: "mmol/L", toUnit: "mg/dL" };
-  }
-  return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
-}
+// NOTE: Lab values are stored AS-IS in the units of the patient's country.
+// Country-specific reference profiles define the matching normal ranges, and
+// the risk engine compares against those profiles — no conversion is applied.
+
 
 function DateGroupValues({
   group,
@@ -543,25 +532,14 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         let filledCount = 0;
-        const conversionMessages: string[] = [];
+        // Save raw values AS-IS in country-specific units. Reference profiles
+        // (per country) define the matching normal ranges; risk engine compares
+        // values against the country profile, so no conversion is performed here.
         for (const field of LAB_FIELDS) {
           const v = parseFloat(group.values[field.key]);
           if (isNaN(v)) { labData[field.key] = null; continue; }
-
-          // Convert from country-specific unit to standard unit
-          const countryUnit = refMap[field.key]?.unit;
-          if (countryUnit) {
-            const { converted, wasConverted, fromUnit, toUnit } = convertToStandard(field.key, v, countryUnit);
-            labData[field.key] = converted;
-            if (wasConverted) conversionMessages.push(`${field.key}: ${v} ${fromUnit} → ${converted} ${toUnit}`);
-          } else {
-            labData[field.key] = v;
-          }
+          labData[field.key] = v;
           filledCount++;
-        }
-
-        if (conversionMessages.length > 0) {
-          toast({ title: "🔄 " + t("common.info"), description: conversionMessages.join(", ") });
         }
 
         if (filledCount > 0) {
