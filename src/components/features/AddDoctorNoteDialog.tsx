@@ -27,10 +27,9 @@ interface NoteTemplate {
 export default function AddDoctorNoteDialog({ patientId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const addNote = useAddDoctorNote(patientId);
 
-  const { lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const [assessment, setAssessment] = useState("");
   const [plan, setPlan] = useState("");
