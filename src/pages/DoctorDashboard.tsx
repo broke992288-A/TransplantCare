@@ -105,7 +105,7 @@ export default function DoctorDashboard() {
                   {t("dashboard.riskDistribution")}
                 </CardTitle>
                 <Badge variant="outline" className="text-[10px] font-medium uppercase tracking-wider border-primary/30 text-primary bg-primary/5">
-                  Live
+                  {t("trend.live")}
                 </Badge>
               </div>
             </CardHeader>
