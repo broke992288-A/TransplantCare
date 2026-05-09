@@ -11,6 +11,7 @@ import { useAddDoctorNote } from "@/hooks/useDoctorNotes";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
+import { encodeSourceLang } from "@/utils/langPrefix";
 
 interface Props {
   patientId: string;
@@ -26,7 +27,7 @@ interface NoteTemplate {
 export default function AddDoctorNoteDialog({ patientId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const addNote = useAddDoctorNote(patientId);
 
   const [open, setOpen] = useState(false);
@@ -79,8 +80,8 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
       await addNote.mutateAsync({
         patient_id: patientId,
         doctor_id: user.id,
-        assessment: assessment.trim() || undefined,
-        plan: plan.trim() || undefined,
+        assessment: assessment.trim() ? encodeSourceLang(assessment.trim(), lang) : undefined,
+        plan: plan.trim() ? encodeSourceLang(plan.trim(), lang) : undefined,
         follow_up_date: followUpDate || null,
       });
 

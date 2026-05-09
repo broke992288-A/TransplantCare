@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import AddDoctorNoteDialog from "@/components/features/AddDoctorNoteDialog";
+import TranslatedText from "@/components/features/TranslatedText";
 
 interface Props {
   patientId: string;
@@ -135,13 +136,13 @@ export default function DoctorNotesCard({ patientId, readOnly = false }: Props) 
                   {note.assessment && (
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-0.5">{t("notes.assessment")}</p>
-                      <p className="text-sm">{note.assessment}</p>
+                      <TranslatedText text={note.assessment} className="text-sm" />
                     </div>
                   )}
                   {note.plan && (
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-0.5">{t("notes.plan")}</p>
-                      <p className="text-sm">{note.plan}</p>
+                      <TranslatedText text={note.plan} className="text-sm" />
                     </div>
                   )}
                   {note.follow_up_date && (
