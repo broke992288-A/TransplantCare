@@ -396,7 +396,8 @@ serve(async (req) => {
         await supabase.from("patients").update({
           risk_level: latestSnapshot.risk_level,
           risk_score: Math.round(latestSnapshot.score),
-          last_risk_evaluation: latestSnapshot.created_at,
+          last_risk_evaluation: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         }).eq("id", patient.id);
       }
 
