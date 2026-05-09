@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import AddDoctorNoteDialog from "@/components/features/AddDoctorNoteDialog";
+import TranslatedText from "@/components/features/TranslatedText";
 
 interface Props {
   patientId: string;
