@@ -54,8 +54,8 @@ export const LAB_ALIASES: Record<CanonicalLabKey, string[]> = {
   direct_bilirubin: ["direct bilirubin", "conjugated bilirubin", "прямой билирубин", "тугридан тугри билирубин", "тўғридан-тўғри билирубин", "d.bil", "dbil"],
   ast: ["aspartate aminotransferase", "sgot", "аспартатаминотрансфераза", "асат", "аст", "ast"],
   alt: ["alanine aminotransferase", "sgpt", "аланинаминотрансфераза", "алат", "алт", "alt"],
-  alp: ["alkaline phosphatase", "ишкорий фосфатаза", "ишқорий фосфатаза", "щф", "alp"],
-  ggt: ["gamma glutamyl transferase", "gamma gt", "ггт", "ггтп", "ggt"],
+  alp: ["alkaline phosphatase", "щелочная фосфатаза", "щел фосфатаза", "ишкорий фосфатаза", "ишқорий фосфатаза", "alk phos", "щф", "sap", "alp"],
+  ggt: ["gamma glutamyl transferase", "гамма-глутамилтрансфераза", "gamma gt", "гамма гт", "ггтп", "ггт", "ggt"],
   total_protein: ["total protein", "общий белок", "умумий оксил", "умумий оқсил", "tp"],
   albumin: ["albumin", "альбумин", "альб", "alb"],
 
@@ -77,10 +77,10 @@ export const LAB_ALIASES: Record<CanonicalLabKey, string[]> = {
   esr: ["erythrocyte sedimentation rate", "sed rate", "соэ", "эчт", "esr"],
   ldh: ["lactate dehydrogenase", "лдг", "ldh"],
   ammonia: ["ammonia", "аммиак", "nh3"],
-  glucose: ["fasting glucose", "blood glucose", "glucose", "glu", "глюкоза", "сахар крови", "қанд", "қанд миқдори", "глю"],
+  glucose: ["fasting glucose", "blood glucose", "сахар крови", "қондаги қанд", "кандли диабет", "қанд миқдори", "glucose", "глюкоза", "қанд", "глю", "glu"],
 
   // Immunosuppressants
-  tacrolimus_level: ["tacrolimus", "fk506", "fk-506", "такролимус", "тас", "tac"],
+  tacrolimus_level: ["tacrolimus", "такралимус", "такролимус", "tac level", "fk-506", "fk506", "тас", "tac"],
   cyclosporine: ["cyclosporine", "cyclosporin", "циклоспорин", "csa"],
 
   // Urine
