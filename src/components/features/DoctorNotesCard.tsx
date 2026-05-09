@@ -6,6 +6,7 @@ import { FileText, CalendarClock, Trash2, Clock } from "lucide-react";
 import { useDoctorNotes, useDeleteDoctorNote } from "@/hooks/useDoctorNotes";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import AddDoctorNoteDialog from "@/components/features/AddDoctorNoteDialog";
 
 interface Props {
@@ -15,22 +16,27 @@ interface Props {
 
 const SEEN_KEY = (id: string) => `doctor-notes-last-seen-${id}`;
 
-function formatRelative(dateStr: string): string {
-  const d = new Date(dateStr).getTime();
-  const diffMs = Date.now() - d;
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "hozir";
-  if (min < 60) return `${min} daqiqa oldin`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h} soat oldin`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `${days} kun oldin`;
-  return new Date(dateStr).toLocaleDateString();
+function useFormatRelative() {
+  const { t } = useLanguage();
+  return (dateStr: string): string => {
+    const d = new Date(dateStr).getTime();
+    const diffMs = Date.now() - d;
+    const min = Math.floor(diffMs / 60000);
+    if (min < 1) return t("notes.now");
+    if (min < 60) return `${min} ${t("time.minAgo")}`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h} ${t("time.hourAgo")}`;
+    const days = Math.floor(h / 24);
+    if (days < 7) return `${days} ${t("time.dayAgo")}`;
+    return new Date(dateStr).toLocaleDateString();
+  };
 }
 
 export default function DoctorNotesCard({ patientId, readOnly = false }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const formatRelative = useFormatRelative();
   const { data: notes = [], isLoading } = useDoctorNotes(patientId, readOnly ? 10 : 3);
   const deleteNote = useDeleteDoctorNote(patientId);
 
@@ -45,23 +51,22 @@ export default function DoctorNotesCard({ patientId, readOnly = false }: Props) 
 
   const latestNote = notes[0];
 
-  // Mark as seen when patient views the card (after a short delay so badge is visible)
   useEffect(() => {
     if (!readOnly || notes.length === 0) return;
-    const t = setTimeout(() => {
+    const tmr = setTimeout(() => {
       const newest = new Date(notes[0].created_at).getTime();
       localStorage.setItem(SEEN_KEY(patientId), String(newest));
     }, 3000);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tmr);
   }, [readOnly, notes, patientId]);
 
   const handleDelete = async (noteId: string) => {
     try {
       await deleteNote.mutateAsync(noteId);
-      toast({ title: "Note deleted" });
+      toast({ title: t("notes.deleted") });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: t("common.error"), description: message, variant: "destructive" });
     }
   };
 
@@ -71,13 +76,13 @@ export default function DoctorNotesCard({ patientId, readOnly = false }: Props) 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <FileText className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Doctor Notes</CardTitle>
+            <CardTitle className="text-base">{t("notes.title")}</CardTitle>
             {notes.length > 0 && (
               <Badge variant="secondary">{notes.length}</Badge>
             )}
             {readOnly && unreadCount > 0 && (
               <Badge variant="destructive" className="animate-pulse">
-                {unreadCount} yangi
+                {unreadCount} {t("notes.new")}
               </Badge>
             )}
           </div>
@@ -86,15 +91,15 @@ export default function DoctorNotesCard({ patientId, readOnly = false }: Props) 
         {readOnly && latestNote && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Clock className="h-3 w-3" />
-            Oxirgi yozuv: {formatRelative(latestNote.created_at)}
+            {t("notes.lastEntry")} {formatRelative(latestNote.created_at)}
           </p>
         )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">{t("notes.loading")}</p>
         ) : notes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No notes yet. Add the first clinical note.</p>
+          <p className="text-sm text-muted-foreground">{t("notes.empty")}</p>
         ) : (
           <div className="space-y-3">
             {notes.map((note) => {
@@ -129,20 +134,20 @@ export default function DoctorNotesCard({ patientId, readOnly = false }: Props) 
                   </div>
                   {note.assessment && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Assessment</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">{t("notes.assessment")}</p>
                       <p className="text-sm">{note.assessment}</p>
                     </div>
                   )}
                   {note.plan && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Plan</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">{t("notes.plan")}</p>
                       <p className="text-sm">{note.plan}</p>
                     </div>
                   )}
                   {note.follow_up_date && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CalendarClock className="h-3.5 w-3.5" />
-                      Follow-up: {new Date(note.follow_up_date).toLocaleDateString()}
+                      {t("notes.followUp")}: {new Date(note.follow_up_date).toLocaleDateString()}
                     </div>
                   )}
                 </div>
