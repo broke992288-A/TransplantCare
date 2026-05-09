@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,37 +23,6 @@ interface NoteTemplate {
   color: string;
 }
 
-const TEMPLATES: NoteTemplate[] = [
-  {
-    label: "Acute rejection suspicion",
-    assessment: "Possible rejection due to lab deterioration. Elevated creatinine/liver enzymes observed with rapid change from baseline.",
-    plan: "Repeat creatinine and tacrolimus in 48 hours. Consider biopsy if trend continues. Monitor closely.",
-    color: "bg-destructive/10 text-destructive border-destructive/30",
-  },
-  {
-    label: "Stable graft function",
-    assessment: "Graft function stable. Lab values within expected range. No signs of rejection or infection.",
-    plan: "Continue current medications. Follow-up in 1 month. Routine labs at next visit.",
-    color: "bg-success/10 text-success border-success/30",
-  },
-  {
-    label: "Medication toxicity",
-    assessment: "Possible tacrolimus toxicity. Elevated trough level with potential nephrotoxicity signs.",
-    plan: "Reduce tacrolimus dose. Repeat trough level in 48 hours. Monitor renal function.",
-    color: "bg-warning/10 text-warning border-warning/30",
-  },
-  {
-    label: "Repeat labs 48h",
-    plan: "Repeat full labs in 48 hours. Review results and adjust management accordingly.",
-    color: "bg-primary/10 text-primary border-primary/30",
-  },
-  {
-    label: "Follow-up 7 days",
-    plan: "Follow-up visit in 7 days. Continue current management. Contact if symptoms worsen.",
-    color: "bg-primary/10 text-primary border-primary/30",
-  },
-];
-
 export default function AddDoctorNoteDialog({ patientId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -65,6 +34,37 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
   const [plan, setPlan] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
 
+  const TEMPLATES: NoteTemplate[] = useMemo(() => [
+    {
+      label: t("notes.tplRejection"),
+      assessment: t("notes.tplRejectionAssessment"),
+      plan: t("notes.tplRejectionPlan"),
+      color: "bg-destructive/10 text-destructive border-destructive/30",
+    },
+    {
+      label: t("notes.tplStable"),
+      assessment: t("notes.tplStableAssessment"),
+      plan: t("notes.tplStablePlan"),
+      color: "bg-success/10 text-success border-success/30",
+    },
+    {
+      label: t("notes.tplToxicity"),
+      assessment: t("notes.tplToxicityAssessment"),
+      plan: t("notes.tplToxicityPlan"),
+      color: "bg-warning/10 text-warning border-warning/30",
+    },
+    {
+      label: t("notes.tplRepeat48"),
+      plan: t("notes.tplRepeat48Plan"),
+      color: "bg-primary/10 text-primary border-primary/30",
+    },
+    {
+      label: t("notes.tplFollowUp7"),
+      plan: t("notes.tplFollowUp7Plan"),
+      color: "bg-primary/10 text-primary border-primary/30",
+    },
+  ], [t]);
+
   const applyTemplate = (tpl: NoteTemplate) => {
     if (tpl.assessment) setAssessment(tpl.assessment);
     if (tpl.plan) setPlan(tpl.plan);
@@ -72,7 +72,7 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
 
   const handleSubmit = async () => {
     if (!user || (!assessment.trim() && !plan.trim())) {
-      toast({ title: "Please fill assessment or plan", variant: "destructive" });
+      toast({ title: t("notes.fillRequired"), variant: "destructive" });
       return;
     }
     try {
@@ -84,7 +84,6 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
         follow_up_date: followUpDate || null,
       });
 
-      // Notify patient (linked user) via push if available
       try {
         const { data: pat } = await supabase
           .from("patients")
@@ -97,8 +96,8 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
           await supabase.functions.invoke("send-push", {
             body: {
               user_ids: [linkedUserId],
-              title: "👨‍⚕️ Shifokor yangi yozuv qo'shdi",
-              body: bodyText || "Yangi klinik yozuv mavjud.",
+              title: t("notes.pushTitle"),
+              body: bodyText || t("notes.pushFallback"),
               url: "/patient/home",
             },
           });
@@ -107,7 +106,7 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
         console.warn("[AddDoctorNote] push notify failed", pushErr);
       }
 
-      toast({ title: "Note added" });
+      toast({ title: t("notes.added") });
       setAssessment("");
       setPlan("");
       setFollowUpDate("");
@@ -123,22 +122,21 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          Add Note
+          {t("notes.add")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Doctor Note
+            {t("notes.dialogTitle")}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Quick templates */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Zap className="h-4 w-4" />
-            Quick Templates
+            {t("notes.quickTemplates")}
           </div>
           <div className="flex flex-wrap gap-2">
             {TEMPLATES.map((tpl) => (
@@ -156,25 +154,25 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Assessment</Label>
+            <Label>{t("notes.assessment")}</Label>
             <Textarea
-              placeholder="Clinical assessment..."
+              placeholder={t("notes.assessmentPlaceholder")}
               value={assessment}
               onChange={(e) => setAssessment(e.target.value)}
               className="min-h-[100px]"
             />
           </div>
           <div className="space-y-2">
-            <Label>Plan</Label>
+            <Label>{t("notes.plan")}</Label>
             <Textarea
-              placeholder="Treatment plan..."
+              placeholder={t("notes.planPlaceholder")}
               value={plan}
               onChange={(e) => setPlan(e.target.value)}
               className="min-h-[100px]"
             />
           </div>
           <div className="space-y-2">
-            <Label>Follow-up Date</Label>
+            <Label>{t("notes.followUpDate")}</Label>
             <Input
               type="date"
               value={followUpDate}
@@ -182,7 +180,7 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
             />
           </div>
           <Button onClick={handleSubmit} disabled={addNote.isPending} className="w-full">
-            {addNote.isPending ? "Saving..." : "Save Note"}
+            {addNote.isPending ? t("notes.saving") : t("notes.save")}
           </Button>
         </div>
       </DialogContent>
