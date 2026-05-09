@@ -198,7 +198,7 @@ export default function PatientDetail() {
         <ResizablePanelGroup direction={direction} className="min-h-[280px] rounded-lg border">
           <ResizablePanel defaultSize={50} minSize={25}>
             <div className="p-3 space-y-2 h-full overflow-auto">
-              <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} />
+              <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} lastEvaluation={patient.last_risk_evaluation} />
               <Button variant="outline" size="sm" onClick={handleRecalculate} disabled={recalculating} className="w-full">
                 {recalculating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
                 {t("detail.recalculateRisk")}
