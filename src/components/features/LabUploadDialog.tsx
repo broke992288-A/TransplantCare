@@ -543,25 +543,14 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         let filledCount = 0;
-        const conversionMessages: string[] = [];
+        // Save raw values AS-IS in country-specific units. Reference profiles
+        // (per country) define the matching normal ranges; risk engine compares
+        // values against the country profile, so no conversion is performed here.
         for (const field of LAB_FIELDS) {
           const v = parseFloat(group.values[field.key]);
           if (isNaN(v)) { labData[field.key] = null; continue; }
-
-          // Convert from country-specific unit to standard unit
-          const countryUnit = refMap[field.key]?.unit;
-          if (countryUnit) {
-            const { converted, wasConverted, fromUnit, toUnit } = convertToStandard(field.key, v, countryUnit);
-            labData[field.key] = converted;
-            if (wasConverted) conversionMessages.push(`${field.key}: ${v} ${fromUnit} → ${converted} ${toUnit}`);
-          } else {
-            labData[field.key] = v;
-          }
+          labData[field.key] = v;
           filledCount++;
-        }
-
-        if (conversionMessages.length > 0) {
-          toast({ title: "🔄 " + t("common.info"), description: conversionMessages.join(", ") });
         }
 
         if (filledCount > 0) {
