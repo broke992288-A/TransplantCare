@@ -93,10 +93,23 @@ export default function DoctorDashboard() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Pie Chart */}
-          <Card className="lg:col-span-1">
-            <CardHeader><CardTitle className="text-lg">{t("dashboard.riskDistribution")}</CardTitle></CardHeader>
-            <CardContent className="flex items-center justify-center">
+          {/* Risk Distribution — modern donut */}
+          <Card className="lg:col-span-1 overflow-hidden border-border/60 bg-gradient-to-br from-card via-card to-card/40 hover:shadow-xl transition-all duration-500 group">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                  </span>
+                  {t("dashboard.riskDistribution")}
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px] font-medium uppercase tracking-wider border-primary/30 text-primary bg-primary/5">
+                  Live
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
               {loading ? (
                 <SkeletonChart />
               ) : patients.length === 0 ? (
@@ -108,14 +121,104 @@ export default function DoctorDashboard() {
                   onAction={() => navigate("/add-patient")}
                 />
               ) : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                      {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="flex flex-col items-center">
+                  <div className="relative w-full" style={{ height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <defs>
+                          <linearGradient id="grad-high" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
+                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.65} />
+                          </linearGradient>
+                          <linearGradient id="grad-medium" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--warning))" stopOpacity={1} />
+                            <stop offset="100%" stopColor="hsl(var(--warning))" stopOpacity={0.65} />
+                          </linearGradient>
+                          <linearGradient id="grad-low" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={1} />
+                            <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.65} />
+                          </linearGradient>
+                        </defs>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={62}
+                          outerRadius={92}
+                          paddingAngle={4}
+                          dataKey="value"
+                          stroke="hsl(var(--background))"
+                          strokeWidth={3}
+                          startAngle={90}
+                          endAngle={-270}
+                          animationDuration={900}
+                        >
+                          {pieData.map((entry, i) => {
+                            const gradId =
+                              entry.color.includes("destructive")
+                                ? "grad-high"
+                                : entry.color.includes("warning")
+                                  ? "grad-medium"
+                                  : "grad-low";
+                            return <Cell key={i} fill={`url(#${gradId})`} />;
+                          })}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: 10,
+                            fontSize: 12,
+                            border: "1px solid hsl(var(--border))",
+                            background: "hsl(var(--popover) / 0.95)",
+                            backdropFilter: "blur(8px)",
+                            boxShadow: "0 8px 24px hsl(var(--foreground) / 0.08)",
+                          }}
+                          formatter={(value: number, name: string) => {
+                            const pct = patients.length > 0 ? ((value / patients.length) * 100).toFixed(0) : 0;
+                            return [`${value} (${pct}%)`, name];
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center stat overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-3xl font-bold tabular-nums leading-none bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        {patients.length}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1 font-medium">
+                        {t("dashboard.totalPatients")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Custom legend with stats */}
+                  <div className="grid grid-cols-3 gap-2 w-full mt-2">
+                    {[
+                      { label: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(var(--destructive))", bg: "bg-destructive/5", text: "text-destructive", border: "border-destructive/20" },
+                      { label: t("dashboard.mediumRisk"), value: mediumRisk.length, color: "hsl(var(--warning))", bg: "bg-warning/5", text: "text-warning", border: "border-warning/20" },
+                      { label: t("patients.lowRisk"), value: patients.length - highRisk.length - mediumRisk.length, color: "hsl(var(--success))", bg: "bg-success/5", text: "text-success", border: "border-success/20" },
+                    ].map((item) => {
+                      const pct = patients.length > 0 ? Math.round((item.value / patients.length) * 100) : 0;
+                      return (
+                        <div
+                          key={item.label}
+                          className={`relative rounded-lg border ${item.border} ${item.bg} p-2 flex flex-col items-center gap-0.5 transition-all hover:scale-105 hover:shadow-md`}
+                        >
+                          <span
+                            className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }}
+                          />
+                          <span className={`text-lg font-bold tabular-nums ${item.text}`}>{item.value}</span>
+                          <span className="text-[9px] uppercase tracking-wide text-muted-foreground font-medium leading-tight text-center">
+                            {item.label}
+                          </span>
+                          <span className="text-[10px] font-semibold tabular-nums text-muted-foreground/80">
+                            {pct}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
