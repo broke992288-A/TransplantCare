@@ -32,6 +32,7 @@ export type CanonicalLabKey =
   | "esr"
   | "ldh"
   | "ammonia"
+  | "glucose"
   | "tacrolimus_level"
   | "cyclosporine"
   | "proteinuria";
@@ -76,6 +77,7 @@ export const LAB_ALIASES: Record<CanonicalLabKey, string[]> = {
   esr: ["erythrocyte sedimentation rate", "sed rate", "соэ", "эчт", "esr"],
   ldh: ["lactate dehydrogenase", "лдг", "ldh"],
   ammonia: ["ammonia", "аммиак", "nh3"],
+  glucose: ["fasting glucose", "blood glucose", "glucose", "glu", "глюкоза", "сахар крови", "қанд", "қанд миқдори", "глю"],
 
   // Immunosuppressants
   tacrolimus_level: ["tacrolimus", "fk506", "fk-506", "такролимус", "тас", "tac"],

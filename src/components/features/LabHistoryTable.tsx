@@ -21,7 +21,7 @@ type LabNumericKey = keyof Pick<LabResult,
   "total_bilirubin" | "direct_bilirubin" | "ast" | "alt" | "alp" | "ggt" |
   "total_protein" | "albumin" | "urea" | "creatinine" | "egfr" |
   "sodium" | "potassium" | "calcium" | "magnesium" | "phosphorus" |
-  "uric_acid" | "crp" | "esr" | "ldh" | "ammonia" | "proteinuria"
+  "uric_acid" | "crp" | "esr" | "ldh" | "ammonia" | "glucose" | "proteinuria"
 >;
 
 const ALL_HEADERS: { key: LabNumericKey; label: string }[] = [
@@ -53,6 +53,7 @@ const ALL_HEADERS: { key: LabNumericKey; label: string }[] = [
   { key: "esr", label: "ESR" },
   { key: "ldh", label: "LDH" },
   { key: "ammonia", label: "Ammonia" },
+  { key: "glucose", label: "Glucose" },
   { key: "proteinuria", label: "Proteinuria" },
 ];
 

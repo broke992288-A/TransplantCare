@@ -62,7 +62,7 @@ const LAB_NUMERIC_KEYS = [
   "total_bilirubin", "direct_bilirubin", "ast", "alt", "alp", "ggt",
   "total_protein", "albumin", "urea", "creatinine", "egfr",
   "sodium", "potassium", "calcium", "magnesium", "phosphorus",
-  "uric_acid", "crp", "esr", "ldh", "ammonia",
+  "uric_acid", "crp", "esr", "ldh", "ammonia", "glucose",
   "tacrolimus_level", "cyclosporine", "proteinuria",
   "bk_virus_load", "cmv_load", "dsa_mfi",
 ] as const;

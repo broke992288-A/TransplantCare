@@ -42,6 +42,7 @@ const IMPOSSIBLE_RANGES: Record<string, { min: number; max: number; unit: string
   ggt: { min: 0, max: 5000, unit: "U/L" },
   ammonia: { min: 0, max: 500, unit: "µmol/L" },
   ldh: { min: 0, max: 5000, unit: "U/L" },
+  glucose: { min: 1, max: 50, unit: "mmol/L" },
 };
 
 // Highly suspicious ranges (likely OCR errors or wrong units)
