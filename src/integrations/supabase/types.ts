@@ -212,6 +212,7 @@ export type Database = {
           egfr: number | null
           esr: number | null
           ggt: number | null
+          glucose: number | null
           hb: number | null
           id: string
           inr: number | null
@@ -251,6 +252,7 @@ export type Database = {
           egfr?: number | null
           esr?: number | null
           ggt?: number | null
+          glucose?: number | null
           hb?: number | null
           id?: string
           inr?: number | null
@@ -290,6 +292,7 @@ export type Database = {
           egfr?: number | null
           esr?: number | null
           ggt?: number | null
+          glucose?: number | null
           hb?: number | null
           id?: string
           inr?: number | null
