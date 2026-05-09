@@ -47,10 +47,11 @@ interface CustomTooltipProps {
   unit?: string;
   color?: string;
   ref?: { min: number; max: number };
+  t?: (k: string) => string;
 }
 
-function CustomTooltip({ active, payload, unit, color, ref }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null;
+function CustomTooltip({ active, payload, unit, color, ref, t }: CustomTooltipProps) {
+  if (!active || !payload?.length || !t) return null;
   const item = payload[0];
   const value = item.value;
   let status: "normal" | "high" | "low" = "normal";
@@ -60,6 +61,8 @@ function CustomTooltip({ active, payload, unit, color, ref }: CustomTooltipProps
   }
   const statusColor =
     status === "high" ? "text-destructive" : status === "low" ? "text-blue-500" : "text-emerald-500";
+  const statusLabel =
+    status === "high" ? `↑ ${t("lab.high")}` : status === "low" ? `↓ ${t("lab.low")}` : `✓ ${t("lab.normal")}`;
 
   return (
     <div className="rounded-lg border bg-popover/95 backdrop-blur-sm shadow-lg px-3 py-2 text-xs">
@@ -72,7 +75,7 @@ function CustomTooltip({ active, payload, unit, color, ref }: CustomTooltipProps
       </div>
       {ref && (
         <div className={cn("text-[10px] font-medium mt-0.5 uppercase tracking-wide", statusColor)}>
-          {status === "high" ? "↑ High" : status === "low" ? "↓ Low" : "✓ Normal"}
+          {statusLabel}
         </div>
       )}
     </div>
@@ -121,10 +124,10 @@ export default function LabTrendCharts({ labs }: Props) {
 
         const statusBadge =
           status === "high"
-            ? { label: "High", cls: "bg-destructive/10 text-destructive border-destructive/30", icon: AlertTriangle }
+            ? { label: t("lab.high"), cls: "bg-destructive/10 text-destructive border-destructive/30", icon: AlertTriangle }
             : status === "low"
-              ? { label: "Low", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400", icon: AlertTriangle }
-              : { label: "Normal", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400", icon: CheckCircle2 };
+              ? { label: t("lab.low"), cls: "bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400", icon: AlertTriangle }
+              : { label: t("lab.normal"), cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400", icon: CheckCircle2 };
 
         const StatusIcon = statusBadge.icon;
         const TrendIcon = Math.abs(deltaPct) < 0.5 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
@@ -207,7 +210,7 @@ export default function LabTrendCharts({ labs }: Props) {
                     width={36}
                   />
                   <Tooltip
-                    content={<CustomTooltip unit={ref?.unit} color={color} ref={ref} />}
+                    content={<CustomTooltip unit={ref?.unit} color={color} ref={ref} t={t} />}
                     cursor={{ stroke: color, strokeOpacity: 0.3, strokeWidth: 1, strokeDasharray: "3 3" }}
                   />
                   {ref && (
@@ -254,15 +257,15 @@ export default function LabTrendCharts({ labs }: Props) {
               </ResponsiveContainer>
               <div className="grid grid-cols-3 gap-2 px-2 pt-2 border-t border-border/40 mt-1">
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Avg</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.avg")}</div>
                   <div className="text-xs font-semibold tabular-nums">{avg.toFixed(2)}</div>
                 </div>
                 <div className="text-center border-x border-border/40">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Min</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.min")}</div>
                   <div className="text-xs font-semibold tabular-nums">{min.toFixed(2)}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Max</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.max")}</div>
                   <div className="text-xs font-semibold tabular-nums">{max.toFixed(2)}</div>
                 </div>
               </div>
