@@ -30,6 +30,7 @@ export default function AddDoctorNoteDialog({ patientId }: Props) {
   const { t } = useLanguage();
   const addNote = useAddDoctorNote(patientId);
 
+  const { lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const [assessment, setAssessment] = useState("");
   const [plan, setPlan] = useState("");
