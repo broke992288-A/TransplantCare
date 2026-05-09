@@ -124,7 +124,7 @@ export async function processFileOCR(
   let upload: UploadHandle | null = null;
 
   try {
-    // ─── Stage 1: extract (and possibly deterministic parse) ───
+    // ─── Stage 1: extract (preprocess for OCR; also yields storage file) ───
     onStage?.("extract");
     const tExtract = performance.now();
     const preprocessed = await withTimeout(
@@ -141,14 +141,35 @@ export async function processFileOCR(
     });
     if (controller.signal.aborted) throw abortError();
 
+    const source: OCRSource = preprocessed.extractionSource ?? "ai-image";
+    const hasDeterministic =
+      !!preprocessed.deterministicGroups && preprocessed.deterministicGroups.length > 0;
+
+    // ─── Stage 2: upload FIRST (fast, isolated from slow AI OCR) ───
+    // Upload is short and predictable; doing it before AI OCR prevents the
+    // combined wall-clock from blowing past a single timeout budget.
+    onStage?.("upload");
+    const fileToUpload = preprocessed.storageFile ?? preprocessed.file;
+    upload = await withTimeout(
+      uploadLabReport(fileToUpload, patientId, fileIndex),
+      OCR_TIMEOUTS.UPLOAD_MS,
+      "UPLOAD",
+      controller,
+    );
+    if (controller.signal.aborted) {
+      const path = upload.path;
+      upload = null;
+      await cleanupOrphanUpload(path);
+      throw abortError();
+    }
+
+    // ─── Stage 3: parse (deterministic) OR AI OCR fallback ───
     let groups: OCRGroupValues[] = [];
     let reportType = "";
-    const source: OCRSource = preprocessed.extractionSource ?? "ai-image";
 
-    if (preprocessed.deterministicGroups && preprocessed.deterministicGroups.length > 0) {
-      // ─── Stage 2a: deterministic parse — NO AI call ───
+    if (hasDeterministic) {
       onStage?.("parse");
-      groups = preprocessed.deterministicGroups.map((g) => ({
+      groups = preprocessed.deterministicGroups!.map((g) => ({
         date: g.date ?? "unknown",
         values: valuesFromData(g.data as Record<string, number | null> | undefined),
         confidence: (g.confidence ?? {}) as Record<string, number>,
@@ -162,7 +183,6 @@ export async function processFileOCR(
         markers: countMarkers(groups),
       });
     } else {
-      // ─── Stage 2b: AI fallback ───
       onStage?.("ai");
       const tAi = performance.now();
       const aiPromise = supabase.functions.invoke<OcrEdgeResponse>(
@@ -172,6 +192,7 @@ export async function processFileOCR(
             imageBase64: preprocessed.base64,
             fileType: preprocessed.fileType,
             textContent: preprocessed.textContent,
+            reportUrl: upload.signedUrl,
           },
         },
       );
@@ -217,29 +238,11 @@ export async function processFileOCR(
       reportType = data.reportType ?? "ai";
     }
 
-    // No usable values → fail before touching storage. No orphan possible.
+    // No usable values → cleanup the uploaded file (orphan protection).
     if (countMarkers(groups) === 0) {
       throw new Error("No lab values extracted from file");
     }
     if (controller.signal.aborted) throw abortError();
-
-    // ─── Stage 3: upload (process-first guarantee) ───
-    onStage?.("upload");
-    const fileToUpload = preprocessed.storageFile ?? preprocessed.file;
-    upload = await withTimeout(
-      uploadLabReport(fileToUpload, patientId, fileIndex),
-      OCR_TIMEOUTS.UPLOAD_MS,
-      "UPLOAD",
-      controller,
-    );
-
-    // Cancellation between upload completion and return → cleanup.
-    if (controller.signal.aborted) {
-      const path = upload.path;
-      upload = null;
-      await cleanupOrphanUpload(path);
-      throw abortError();
-    }
 
     onStage?.("done");
     logOCR("done", {
