@@ -77,7 +77,7 @@ export const LAB_ALIASES: Record<CanonicalLabKey, string[]> = {
   esr: ["erythrocyte sedimentation rate", "sed rate", "соэ", "эчт", "esr"],
   ldh: ["lactate dehydrogenase", "лдг", "ldh"],
   ammonia: ["ammonia", "аммиак", "nh3"],
-  glucose: ["fasting glucose", "blood glucose", "сахар крови", "қондаги қанд", "кандли диабет", "қанд миқдори", "glucose", "глюкоза", "қанд", "глю", "glu"],
+  glucose: ["fasting glucose", "blood glucose", "сахар крови", "қондаги қанд", "қанд миқдори", "glucose", "глюкоза", "қанд", "глю", "glu"],
 
   // Immunosuppressants
   tacrolimus_level: ["tacrolimus", "такралимус", "такролимус", "tac level", "fk-506", "fk506", "тас", "tac"],
