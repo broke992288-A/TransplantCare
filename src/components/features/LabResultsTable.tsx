@@ -8,7 +8,7 @@ type LabValueKey = keyof Pick<LabResult,
   "hb" | "tlc" | "platelets" | "pti" | "inr" | "total_bilirubin" | "direct_bilirubin" |
   "ast" | "alt" | "alp" | "ggt" | "total_protein" | "albumin" | "urea" | "creatinine" |
   "egfr" | "sodium" | "potassium" | "calcium" | "magnesium" | "phosphorus" | "uric_acid" |
-  "crp" | "esr" | "ldh" | "ammonia" | "tacrolimus_level" | "cyclosporine" | "proteinuria"
+  "crp" | "esr" | "ldh" | "ammonia" | "glucose" | "tacrolimus_level" | "cyclosporine" | "proteinuria"
 >;
 
 const REFERENCE_RANGES: Record<LabValueKey, { min: number; max: number; unit: string; label: string }> = {
@@ -38,6 +38,7 @@ const REFERENCE_RANGES: Record<LabValueKey, { min: number; max: number; unit: st
   esr: { min: 0, max: 20, unit: "mm/hr", label: "ESR" },
   ldh: { min: 140, max: 280, unit: "U/L", label: "LDH" },
   ammonia: { min: 15, max: 45, unit: "µg/dL", label: "Ammonia" },
+  glucose: { min: 3.9, max: 6.1, unit: "mmol/L", label: "Glucose" },
   tacrolimus_level: { min: 5, max: 15, unit: "ng/mL", label: "Tacrolimus" },
   cyclosporine: { min: 100, max: 300, unit: "ng/mL", label: "Cyclosporine" },
   proteinuria: { min: 0, max: 150, unit: "mg/dL", label: "Proteinuria" },

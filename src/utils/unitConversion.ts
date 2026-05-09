@@ -56,6 +56,7 @@ export const STANDARD_UNITS: Record<string, string> = {
   crp: "mg/L",
   esr: "mm/hr",
   ammonia: "µmol/L",
+  glucose: "mmol/L",
   inr: "",
   pti: "%",
 };

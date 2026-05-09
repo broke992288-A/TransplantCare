@@ -40,7 +40,7 @@ const LAB_MARKERS = [
   "total_bilirubin", "direct_bilirubin", "ast", "alt", "alp", "ggt",
   "total_protein", "albumin", "urea", "creatinine", "egfr",
   "sodium", "potassium", "calcium", "magnesium", "phosphorus",
-  "uric_acid", "crp", "esr", "ldh", "ammonia",
+  "uric_acid", "crp", "esr", "ldh", "ammonia", "glucose",
   "tacrolimus_level", "cyclosporine", "proteinuria",
 ];
 
@@ -122,6 +122,7 @@ CRP / C-Reactive Protein / СРБ → crp
 ESR / СОЭ / ЭЧТ / Sed Rate → esr
 LDH / ЛДГ / Lactate Dehydrogenase → ldh
 Ammonia / Аммиак / NH3 → ammonia
+Glucose / Glu / Глюкоза / Сахар крови / Қанд / Глю → glucose
 Tacrolimus / FK506 / Такролимус → tacrolimus_level
 Cyclosporine / Циклоспорин / CsA → cyclosporine
 Proteinuria / Протеинурия / Protein in urine → proteinuria

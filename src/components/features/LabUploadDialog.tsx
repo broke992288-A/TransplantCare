@@ -46,6 +46,7 @@ const LAB_FIELDS = [
   { key: "esr", label: "ESR", unit: "mm/hr" },
   { key: "ldh", label: "LDH", unit: "U/L" },
   { key: "ammonia", label: "Ammonia", unit: "µg/dL" },
+  { key: "glucose", label: "Glucose", unit: "mmol/L" },
   { key: "tacrolimus_level", label: "Tacrolimus", unit: "ng/mL" },
   { key: "cyclosporine", label: "Cyclosporine", unit: "ng/mL" },
   { key: "proteinuria", label: "Proteinuria", unit: "mg/dL" },
