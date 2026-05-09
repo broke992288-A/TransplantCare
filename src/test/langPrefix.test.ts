@@ -11,7 +11,7 @@ describe("detectLang", () => {
     expect(detectLang("Бемор яхши ҳолатда")).toBe("uz");
     expect(detectLang("Ўзгариш йўқ")).toBe("uz");
     expect(detectLang("Қон тахлили")).toBe("uz");
-    expect(detectLang("Жигар фаолияти")).toBe("uz"); // contains қ-class? no — fallback test below
+    expect(detectLang("Жигар фаолияти")).toBe("ru"); // no Uzbek-specific letters → general Cyrillic
   });
 
   it("detects Russian for general Cyrillic without Uzbek markers", () => {
