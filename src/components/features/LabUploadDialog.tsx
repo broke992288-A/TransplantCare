@@ -146,21 +146,10 @@ function isSuspicious(key: string, value: number): boolean {
   return threshold != null && value > threshold;
 }
 
-/** Unit conversion: country-specific → standard */
-function convertToStandard(key: string, value: number, countryUnit: string): { converted: number; wasConverted: boolean; fromUnit: string; toUnit: string } {
-  const standardUnit = STANDARD_UNITS[key] ?? "";
-  if (!countryUnit || !standardUnit || countryUnit === standardUnit) {
-    return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
-  }
-  if (countryUnit === "µmol/L" && standardUnit === "mg/dL") {
-    if (key === "creatinine") return { converted: Math.round((value / 88.4) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
-    if (key === "total_bilirubin" || key === "direct_bilirubin") return { converted: Math.round((value / 17.1) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
-  }
-  if (key === "urea" && countryUnit === "mmol/L" && standardUnit === "mg/dL") {
-    return { converted: Math.round(value * 6 * 100) / 100, wasConverted: true, fromUnit: "mmol/L", toUnit: "mg/dL" };
-  }
-  return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
-}
+// NOTE: Lab values are stored AS-IS in the units of the patient's country.
+// Country-specific reference profiles define the matching normal ranges, and
+// the risk engine compares against those profiles — no conversion is applied.
+
 
 function DateGroupValues({
   group,
