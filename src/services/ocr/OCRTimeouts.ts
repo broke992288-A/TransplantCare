@@ -12,7 +12,7 @@ export const OCR_TIMEOUTS = {
   /** AI OCR fallback round-trip (only when deterministic parse failed). */
   AI_OCR_MS: 90_000,
   /** Storage upload + signed URL creation. */
-  UPLOAD_MS: 60_000,
+  UPLOAD_MS: 120_000,
   /** Best-effort orphan cleanup. */
   CLEANUP_MS: 10_000,
 } as const;
