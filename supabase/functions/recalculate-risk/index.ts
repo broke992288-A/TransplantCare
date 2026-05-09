@@ -16,11 +16,11 @@ async function authenticateRequest(req: Request, corsHeaders: Record<string, str
   }
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
   const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims) {
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  return { userId: data.claims.sub as string };
+  return { userId: data.user.id };
 }
 
 const FN_NAME = "recalculate-risk";
@@ -162,6 +162,21 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
+
+  // Authorization: only doctor or admin can trigger recalculation
+  const { data: callerRoles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  const allowed = new Set(["doctor", "admin"]);
+  const isAuthorized = (callerRoles ?? []).some((r: { role: string }) => allowed.has(r.role));
+  if (!isAuthorized) {
+    log("warn", FN_NAME, "Forbidden caller for recalculation", { requestId, userId });
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const body = await req.json().catch(() => ({}));
