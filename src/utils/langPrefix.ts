@@ -12,8 +12,8 @@ export function detectLang(raw: string): "uz" | "ru" | "en" | undefined {
   if (/[ўғқҳ]/.test(text)) return "uz";
   // General Cyrillic → Russian
   if (/[\u0400-\u04ff]/.test(text)) return "ru";
-  // Uzbek Latin markers (oʻ, gʻ, common words)
-  if (/[oʻgʻ]|\b(bemor|shifokor|kasal|salom|rahmat|qabul|tahlil|davolash|kerak|yaxshi)\b/.test(text)) return "uz";
+  // Uzbek Latin markers: special letters oʻ/gʻ (with modifier ʻ) or common words
+  if (/oʻ|gʻ|ʻ|\b(bemor|shifokor|kasal|salom|rahmat|qabul|tahlil|davolash|kerak|yaxshi|holatda|natijasi)\b/.test(text)) return "uz";
   // Latin → English
   if (/[a-z]/.test(text)) return "en";
   return undefined;
