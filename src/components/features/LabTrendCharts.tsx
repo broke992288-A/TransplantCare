@@ -210,7 +210,7 @@ export default function LabTrendCharts({ labs }: Props) {
                     width={36}
                   />
                   <Tooltip
-                    content={<CustomTooltip unit={ref?.unit} color={color} ref={ref} />}
+                    content={<CustomTooltip unit={ref?.unit} color={color} ref={ref} t={t} />}
                     cursor={{ stroke: color, strokeOpacity: 0.3, strokeWidth: 1, strokeDasharray: "3 3" }}
                   />
                   {ref && (
