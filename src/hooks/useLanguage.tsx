@@ -220,6 +220,11 @@ const translations: Record<Language, Record<string, string>> = {
     "lab.latestLabs": "Latest Labs",
     "lab.labHistory": "Lab History",
     "lab.latest": "Latest",
+    "lab.low": "Low",
+    "trend.live": "Live",
+    "trend.avg": "Avg",
+    "trend.min": "Min",
+    "trend.max": "Max",
     // Risk Score
     "risk.score": "Risk Score",
     "risk.calculating": "Calculating...",
