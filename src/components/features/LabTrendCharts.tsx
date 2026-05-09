@@ -257,15 +257,15 @@ export default function LabTrendCharts({ labs }: Props) {
               </ResponsiveContainer>
               <div className="grid grid-cols-3 gap-2 px-2 pt-2 border-t border-border/40 mt-1">
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Avg</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.avg")}</div>
                   <div className="text-xs font-semibold tabular-nums">{avg.toFixed(2)}</div>
                 </div>
                 <div className="text-center border-x border-border/40">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Min</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.min")}</div>
                   <div className="text-xs font-semibold tabular-nums">{min.toFixed(2)}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Max</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.max")}</div>
                   <div className="text-xs font-semibold tabular-nums">{max.toFixed(2)}</div>
                 </div>
               </div>
