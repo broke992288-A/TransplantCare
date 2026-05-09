@@ -13,7 +13,7 @@ import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
 import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
-import { preprocessLabImage } from "@/utils/imagePreprocess";
+import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
@@ -337,152 +337,32 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     return error instanceof Error && error.name === "AbortError";
   };
 
-  const throwIfCancelled = (signal: AbortSignal): void => {
-    if (signal.aborted) throw new DOMException("OCR processing was cancelled", "AbortError");
-  };
-
-  /** Wrap any promise with a hard timeout and abort the underlying operation when possible. */
-  const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string, controller?: AbortController): Promise<T> => {
-    let timeoutId: number | undefined;
-    const timeout = new Promise<T>((_, reject) => {
-      timeoutId = window.setTimeout(() => {
-        console.warn(JSON.stringify({ scope: "lab-upload", event: "timeout", label, ms, ts: new Date().toISOString() }));
-        controller?.abort();
-        reject(new Error(`${label}_TIMEOUT_${ms}ms`));
-      }, ms);
+  /**
+   * Process a single file via the OCRCoordinator service.
+   * All upload + AI + timeout + cleanup logic lives in the service now —
+   * this dialog only orchestrates UI state.
+   */
+  const processSingleFile = async (
+    file: File,
+    fileIndex: number,
+    totalFiles: number,
+    controller: AbortController,
+  ): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
+    console.log(`[LabUpload] processFile ${fileIndex + 1}/${totalFiles}`, {
+      name: file.name,
+      size: file.size,
+      type: file.type,
     });
-    try {
-      return await Promise.race([p, timeout]);
-    } finally {
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-    }
-  };
-
-  /** Process a single file → returns extracted DateGroup[] */
-  const processSingleFile = async (file: File, fileIndex: number, totalFiles: number, controller: AbortController): Promise<{ groups: DateGroup[]; reportType: string; reportUrl: string | null }> => {
-    const { signal } = controller;
-    const t0 = performance.now();
-    console.log(`[LabUpload] processFile ${fileIndex + 1}/${totalFiles}`, { name: file.name, size: file.size, type: file.type });
-    throwIfCancelled(signal);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-
-    // Hard 60s cap on preprocessing (PDF rendering can hang on bad worker)
-    const preStart = performance.now();
-    let preprocessed;
-    try {
-      preprocessed = await withTimeout(preprocessLabImage(file, { signal }), 60000, "PREPROCESS", controller);
-    } catch (e) {
-      if (isCancelledError(e)) throw e;
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[LabUpload] preprocess FAILED ${fileIndex + 1}/${totalFiles}`, msg);
-      if (msg.includes("PREPROCESS_TIMEOUT")) {
-        throw new Error(`File ${fileIndex + 1}: preprocessing timed out (60s). Try a smaller PDF or convert to JPG.`);
-      }
-      throw new Error(`File ${fileIndex + 1}: ${msg}`);
-    }
-    throwIfCancelled(signal);
-    const { base64, file: processedFile, storageFile, fileType, textContent, deterministicGroups, extractionSource } = preprocessed;
-    console.log(`[LabUpload] preprocess done ${fileIndex + 1}/${totalFiles}`, {
-      fileType, base64Len: base64?.length, ms: Math.round(performance.now() - preStart),
-      source: extractionSource, deterministicMarkers: deterministicGroups?.reduce((s, g) => s + Object.keys(g.data).length, 0) ?? 0,
+    const result = await processFileOCR(file, {
+      patientId,
+      fileIndex,
+      signal: controller.signal,
     });
-
-    const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `${patientId}/${Date.now()}_${fileIndex}.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from("lab_reports").upload(path, storageFile ?? processedFile);
-    if (uploadErr) throw uploadErr;
-    throwIfCancelled(signal);
-
-    const { data: urlData } = await supabase.storage.from("lab_reports").createSignedUrl(path, 60 * 60 * 24);
-    const fileReportUrl = urlData?.signedUrl ?? null;
-    throwIfCancelled(signal);
-
-    // ─── Deterministic short-circuit: skip AI when native parser produced enough markers ───
-    if (deterministicGroups && deterministicGroups.length > 0) {
-      const groups: DateGroup[] = deterministicGroups.map((g) => {
-        const values: Record<string, string> = {};
-        for (const field of LAB_FIELDS) {
-          const v = g.data?.[field.key as keyof typeof g.data];
-          values[field.key] = v != null ? String(v) : "";
-        }
-        return {
-          date: g.date ?? "unknown",
-          values,
-          confidence: (g.confidence ?? {}) as Record<string, number>,
-          originalText: (g.originalText ?? {}) as Record<string, string>,
-        };
-      });
-      console.info(JSON.stringify({
-        scope: "lab-upload", event: "deterministic_used", file: file.name,
-        source: extractionSource, groups: groups.length,
-      }));
-      return { groups, reportType: "deterministic", reportUrl: fileReportUrl };
-    }
-
-    // OCR call with hard 90s timeout per file
-    const ocrStart = performance.now();
-    const ocrPromise = supabase.functions.invoke<OcrResponse>("ocr-lab-report", {
-      body: { imageBase64: base64, fileType, textContent },
-      signal,
-      timeout: 90000,
-    });
-
-    let ocrData: OcrResponse | null;
-    let ocrErr: Error | null;
-    try {
-      const result = await withTimeout(ocrPromise, 90000, "OCR", controller);
-      ocrData = result.data;
-      ocrErr = result.error;
-      console.log(`[LabUpload] OCR done ${fileIndex + 1}/${totalFiles}`, { ms: Math.round(performance.now() - ocrStart) });
-    } catch (raceErr) {
-      if (isCancelledError(raceErr)) throw raceErr;
-      const msg = raceErr instanceof Error ? raceErr.message : String(raceErr);
-      console.error(`[LabUpload] OCR FAILED ${fileIndex + 1}/${totalFiles}`, msg);
-      if (msg.includes("OCR_TIMEOUT")) {
-        throw new Error(`File ${fileIndex + 1}: AI service timed out (90s).`);
-      }
-      throw raceErr;
-    }
-
-    if (ocrErr) throw new Error(ocrErr.message || `File ${fileIndex + 1}: AI service unavailable.`);
-    if (ocrData?.error) throw new Error(`File ${fileIndex + 1}: ${ocrData.error}`);
-    if (!ocrData || typeof ocrData !== "object") {
-      throw new Error(`File ${fileIndex + 1}: invalid AI response.`);
-    }
-
-    let groups: DateGroup[] = [];
-    const responseDateGroups = Array.isArray(ocrData.dateGroups) ? ocrData.dateGroups : [];
-    if (ocrData.multiDate && responseDateGroups.length > 0) {
-      groups = responseDateGroups.map((g) => {
-        const values: Record<string, string> = {};
-        for (const field of LAB_FIELDS) {
-          const v = g.data?.[field.key];
-          values[field.key] = v != null ? String(v) : "";
-        }
-        return {
-          date: g.date ?? "unknown",
-          values,
-          confidence: g.confidence ?? {},
-          originalText: g.originalText ?? {},
-        };
-      });
-    } else {
-      const extracted = ocrData?.data ?? {};
-      const values: Record<string, string> = {};
-      for (const field of LAB_FIELDS) {
-        const v = extracted[field.key];
-        values[field.key] = v != null ? String(v) : "";
-      }
-      groups = [{
-        date: "unknown",
-        values,
-        confidence: ocrData?.confidence ?? {},
-        originalText: ocrData?.originalText ?? {},
-      }];
-    }
-
-    return { groups, reportType: ocrData?.reportType ?? "", reportUrl: fileReportUrl };
+    return {
+      groups: result.groups as DateGroup[],
+      reportType: result.reportType,
+      reportUrl: result.reportUrl,
+    };
   };
 
   /** Process one or more files (up to MAX_FILES) sequentially */
@@ -508,7 +388,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
     for (let i = 0; i < limited.length; i++) {
       try {
-        throwIfCancelled(controller.signal);
+        if (controller.signal.aborted) break;
         toast({ title: `📄 ${i + 1}/${limited.length}`, description: limited[i].name });
         const { groups, reportType: rt, reportUrl: ru } = await processSingleFile(limited[i], i, limited.length, controller);
         allGroups.push(...groups);
