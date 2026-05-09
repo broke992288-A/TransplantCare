@@ -124,10 +124,10 @@ export default function LabTrendCharts({ labs }: Props) {
 
         const statusBadge =
           status === "high"
-            ? { label: "High", cls: "bg-destructive/10 text-destructive border-destructive/30", icon: AlertTriangle }
+            ? { label: t("lab.high"), cls: "bg-destructive/10 text-destructive border-destructive/30", icon: AlertTriangle }
             : status === "low"
-              ? { label: "Low", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400", icon: AlertTriangle }
-              : { label: "Normal", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400", icon: CheckCircle2 };
+              ? { label: t("lab.low"), cls: "bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400", icon: AlertTriangle }
+              : { label: t("lab.normal"), cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400", icon: CheckCircle2 };
 
         const StatusIcon = statusBadge.icon;
         const TrendIcon = Math.abs(deltaPct) < 0.5 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
