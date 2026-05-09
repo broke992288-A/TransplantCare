@@ -47,10 +47,11 @@ interface CustomTooltipProps {
   unit?: string;
   color?: string;
   ref?: { min: number; max: number };
+  t?: (k: string) => string;
 }
 
-function CustomTooltip({ active, payload, unit, color, ref }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null;
+function CustomTooltip({ active, payload, unit, color, ref, t }: CustomTooltipProps) {
+  if (!active || !payload?.length || !t) return null;
   const item = payload[0];
   const value = item.value;
   let status: "normal" | "high" | "low" = "normal";
@@ -60,6 +61,8 @@ function CustomTooltip({ active, payload, unit, color, ref }: CustomTooltipProps
   }
   const statusColor =
     status === "high" ? "text-destructive" : status === "low" ? "text-blue-500" : "text-emerald-500";
+  const statusLabel =
+    status === "high" ? `↑ ${t("lab.high")}` : status === "low" ? `↓ ${t("lab.low")}` : `✓ ${t("lab.normal")}`;
 
   return (
     <div className="rounded-lg border bg-popover/95 backdrop-blur-sm shadow-lg px-3 py-2 text-xs">
@@ -72,7 +75,7 @@ function CustomTooltip({ active, payload, unit, color, ref }: CustomTooltipProps
       </div>
       {ref && (
         <div className={cn("text-[10px] font-medium mt-0.5 uppercase tracking-wide", statusColor)}>
-          {status === "high" ? "↑ High" : status === "low" ? "↓ Low" : "✓ Normal"}
+          {statusLabel}
         </div>
       )}
     </div>
