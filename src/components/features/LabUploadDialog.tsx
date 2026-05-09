@@ -543,7 +543,27 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
 
         if (filledCount > 0) {
-          const savedLab = await upsertLabResult(labData as Record<string, any> & { patient_id: string });
+          let savedLab;
+          try {
+            console.info("[LabUpload] upsertLabResult payload", {
+              patient_id: labData.patient_id,
+              recorded_at: labData.recorded_at,
+              filledCount,
+              keys: Object.keys(labData).filter((k) => labData[k] != null),
+            });
+            savedLab = await upsertLabResult(labData as Record<string, any> & { patient_id: string });
+            console.info("[LabUpload] upsertLabResult success", { id: savedLab?.id });
+          } catch (insertErr: any) {
+            console.error("[LabUpload] upsertLabResult FAILED", {
+              message: insertErr?.message,
+              code: insertErr?.code,
+              details: insertErr?.details,
+              hint: insertErr?.hint,
+              status: insertErr?.status,
+              full: insertErr,
+            });
+            throw insertErr;
+          }
           totalFilled += filledCount;
 
           // --- Compute risk score for each saved lab ---
