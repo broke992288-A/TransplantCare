@@ -46,5 +46,5 @@ export function useRealtimeInvalidation() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, user, role]);
 }
