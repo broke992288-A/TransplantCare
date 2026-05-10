@@ -144,6 +144,9 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
 
     setSaving(true);
     let savedCount = 0;
+    const failures: string[] = [];
+
+    console.log("[BulkLabEntry] Starting save", { patientId, rowCount: dataRows.length });
 
     try {
       for (let i = 0; i < dataRows.length; i++) {
@@ -151,47 +154,76 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
         setProgress(`Saving ${i + 1}/${dataRows.length}...`);
 
         const labData: Record<string, unknown> = { patient_id: patientId };
-
-        // Set date
         labData.recorded_at = new Date(row.recorded_at).toISOString();
 
-        // Set numeric fields
         COLUMNS.forEach((col) => {
           if (col.key === "recorded_at" || col.skip) return;
           const val = row[col.key]?.trim();
           if (val) labData[col.key] = parseFloat(val);
         });
 
-        // Insert via RPC for atomic risk calculation
-        const { data: rpcResult, error: rpcError } = await supabase.rpc("insert_lab_and_recalculate", {
-          _lab_data: labData as any,
-        });
+        console.log(`[BulkLabEntry] Row ${i + 1} payload:`, labData);
 
-        if (rpcError) {
-          // Fallback: direct insert
-          const { error: insertError } = await supabase.from("lab_results").insert([labData as any]);
-          if (insertError) throw insertError;
+        let labId: string | undefined;
+
+        try {
+          // Try atomic RPC first
+          const rpcResp = await supabase.rpc("insert_lab_and_recalculate", {
+            _lab_data: labData as any,
+          });
+          console.log(`[BulkLabEntry] Row ${i + 1} RPC response:`, rpcResp);
+
+          if (rpcResp.error) {
+            console.warn(`[BulkLabEntry] RPC failed, falling back to direct insert:`, rpcResp.error);
+            const insertResp = await supabase
+              .from("lab_results")
+              .insert([labData as any])
+              .select("id")
+              .single();
+            console.log(`[BulkLabEntry] Row ${i + 1} direct insert response:`, insertResp);
+            if (insertResp.error) throw insertResp.error;
+            labId = insertResp.data?.id;
+          } else {
+            labId = (rpcResp.data as any)?.lab_id;
+          }
+
+          if (labId) {
+            await autoCompleteSchedules(patientId, labId, row.recorded_at).catch((e) => {
+              console.warn("[BulkLabEntry] autoCompleteSchedules failed:", e);
+            });
+          }
+
+          savedCount++;
+        } catch (rowErr) {
+          const msg = rowErr instanceof Error ? rowErr.message : String(rowErr);
+          console.error(`[BulkLabEntry] Row ${i + 1} FAILED:`, rowErr);
+          failures.push(`Row ${i + 1}: ${msg}`);
         }
-
-        // Auto-complete schedules
-        const labId = (rpcResult as any)?.lab_id;
-        if (labId) {
-          await autoCompleteSchedules(patientId, labId, row.recorded_at).catch(() => {});
-        }
-
-        savedCount++;
       }
 
-      // Risk recalculation is handled by the RPC and DB triggers
       setProgress("Finalizing...");
+      console.log("[BulkLabEntry] Done", { savedCount, failures });
 
-      toast({ title: `${savedCount} lab result(s) saved` });
-      setRows(Array.from({ length: 5 }, emptyRow));
-      setErrors({});
-      setOpen(false);
-      onLabsAdded();
+      if (savedCount > 0) {
+        toast({
+          title: `${savedCount} lab result(s) saved`,
+          description: failures.length ? `${failures.length} row(s) failed` : undefined,
+          variant: failures.length ? "destructive" : "default",
+        });
+        setRows(Array.from({ length: 5 }, emptyRow));
+        setErrors({});
+        setOpen(false);
+        onLabsAdded();
+      } else {
+        toast({
+          title: t("common.error"),
+          description: failures[0] ?? "No rows were saved. Check console for details.",
+          variant: "destructive",
+        });
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
+      console.error("[BulkLabEntry] Fatal error:", err);
       toast({ title: t("common.error"), description: message, variant: "destructive" });
     } finally {
       setSaving(false);
