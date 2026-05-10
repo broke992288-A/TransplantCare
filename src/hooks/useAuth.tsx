@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/types/roles";
@@ -63,35 +63,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchRole]);
 
-  const signIn = async (identifier: string, password: string) => {
+  const signIn = useCallback(async (identifier: string, password: string) => {
     await signInWithPassword(identifier, password);
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
-    await signUpWithEmail(email, password, fullName, phone);
-  };
+  const signUp = useCallback(
+    async (email: string, password: string, fullName: string, phone?: string) => {
+      await signUpWithEmail(email, password, fullName, phone);
+    },
+    [],
+  );
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await signOutUser();
     setRole(null);
-  };
+  }, []);
 
-  const setUserRole = async (newRole: AppRole) => {
-    if (!user) throw new Error("Not authenticated");
-    await upsertUserRole(user.id, newRole);
-    setRole(newRole);
-  };
+  const setUserRole = useCallback(
+    async (newRole: AppRole) => {
+      if (!user) throw new Error("Not authenticated");
+      await upsertUserRole(user.id, newRole);
+      setRole(newRole);
+    },
+    [user],
+  );
 
-  const refreshRole = async () => {
+  const refreshRole = useCallback(async () => {
     if (!user) return;
     await fetchRole(user.id);
-  };
+  }, [user, fetchRole]);
 
-  return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut, setUserRole, refreshRole }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, session, role, loading, signIn, signUp, signOut, setUserRole, refreshRole }),
+    [user, session, role, loading, signIn, signUp, signOut, setUserRole, refreshRole],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

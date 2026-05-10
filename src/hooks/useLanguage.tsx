@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
 
 export type Language = "en" | "ru" | "uz";
 
@@ -2239,22 +2239,24 @@ const translations: Record<Language, Record<string, string>> = {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
-    const saved = localStorage.getItem("app-lang");
+    const saved = typeof localStorage !== "undefined" ? localStorage.getItem("app-lang") : null;
     return (saved as Language) || "en";
   });
 
-  const setLang = (newLang: Language) => {
+  const setLang = useCallback((newLang: Language) => {
     setLangState(newLang);
-    localStorage.setItem("app-lang", newLang);
-  };
+    try {
+      localStorage.setItem("app-lang", newLang);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
-  const t = (key: string) => translations[lang][key] || key;
+  const t = useCallback((key: string) => translations[lang][key] || key, [lang]);
 
-  return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
-      {children}
-    </LanguageContext.Provider>
-  );
+  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {
