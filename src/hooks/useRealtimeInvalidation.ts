@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const WATCHED_TABLES = [
   { table: "patients", queryKeys: ["doctor-patients", "doctor-patients-with-labs", "all-patients", "patient", "linked-patient"] },
@@ -13,8 +14,13 @@ const WATCHED_TABLES = [
 
 export function useRealtimeInvalidation() {
   const queryClient = useQueryClient();
+  const { user, role } = useAuth();
 
   useEffect(() => {
+    // Patients don't need cross-table realtime invalidation, and
+    // anonymous (login/signup) visitors should never open a websocket.
+    if (!user || !role || role === "patient") return;
+
     const channel = supabase
       .channel("global-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => {
@@ -40,5 +46,5 @@ export function useRealtimeInvalidation() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, user, role]);
 }
