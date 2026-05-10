@@ -126,7 +126,7 @@ export default function DoctorDashboard() {
               ) : (
                 <div className="flex flex-col items-center">
                   <div className="relative w-full" style={{ height: 220 }}>
-                    <LazyMount minHeight={220} rootMargin="100px">
+                    <LazyMount minHeight={220} rootMargin="100px" className="h-full w-full">
                       <Suspense fallback={<SkeletonChart />}>
                         <RiskDistributionPie pieData={pieData} total={patients.length} />
                       </Suspense>
