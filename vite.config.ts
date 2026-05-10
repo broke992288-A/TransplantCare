@@ -79,12 +79,19 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          query: ["@tanstack/react-query"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tooltip", "@radix-ui/react-tabs", "@radix-ui/react-select"],
+          // Keep React itself in one stable chunk (used everywhere).
+          react: ["react", "react-dom", "react-router-dom"],
+          // Heavy chart lib — only pulled in by lazy dashboard pages.
           charts: ["recharts"],
+          // TanStack Query — used app-wide once authenticated.
+          query: ["@tanstack/react-query"],
         },
       },
     },
+    // Allow Vite to do its own per-radix splitting; don't bundle every
+    // Radix component into one chunk (that would force the login page to
+    // download dialog/dropdown/select even though it only uses Tabs).
+    target: "es2020",
+    cssCodeSplit: true,
   },
 }));
