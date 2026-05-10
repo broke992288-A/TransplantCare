@@ -14,8 +14,13 @@ const WATCHED_TABLES = [
 
 export function useRealtimeInvalidation() {
   const queryClient = useQueryClient();
+  const { user, role } = useAuth();
 
   useEffect(() => {
+    // Patients don't need cross-table realtime invalidation, and
+    // anonymous (login/signup) visitors should never open a websocket.
+    if (!user || !role || role === "patient") return;
+
     const channel = supabase
       .channel("global-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => {
