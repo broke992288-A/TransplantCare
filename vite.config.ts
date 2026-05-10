@@ -76,22 +76,21 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   build: {
+    sourcemap: false,
+    minify: "esbuild",
+    cssCodeSplit: true,
+    reportCompressedSize: true,
+    target: "es2020",
     rollupOptions: {
       output: {
         manualChunks: {
-          // Keep React itself in one stable chunk (used everywhere).
           react: ["react", "react-dom", "react-router-dom"],
-          // Heavy chart lib — only pulled in by lazy dashboard pages.
           charts: ["recharts"],
-          // TanStack Query — used app-wide once authenticated.
+          supabase: ["@supabase/supabase-js"],
           query: ["@tanstack/react-query"],
+          ui: ["lucide-react"],
         },
       },
     },
-    // Allow Vite to do its own per-radix splitting; don't bundle every
-    // Radix component into one chunk (that would force the login page to
-    // download dialog/dropdown/select even though it only uses Tabs).
-    target: "es2020",
-    cssCodeSplit: true,
   },
 }));
