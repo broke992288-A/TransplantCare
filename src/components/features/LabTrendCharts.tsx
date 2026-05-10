@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,9 +14,14 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { LazyMount } from "./LazyMount";
 import { cn } from "@/lib/utils";
 import type { LabResult } from "@/types/patient";
 import { REFERENCE_RANGES } from "./LabResultsTable";
+
+/** Cap data points fed to the chart to keep render cost bounded. */
+const MAX_CHART_POINTS = 30;
 
 type ChartableKey = keyof Pick<
   LabResult,
@@ -82,13 +88,29 @@ function CustomTooltip({ active, payload, unit, color, ref, t }: CustomTooltipPr
   );
 }
 
-export default function LabTrendCharts({ labs }: Props) {
+function LabTrendCharts({ labs }: Props) {
   const { t } = useLanguage();
-  const sortedLabs = [...labs].sort(
-    (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+  const isMobile = useIsMobile();
+
+  const sortedLabs = useMemo(
+    () =>
+      [...labs].sort(
+        (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime(),
+      ),
+    [labs],
   );
 
-  const charts = CHART_MARKERS.filter((m) => sortedLabs.some((l) => l[m.key] != null));
+  const charts = useMemo(
+    () => CHART_MARKERS.filter((m) => sortedLabs.some((l) => l[m.key] != null)),
+    [sortedLabs],
+  );
+
+  if (charts.length === 0)
+    return <p className="text-muted-foreground text-sm">{t("lab.noTrendData")}</p>;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {charts.map(({ key, color }) => {
 
   if (charts.length === 0)
     return <p className="text-muted-foreground text-sm">{t("lab.noTrendData")}</p>;
