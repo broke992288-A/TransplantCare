@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const WATCHED_TABLES = [
   { table: "patients", queryKeys: ["doctor-patients", "doctor-patients-with-labs", "all-patients", "patient", "linked-patient"] },
