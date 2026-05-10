@@ -76,3 +76,5 @@ function LatestLabsTable({ labs, organType }: Props) {
     </Card>
   );
 }
+
+export default memo(LatestLabsTable);
