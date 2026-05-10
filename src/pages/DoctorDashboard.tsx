@@ -1,11 +1,14 @@
+import { lazy, Suspense } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, AlertTriangle, Activity, Plus, ShieldAlert, UserPlus, Clock, BrainCircuit } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { LazyMount } from "@/components/features/LazyMount";
 import { useLanguage } from "@/hooks/useLanguage";
+
+const RiskDistributionPie = lazy(() => import("@/components/features/RiskDistributionPie"));
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
 import { useSmartPriorityQueue } from "@/hooks/useSmartPriorityQueue";
