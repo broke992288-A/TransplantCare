@@ -1,11 +1,14 @@
+import { lazy, Suspense } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, AlertTriangle, Activity, Plus, ShieldAlert, UserPlus, Clock, BrainCircuit } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { LazyMount } from "@/components/features/LazyMount";
 import { useLanguage } from "@/hooks/useLanguage";
+
+const RiskDistributionPie = lazy(() => import("@/components/features/RiskDistributionPie"));
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
 import { useSmartPriorityQueue } from "@/hooks/useSmartPriorityQueue";
@@ -123,62 +126,11 @@ export default function DoctorDashboard() {
               ) : (
                 <div className="flex flex-col items-center">
                   <div className="relative w-full" style={{ height: 220 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <defs>
-                          <linearGradient id="grad-high" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
-                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.65} />
-                          </linearGradient>
-                          <linearGradient id="grad-medium" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--warning))" stopOpacity={1} />
-                            <stop offset="100%" stopColor="hsl(var(--warning))" stopOpacity={0.65} />
-                          </linearGradient>
-                          <linearGradient id="grad-low" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={1} />
-                            <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.65} />
-                          </linearGradient>
-                        </defs>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={62}
-                          outerRadius={92}
-                          paddingAngle={4}
-                          dataKey="value"
-                          stroke="hsl(var(--background))"
-                          strokeWidth={3}
-                          startAngle={90}
-                          endAngle={-270}
-                          animationDuration={900}
-                        >
-                          {pieData.map((entry, i) => {
-                            const gradId =
-                              entry.color.includes("destructive")
-                                ? "grad-high"
-                                : entry.color.includes("warning")
-                                  ? "grad-medium"
-                                  : "grad-low";
-                            return <Cell key={i} fill={`url(#${gradId})`} />;
-                          })}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            borderRadius: 10,
-                            fontSize: 12,
-                            border: "1px solid hsl(var(--border))",
-                            background: "hsl(var(--popover) / 0.95)",
-                            backdropFilter: "blur(8px)",
-                            boxShadow: "0 8px 24px hsl(var(--foreground) / 0.08)",
-                          }}
-                          formatter={(value: number, name: string) => {
-                            const pct = patients.length > 0 ? ((value / patients.length) * 100).toFixed(0) : 0;
-                            return [`${value} (${pct}%)`, name];
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <LazyMount minHeight={220} rootMargin="100px" className="h-full w-full">
+                      <Suspense fallback={<SkeletonChart />}>
+                        <RiskDistributionPie pieData={pieData} total={patients.length} />
+                      </Suspense>
+                    </LazyMount>
                     {/* Center stat overlay */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <span className="text-3xl font-bold tabular-nums leading-none bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
