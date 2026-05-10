@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FlaskConical } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -8,7 +9,7 @@ interface Props {
   organType: string;
 }
 
-export default function LatestLabsTable({ labs, organType }: Props) {
+function LatestLabsTable({ labs, organType }: Props) {
   const { t } = useLanguage();
   const latest5 = labs.slice(0, 5);
 
@@ -75,3 +76,5 @@ export default function LatestLabsTable({ labs, organType }: Props) {
     </Card>
   );
 }
+
+export default memo(LatestLabsTable);

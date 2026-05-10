@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ interface Props {
   onLabChanged?: () => void;
 }
 
-export default function LabHistoryTable({ labs, organType, showAll = false, editable = false, onLabChanged }: Props) {
+function LabHistoryTable({ labs, organType, showAll = false, editable = false, onLabChanged }: Props) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -289,3 +289,5 @@ export default function LabHistoryTable({ labs, organType, showAll = false, edit
     </TooltipProvider>
   );
 }
+
+export default memo(LabHistoryTable);

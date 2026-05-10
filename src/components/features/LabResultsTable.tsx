@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -60,7 +61,7 @@ interface Props {
   labs: LabResult[];
 }
 
-export default function LabResultsTable({ labs }: Props) {
+function LabResultsTable({ labs }: Props) {
   const { t } = useLanguage();
 
   if (labs.length === 0) return <p className="text-muted-foreground text-sm py-4">{t("lab.noResults")}</p>;
@@ -116,4 +117,5 @@ export default function LabResultsTable({ labs }: Props) {
   );
 }
 
+export default memo(LabResultsTable);
 export { REFERENCE_RANGES };

@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,9 +14,14 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { LazyMount } from "./LazyMount";
 import { cn } from "@/lib/utils";
 import type { LabResult } from "@/types/patient";
 import { REFERENCE_RANGES } from "./LabResultsTable";
+
+/** Cap data points fed to the chart to keep render cost bounded. */
+const MAX_CHART_POINTS = 30;
 
 type ChartableKey = keyof Pick<
   LabResult,
@@ -82,13 +88,22 @@ function CustomTooltip({ active, payload, unit, color, ref, t }: CustomTooltipPr
   );
 }
 
-export default function LabTrendCharts({ labs }: Props) {
+function LabTrendCharts({ labs }: Props) {
   const { t } = useLanguage();
-  const sortedLabs = [...labs].sort(
-    (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+  const isMobile = useIsMobile();
+
+  const sortedLabs = useMemo(
+    () =>
+      [...labs].sort(
+        (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime(),
+      ),
+    [labs],
   );
 
-  const charts = CHART_MARKERS.filter((m) => sortedLabs.some((l) => l[m.key] != null));
+  const charts = useMemo(
+    () => CHART_MARKERS.filter((m) => sortedLabs.some((l) => l[m.key] != null)),
+    [sortedLabs],
+  );
 
   if (charts.length === 0)
     return <p className="text-muted-foreground text-sm">{t("lab.noTrendData")}</p>;
@@ -97,13 +112,18 @@ export default function LabTrendCharts({ labs }: Props) {
     <div className="grid gap-4 md:grid-cols-2">
       {charts.map(({ key, color }) => {
         const ref = REFERENCE_RANGES[key];
-        const data = sortedLabs
+        const allPoints = sortedLabs
           .filter((l) => l[key] != null)
           .map((l) => ({
             date: new Date(l.recorded_at).toLocaleDateString(),
             rawDate: l.recorded_at,
             value: l[key] as number,
           }));
+        // Cap to last MAX_CHART_POINTS to bound recharts work.
+        const data =
+          allPoints.length > MAX_CHART_POINTS
+            ? allPoints.slice(allPoints.length - MAX_CHART_POINTS)
+            : allPoints;
 
         if (data.length < 1) return null;
 
@@ -181,80 +201,83 @@ export default function LabTrendCharts({ labs }: Props) {
               </div>
             </CardHeader>
             <CardContent className="pb-3 px-2">
-              <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={color} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                    strokeOpacity={0.4}
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    minTickGap={24}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={[yMin - pad, yMax + pad]}
-                    width={36}
-                  />
-                  <Tooltip
-                    content={<CustomTooltip unit={ref?.unit} color={color} ref={ref} t={t} />}
-                    cursor={{ stroke: color, strokeOpacity: 0.3, strokeWidth: 1, strokeDasharray: "3 3" }}
-                  />
-                  {ref && (
-                    <ReferenceArea
-                      y1={ref.min}
-                      y2={ref.max}
-                      fill="hsl(var(--emerald-500, 160 84% 39%))"
-                      fillOpacity={0.05}
-                      stroke="none"
+              <LazyMount minHeight={180} rootMargin="150px">
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+                        <stop offset="100%" stopColor={color} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      strokeOpacity={0.4}
+                      vertical={false}
                     />
-                  )}
-                  {ref && (
-                    <>
-                      <ReferenceLine
-                        y={ref.max}
-                        stroke="hsl(var(--destructive))"
-                        strokeDasharray="4 4"
-                        strokeOpacity={0.4}
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[yMin - pad, yMax + pad]}
+                      width={36}
+                    />
+                    <Tooltip
+                      content={<CustomTooltip unit={ref?.unit} color={color} ref={ref} t={t} />}
+                      cursor={{ stroke: color, strokeOpacity: 0.3, strokeWidth: 1, strokeDasharray: "3 3" }}
+                    />
+                    {ref && (
+                      <ReferenceArea
+                        y1={ref.min}
+                        y2={ref.max}
+                        fill="hsl(var(--emerald-500, 160 84% 39%))"
+                        fillOpacity={0.05}
+                        stroke="none"
                       />
-                      <ReferenceLine
-                        y={ref.min}
-                        stroke="hsl(217, 91%, 60%)"
-                        strokeDasharray="4 4"
-                        strokeOpacity={0.4}
-                      />
-                    </>
-                  )}
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke={color}
-                    strokeWidth={2.5}
-                    fill={`url(#${gradientId})`}
-                    dot={{ fill: color, r: 3, strokeWidth: 0 }}
-                    activeDot={{
-                      r: 6,
-                      fill: color,
-                      stroke: "hsl(var(--background))",
-                      strokeWidth: 2,
-                    }}
-                    animationDuration={800}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+                    )}
+                    {ref && (
+                      <>
+                        <ReferenceLine
+                          y={ref.max}
+                          stroke="hsl(var(--destructive))"
+                          strokeDasharray="4 4"
+                          strokeOpacity={0.4}
+                        />
+                        <ReferenceLine
+                          y={ref.min}
+                          stroke="hsl(217, 91%, 60%)"
+                          strokeDasharray="4 4"
+                          strokeOpacity={0.4}
+                        />
+                      </>
+                    )}
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke={color}
+                      strokeWidth={2.5}
+                      fill={`url(#${gradientId})`}
+                      dot={{ fill: color, r: 3, strokeWidth: 0 }}
+                      activeDot={{
+                        r: 6,
+                        fill: color,
+                        stroke: "hsl(var(--background))",
+                        strokeWidth: 2,
+                      }}
+                      isAnimationActive={!isMobile}
+                      animationDuration={isMobile ? 0 : 600}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </LazyMount>
               <div className="grid grid-cols-3 gap-2 px-2 pt-2 border-t border-border/40 mt-1">
                 <div className="text-center">
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("trend.avg")}</div>
@@ -276,3 +299,5 @@ export default function LabTrendCharts({ labs }: Props) {
     </div>
   );
 }
+
+export default memo(LabTrendCharts);
