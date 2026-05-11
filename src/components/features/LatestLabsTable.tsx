@@ -38,6 +38,7 @@ function LatestLabsTable({ labs, organType }: Props) {
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">{t("add.alt")}</th>
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">{t("add.ast")}</th>
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">{t("add.totalBilirubin")}</th>
+                      <th className="px-3 py-2 text-right font-medium text-muted-foreground">{t("add.directBilirubin")}</th>
                     </>
                   ) : (
                     <>
