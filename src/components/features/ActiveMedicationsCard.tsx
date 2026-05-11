@@ -79,23 +79,24 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
     const parsed = parseDose(med.dosage);
     let newDosage = med.dosage;
     let description = "";
+    const arrow = " → ";
 
     if (action === "increase" && parsed) {
       const increment = getStandardIncrement(med.medication_name, parsed.value);
       const newValue = parsed.value + increment;
       newDosage = `${newValue} ${parsed.unit}`;
-      description = `Increase ${med.medication_name} from ${med.dosage} to ${newDosage}`;
+      description = `${t("med.actionIncrease")}: ${med.medication_name} ${med.dosage}${arrow}${newDosage}`;
     } else if (action === "decrease" && parsed) {
       const increment = getStandardIncrement(med.medication_name, parsed.value);
       const newValue = Math.max(0, parsed.value - increment);
       newDosage = `${newValue} ${parsed.unit}`;
-      description = `Decrease ${med.medication_name} from ${med.dosage} to ${newDosage}`;
+      description = `${t("med.actionDecrease")}: ${med.medication_name} ${med.dosage}${arrow}${newDosage}`;
     } else if (action === "hold") {
       newDosage = med.dosage;
-      description = `Hold ${med.medication_name} (${med.dosage})`;
+      description = `${t("med.actionHold")}: ${med.medication_name} (${med.dosage})`;
     } else if (action === "restart") {
       newDosage = med.dosage;
-      description = `Restart ${med.medication_name} (${med.dosage})`;
+      description = `${t("med.actionRestart")}: ${med.medication_name} (${med.dosage})`;
     }
 
     setPendingAction({
@@ -115,7 +116,6 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
       const { medId, action, oldDosage, newDosage, medName } = pendingAction;
 
       if (action === "hold") {
-        // Deactivate medication, mark as held
         await updateMed.mutateAsync({
           id: medId,
           updates: { is_active: false, notes: `[HELD] ${new Date().toLocaleDateString()}` },
@@ -128,7 +128,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
           newDosage: `HELD (${oldDosage})`,
           reason: `Medication held by doctor`,
         });
-        toast({ title: `${medName} held` });
+        toast({ title: `${medName} ${t("med.heldToast")}` });
       } else if (action === "restart") {
         await updateMed.mutateAsync({
           id: medId,
@@ -142,9 +142,8 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
           newDosage: oldDosage,
           reason: `Medication restarted by doctor`,
         });
-        toast({ title: `${medName} restarted` });
+        toast({ title: `${medName} ${t("med.restartedToast")}` });
       } else {
-        // increase / decrease
         await changeDosage.mutateAsync({
           medicationId: medId,
           patientId,
@@ -197,7 +196,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-success hover:bg-success/10"
-                      title="Increase dose"
+                      title={t("med.increaseDose")}
                       onClick={() => prepareAction(med, "increase")}
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -206,7 +205,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-warning hover:bg-warning/10"
-                      title="Decrease dose"
+                      title={t("med.decreaseDose")}
                       onClick={() => prepareAction(med, "decrease")}
                     >
                       <Minus className="h-3.5 w-3.5" />
@@ -215,7 +214,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                      title="Hold medication"
+                      title={t("med.holdMed")}
                       onClick={() => prepareAction(med, "hold")}
                     >
                       <PauseCircle className="h-3.5 w-3.5" />
@@ -230,13 +229,13 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                   <div className="flex items-center justify-between text-sm">
                     <div>
                       <span className="font-medium text-muted-foreground line-through">{med.medication_name}</span>
-                      <Badge variant="outline" className="ml-2 text-xs text-destructive border-destructive/30">HELD</Badge>
+                      <Badge variant="outline" className="ml-2 text-xs text-destructive border-destructive/30">{t("med.held")}</Badge>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-success hover:bg-success/10"
-                      title="Restart medication"
+                      title={t("med.restartMed")}
                       onClick={() => prepareAction(med, "restart")}
                     >
                       <PlayCircle className="h-3.5 w-3.5" />
@@ -253,13 +252,13 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
       <AlertDialog open={!!pendingAction} onOpenChange={(open) => { if (!open) setPendingAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Medication Change</AlertDialogTitle>
+            <AlertDialogTitle>{t("med.confirmChange")}</AlertDialogTitle>
             <AlertDialogDescription>{pendingAction?.description}?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={executing}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={executeAction} disabled={executing}>
-              {executing ? "..." : "Confirm"}
+              {executing ? "..." : t("med.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
