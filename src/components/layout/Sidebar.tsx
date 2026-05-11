@@ -17,9 +17,10 @@ export function Sidebar() {
     { icon: Pill, label: t("nav.medications"), path: "/medications", roles: ["admin", "doctor"] },
     { icon: Pill, label: t("nav.medications"), path: "/patient/home?tab=medications", roles: ["patient"] },
     { icon: AlertTriangle, label: t("nav.alerts"), path: "/alerts", roles: ["admin", "doctor", "support"] },
-    { icon: FileText, label: t("nav.reports"), path: "/reports", roles: ["admin", "doctor"] },
-    { icon: Activity, label: t("nav.analytics"), path: "/analytics", roles: ["admin", "doctor"] },
-    { icon: Sparkles, label: "AI Chat", path: "/ai-chat", roles: ["admin", "doctor", "support", "patient"] },
+    // Temporarily hidden from nav (routes/components remain intact):
+    // { icon: FileText, label: t("nav.reports"), path: "/reports", roles: ["admin", "doctor"] },
+    // { icon: Activity, label: t("nav.analytics"), path: "/analytics", roles: ["admin", "doctor"] },
+    // { icon: Sparkles, label: "AI Chat", path: "/ai-chat", roles: ["admin", "doctor", "support", "patient"] },
   ];
 
   const navItems = allNavItems.filter(item => !role || item.roles.includes(role));
