@@ -100,9 +100,9 @@ export default defineConfig(({ mode }) => ({
           }
           if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return "supabase";
           if (/[\\/]node_modules[\\/]@tanstack[\\/]/.test(id)) return "query";
-          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
-            return "react";
-          }
+          // Intentionally NOT manual-chunking react/react-dom/react-router. Doing
+          // so causes Rollup to hoist a CJS-interop helper into the charts chunk,
+          // which then gets statically pulled (and modulepreloaded) on every page.
           if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return "ui";
           return undefined;
         },
