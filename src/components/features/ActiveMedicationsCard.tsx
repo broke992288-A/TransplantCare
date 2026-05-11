@@ -198,7 +198,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       <span className="font-medium">{med.medication_name}</span>
                       <span className="text-muted-foreground ml-2">{med.dosage}</span>
                     </div>
-                    <Badge variant="outline" className="text-xs shrink-0">{med.frequency}</Badge>
+                    <Badge variant="outline" className="text-xs shrink-0">{translateFreq(med.frequency)}</Badge>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
