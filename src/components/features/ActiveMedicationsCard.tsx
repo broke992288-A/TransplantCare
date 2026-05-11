@@ -196,7 +196,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-success hover:bg-success/10"
-                      title="Increase dose"
+                      title={t("med.increaseDose")}
                       onClick={() => prepareAction(med, "increase")}
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -205,7 +205,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-warning hover:bg-warning/10"
-                      title="Decrease dose"
+                      title={t("med.decreaseDose")}
                       onClick={() => prepareAction(med, "decrease")}
                     >
                       <Minus className="h-3.5 w-3.5" />
@@ -214,7 +214,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                      title="Hold medication"
+                      title={t("med.holdMed")}
                       onClick={() => prepareAction(med, "hold")}
                     >
                       <PauseCircle className="h-3.5 w-3.5" />
@@ -229,13 +229,13 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                   <div className="flex items-center justify-between text-sm">
                     <div>
                       <span className="font-medium text-muted-foreground line-through">{med.medication_name}</span>
-                      <Badge variant="outline" className="ml-2 text-xs text-destructive border-destructive/30">HELD</Badge>
+                      <Badge variant="outline" className="ml-2 text-xs text-destructive border-destructive/30">{t("med.held")}</Badge>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-success hover:bg-success/10"
-                      title="Restart medication"
+                      title={t("med.restartMed")}
                       onClick={() => prepareAction(med, "restart")}
                     >
                       <PlayCircle className="h-3.5 w-3.5" />
@@ -252,13 +252,13 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
       <AlertDialog open={!!pendingAction} onOpenChange={(open) => { if (!open) setPendingAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Medication Change</AlertDialogTitle>
+            <AlertDialogTitle>{t("med.confirmChange")}</AlertDialogTitle>
             <AlertDialogDescription>{pendingAction?.description}?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={executing}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={executeAction} disabled={executing}>
-              {executing ? "..." : "Confirm"}
+              {executing ? "..." : t("med.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
