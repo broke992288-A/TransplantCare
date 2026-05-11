@@ -1,11 +1,26 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CalendarClock, Info, Trash2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useOverdueLabSchedules } from "@/hooks/useLabSchedule";
+import { useOverdueLabSchedules, useInvalidateLabSchedules } from "@/hooks/useLabSchedule";
 import { SkeletonTable } from "@/components/ui/skeleton-card";
+import { deleteLabSchedule } from "@/services/labScheduleService";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/utils/errorHandler";
 
 function StatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
   switch (status) {
@@ -22,6 +37,9 @@ export default function OverdueLabsPanel() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { data: schedules, isLoading } = useOverdueLabSchedules();
+  const invalidate = useInvalidateLabSchedules();
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const actionable = (schedules ?? []).filter((s) => s.status === "overdue" || s.status === "due_soon");
   const byPatient = new Map<string, typeof actionable[0]>();
@@ -38,6 +56,21 @@ export default function OverdueLabsPanel() {
   });
 
   if (!isLoading && items.length === 0) return null;
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await deleteLabSchedule(pendingDelete.id);
+      invalidate();
+      toast({ title: t("common.delete"), description: pendingDelete.name });
+    } catch (err) {
+      toast({ title: t("common.error"), description: getErrorMessage(err), variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
+    }
+  };
 
   return (
     <Card>
@@ -59,6 +92,7 @@ export default function OverdueLabsPanel() {
                   <TableHead>{t("schedule.lastLabDate")}</TableHead>
                   <TableHead>{t("schedule.expectedDate")}</TableHead>
                   <TableHead>{t("schedule.status")}</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -76,6 +110,20 @@ export default function OverdueLabsPanel() {
                       {new Date(item.scheduled_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell><StatusBadge status={item.status} t={t} /></TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPendingDelete({ id: item.id, name: item.patient_name });
+                        }}
+                        aria-label={t("common.delete")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -87,6 +135,27 @@ export default function OverdueLabsPanel() {
           </>
         )}
       </CardContent>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("common.delete")}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete?.name} — {pendingDelete && new Date(items.find(i => i.id === pendingDelete.id)?.scheduled_date ?? "").toLocaleDateString()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
