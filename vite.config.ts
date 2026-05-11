@@ -83,27 +83,16 @@ export default defineConfig(({ mode }) => ({
     target: "es2020",
     rollupOptions: {
       output: {
+        // No manualChunks for `charts`. Forcing recharts into a manual chunk
+        // makes Rollup hoist its CJS-interop helper there, which then leaks
+        // into every other vendor chunk (entry/ui/query/supabase) as a
+        // static import — and ends up modulepreloaded on the login page.
+        // Letting Rollup split per dynamic-import boundary keeps recharts
+        // strictly inside the lazy routes that actually use it.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          // Tiny shared utils get their own stable vendor chunk so neither the
-          // entry nor the charts chunk ends up statically importing the other.
-          if (/[\\/]node_modules[\\/](clsx|tailwind-merge|class-variance-authority)[\\/]/.test(id)) {
-            return "vendor";
-          }
-          // Charts: recharts + its d3/victory deps. Isolated so entry never preloads them.
-          if (
-            /[\\/]node_modules[\\/](recharts|victory-vendor|d3-[a-z]+|internmap|delaunator|robust-predicates)[\\/]/.test(
-              id,
-            )
-          ) {
-            return "charts";
-          }
           if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return "supabase";
-          if (/[\\/]node_modules[\\/]@tanstack[\\/]/.test(id)) return "query";
-          // Intentionally NOT manual-chunking react/react-dom/react-router. Doing
-          // so causes Rollup to hoist a CJS-interop helper into the charts chunk,
-          // which then gets statically pulled (and modulepreloaded) on every page.
-          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return "ui";
+          if (/[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/.test(id)) return "query";
           return undefined;
         },
       },
