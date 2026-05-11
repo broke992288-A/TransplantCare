@@ -79,23 +79,24 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
     const parsed = parseDose(med.dosage);
     let newDosage = med.dosage;
     let description = "";
+    const arrow = " → ";
 
     if (action === "increase" && parsed) {
       const increment = getStandardIncrement(med.medication_name, parsed.value);
       const newValue = parsed.value + increment;
       newDosage = `${newValue} ${parsed.unit}`;
-      description = `Increase ${med.medication_name} from ${med.dosage} to ${newDosage}`;
+      description = `${t("med.actionIncrease")}: ${med.medication_name} ${med.dosage}${arrow}${newDosage}`;
     } else if (action === "decrease" && parsed) {
       const increment = getStandardIncrement(med.medication_name, parsed.value);
       const newValue = Math.max(0, parsed.value - increment);
       newDosage = `${newValue} ${parsed.unit}`;
-      description = `Decrease ${med.medication_name} from ${med.dosage} to ${newDosage}`;
+      description = `${t("med.actionDecrease")}: ${med.medication_name} ${med.dosage}${arrow}${newDosage}`;
     } else if (action === "hold") {
       newDosage = med.dosage;
-      description = `Hold ${med.medication_name} (${med.dosage})`;
+      description = `${t("med.actionHold")}: ${med.medication_name} (${med.dosage})`;
     } else if (action === "restart") {
       newDosage = med.dosage;
-      description = `Restart ${med.medication_name} (${med.dosage})`;
+      description = `${t("med.actionRestart")}: ${med.medication_name} (${med.dosage})`;
     }
 
     setPendingAction({
@@ -115,7 +116,6 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
       const { medId, action, oldDosage, newDosage, medName } = pendingAction;
 
       if (action === "hold") {
-        // Deactivate medication, mark as held
         await updateMed.mutateAsync({
           id: medId,
           updates: { is_active: false, notes: `[HELD] ${new Date().toLocaleDateString()}` },
@@ -128,7 +128,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
           newDosage: `HELD (${oldDosage})`,
           reason: `Medication held by doctor`,
         });
-        toast({ title: `${medName} held` });
+        toast({ title: `${medName} ${t("med.heldToast")}` });
       } else if (action === "restart") {
         await updateMed.mutateAsync({
           id: medId,
@@ -142,9 +142,8 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
           newDosage: oldDosage,
           reason: `Medication restarted by doctor`,
         });
-        toast({ title: `${medName} restarted` });
+        toast({ title: `${medName} ${t("med.restartedToast")}` });
       } else {
-        // increase / decrease
         await changeDosage.mutateAsync({
           medicationId: medId,
           patientId,
