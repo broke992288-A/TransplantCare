@@ -72,6 +72,15 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [executing, setExecuting] = useState(false);
 
+  const freqKey: Record<string, string> = {
+    daily: "med.daily",
+    twice_daily: "med.twiceDaily",
+    three_times: "med.threeTimesDaily",
+    weekly: "med.weekly",
+    as_needed: "med.asNeeded",
+  };
+  const translateFreq = (f: string) => (freqKey[f] ? t(freqKey[f]) : f);
+
   const activeMeds = medications.filter((m: any) => m.is_active);
   const heldMeds = medications.filter((m: any) => !m.is_active && m.notes?.includes("[HELD]"));
 
