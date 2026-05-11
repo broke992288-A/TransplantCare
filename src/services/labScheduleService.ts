@@ -83,6 +83,11 @@ export async function updateScheduleStatus(scheduleId: string, status: string, c
   if (error) throw error;
 }
 
+export async function deleteLabSchedule(scheduleId: string) {
+  const { error } = await supabase.from("lab_schedules").delete().eq("id", scheduleId);
+  if (error) throw error;
+}
+
 export async function generateScheduleForPatient(patientId: string, transplantDate: string) {
   const { error } = await supabase.rpc("generate_lab_schedule", {
     _patient_id: patientId,
