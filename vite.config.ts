@@ -83,12 +83,23 @@ export default defineConfig(({ mode }) => ({
     target: "es2020",
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          charts: ["recharts"],
-          supabase: ["@supabase/supabase-js"],
-          query: ["@tanstack/react-query"],
-          ui: ["lucide-react"],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          // Charts: recharts + its d3/victory deps. Isolated so entry never preloads them.
+          if (
+            /[\\/]node_modules[\\/](recharts|victory-vendor|d3-[a-z]+|internmap|delaunator|robust-predicates)[\\/]/.test(
+              id,
+            )
+          ) {
+            return "charts";
+          }
+          if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return "supabase";
+          if (/[\\/]node_modules[\\/]@tanstack[\\/]/.test(id)) return "query";
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
+            return "react";
+          }
+          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return "ui";
+          return undefined;
         },
       },
     },
