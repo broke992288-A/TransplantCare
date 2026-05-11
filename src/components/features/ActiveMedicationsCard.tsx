@@ -72,6 +72,15 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [executing, setExecuting] = useState(false);
 
+  const freqKey: Record<string, string> = {
+    daily: "med.daily",
+    twice_daily: "med.twiceDaily",
+    three_times: "med.threeTimesDaily",
+    weekly: "med.weekly",
+    as_needed: "med.asNeeded",
+  };
+  const translateFreq = (f: string) => (freqKey[f] ? t(freqKey[f]) : f);
+
   const activeMeds = medications.filter((m: any) => m.is_active);
   const heldMeds = medications.filter((m: any) => !m.is_active && m.notes?.includes("[HELD]"));
 
@@ -189,7 +198,7 @@ export default function ActiveMedicationsCard({ patientId }: Props) {
                       <span className="font-medium">{med.medication_name}</span>
                       <span className="text-muted-foreground ml-2">{med.dosage}</span>
                     </div>
-                    <Badge variant="outline" className="text-xs shrink-0">{med.frequency}</Badge>
+                    <Badge variant="outline" className="text-xs shrink-0">{translateFreq(med.frequency)}</Badge>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
