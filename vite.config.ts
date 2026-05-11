@@ -85,10 +85,10 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          // Pin tiny shared utils into the entry vendor (NOT charts) so entry
-          // doesn't statically import the charts chunk via clsx/tailwind-merge.
+          // Tiny shared utils get their own stable vendor chunk so neither the
+          // entry nor the charts chunk ends up statically importing the other.
           if (/[\\/]node_modules[\\/](clsx|tailwind-merge|class-variance-authority)[\\/]/.test(id)) {
-            return undefined;
+            return "vendor";
           }
           // Charts: recharts + its d3/victory deps. Isolated so entry never preloads them.
           if (
