@@ -83,12 +83,17 @@ export default defineConfig(({ mode }) => ({
     target: "es2020",
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          charts: ["recharts"],
-          supabase: ["@supabase/supabase-js"],
-          query: ["@tanstack/react-query"],
-          ui: ["lucide-react"],
+        // No manualChunks for `charts`. Forcing recharts into a manual chunk
+        // makes Rollup hoist its CJS-interop helper there, which then leaks
+        // into every other vendor chunk (entry/ui/query/supabase) as a
+        // static import — and ends up modulepreloaded on the login page.
+        // Letting Rollup split per dynamic-import boundary keeps recharts
+        // strictly inside the lazy routes that actually use it.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return "supabase";
+          if (/[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/.test(id)) return "query";
+          return undefined;
         },
       },
     },
