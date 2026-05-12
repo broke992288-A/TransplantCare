@@ -119,6 +119,7 @@ Analyze the trend and predict rejection risk for the next 7-14 days.`;
               timeframe: { type: "string" },
             },
             required: ["prediction_risk", "score", "message", "reasons", "timeframe"],
+
           },
         },
       }],
