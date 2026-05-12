@@ -112,7 +112,7 @@ export default function DoctorDashboard() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="pt-2 px-3 sm:px-6">
               {loading ? (
                 <SkeletonChart />
               ) : patients.length === 0 ? (
