@@ -117,7 +117,7 @@ export function useSmartPriorityQueue() {
       result.sort((a, b) => comparePriority(a.priority, b.priority));
       return result;
     },
-    enabled: !!user,
+    enabled: !!user && !!role,
     staleTime: 60_000,
   });
 }
