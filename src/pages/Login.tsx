@@ -181,32 +181,6 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Available Roles Preview */}
-        <div className="space-y-3">
-          <h2 className="text-center text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("login.availableRoles")}
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {ROLES.map(({ role: r, icon: Icon, titleKey, descKey }) => (
-              <Card
-                key={r}
-                className="border border-border/50 bg-card/50 backdrop-blur-sm"
-              >
-                <CardHeader className="items-center text-center pb-2 pt-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <CardTitle className="text-xs mt-2">{t(titleKey)}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center px-3 pb-4">
-                  <CardDescription className="text-[10px] leading-tight">
-                    {t(descKey)}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
