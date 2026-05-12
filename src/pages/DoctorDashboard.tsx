@@ -153,7 +153,7 @@ export default function DoctorDashboard() {
                       return (
                         <div
                           key={item.label}
-                          className={`relative rounded-lg border ${item.border} ${item.bg} p-2 flex flex-col items-center gap-0.5 transition-all hover:scale-105 hover:shadow-md`}
+                          className={`relative rounded-lg border ${item.border} ${item.bg} p-1.5 sm:p-2 min-w-0 flex flex-col items-center gap-0.5 transition-all hover:shadow-md`}
                         >
                           <span
                             className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
