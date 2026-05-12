@@ -6,23 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Mail, Phone, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
+import { Loader2, Mail, Phone } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import LanguageSelector from "@/components/features/LanguageSelector";
 import { resetPasswordForEmail } from "@/services/authService";
 import { logAudit } from "@/services/auditService";
-import type { AppRole } from "@/types/roles";
 
 type Mode = "email" | "phone";
-
-const ROLES: { role: AppRole; icon: typeof User; titleKey: string; descKey: string }[] = [
-  { role: "doctor", icon: Stethoscope, titleKey: "role.doctor", descKey: "role.doctorDesc" },
-  { role: "patient", icon: User, titleKey: "role.patient", descKey: "role.patientDesc" },
-  { role: "support", icon: HeadsetIcon, titleKey: "role.support", descKey: "role.supportDesc" },
-  { role: "admin", icon: ShieldCheck, titleKey: "role.admin", descKey: "role.adminDesc" },
-];
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>("email");
@@ -189,32 +181,6 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Available Roles Preview */}
-        <div className="space-y-3">
-          <h2 className="text-center text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("login.availableRoles")}
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {ROLES.map(({ role: r, icon: Icon, titleKey, descKey }) => (
-              <Card
-                key={r}
-                className="border border-border/50 bg-card/50 backdrop-blur-sm"
-              >
-                <CardHeader className="items-center text-center pb-2 pt-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <CardTitle className="text-xs mt-2">{t(titleKey)}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center px-3 pb-4">
-                  <CardDescription className="text-[10px] leading-tight">
-                    {t(descKey)}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
