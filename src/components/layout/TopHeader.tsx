@@ -31,8 +31,14 @@ export function TopHeader({ onMenuClick }: TopHeaderProps) {
   const RoleIcon = roleMeta?.icon;
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/login");
+    try {
+      await signOut();
+    } catch (err) {
+      console.warn("[Logout] signOut failed, forcing redirect:", err);
+    } finally {
+      // Always navigate to /login, even if remote sign-out errored.
+      navigate("/login", { replace: true });
+    }
   };
 
   return (
