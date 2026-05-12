@@ -68,6 +68,7 @@ const translations: Record<Language, Record<string, string>> = {
     "login.phoneNumber": "Phone number",
     "login.phoneHint": "Uzbekistan format: +998 or 9-digit number",
     "login.phonePlaceholder": "+998 90 123 45 67",
+    "login.availableRoles": "Available Roles",
     "signup.title": "Create patient account",
     "signup.desc": "Self-registration is for patients only. Doctor accounts are created by administrators.",
     "signup.fullName": "Full name",
