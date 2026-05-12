@@ -46,6 +46,8 @@ export default function Login() {
         setIsForgot(false);
       } else {
         const identifier = mode === "email" ? email.trim() : normalizePhone(phone);
+        // Clear role-confirmation flag so user must re-select role on every login
+        sessionStorage.removeItem("roleConfirmed");
         await signIn(identifier, password);
         try {
           logAudit({ action: "user_login", metadata: { mode, identifier } });

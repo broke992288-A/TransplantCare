@@ -72,6 +72,7 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; 
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (!role) return <Navigate to="/select-role" replace />;
+  if (sessionStorage.getItem("roleConfirmed") !== role) return <Navigate to="/select-role" replace />;
   if (allowedRole && role !== allowedRole) {
     const home = role === "patient" ? "/patient/home" : "/doctor-dashboard";
     return <Navigate to={home} replace />;
@@ -84,6 +85,7 @@ function DoctorOrAdminRoute({ children }: { children: React.ReactNode }) {
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (!role) return <Navigate to="/select-role" replace />;
+  if (sessionStorage.getItem("roleConfirmed") !== role) return <Navigate to="/select-role" replace />;
   if (!["doctor", "admin", "support"].includes(role)) return <Navigate to="/patient/home" replace />;
   return <>{children}</>;
 }
