@@ -1642,6 +1642,8 @@ const translations: Record<Language, Record<string, string>> = {
     "login.accountCreated": "Hisob yaratildi",
     "login.checkEmail": "Hisobingizni tasdiqlash uchun pochtangizni tekshiring.",
     "login.forgotPassword": "Parolni unutdingizmi?",
+    "login.showPassword": "Parolni ko'rsatish",
+    "login.hidePassword": "Parolni yashirish",
     "login.resetPassword": "Parolni tiklash",
     "login.resetDesc": "Parolni tiklash havolasini olish uchun emailingizni kiriting",
     "login.sendResetLink": "Havola yuborish",
