@@ -49,7 +49,27 @@ export async function signUpWithEmail(
 }
 
 export async function signOutUser() {
-  await supabase.auth.signOut();
+  // Always clear local role confirmation regardless of remote outcome.
+  try {
+    sessionStorage.removeItem("roleConfirmed");
+  } catch {
+    /* sessionStorage unavailable — ignore */
+  }
+  try {
+    // `local` scope avoids server round-trip failures when the session is
+    // already invalid (we've seen `AuthSessionMissingError` / 403 from /user
+    // when the refresh token expired in another tab). The end result is the
+    // same: local tokens cleared and the user redirected to /login.
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error && !/session/i.test(error.message)) throw error;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (!/session|missing|not\s*found/i.test(msg)) {
+      // Re-throw genuine errors; swallow stale-session noise.
+      throw err;
+    }
+    console.warn("[Auth] signOut: ignoring stale session error:", msg);
+  }
 }
 
 export async function resetPasswordForEmail(email: string) {
