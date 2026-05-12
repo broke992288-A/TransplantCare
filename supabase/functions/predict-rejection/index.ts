@@ -99,7 +99,7 @@ ${labSummary}
 Analyze the trend and predict rejection risk for the next 7-14 days.`;
 
     const aiPayload = {
-      model: "google/gemini-3-flash-preview",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -119,11 +119,11 @@ Analyze the trend and predict rejection risk for the next 7-14 days.`;
               timeframe: { type: "string" },
             },
             required: ["prediction_risk", "score", "message", "reasons", "timeframe"],
-            additionalProperties: false,
+
           },
         },
       }],
-      tool_choice: { type: "function", function: { name: "predict_rejection" } },
+      tool_choice: "auto",
     };
 
     let response: Response | null = null;
