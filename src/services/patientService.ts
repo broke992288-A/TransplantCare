@@ -55,6 +55,15 @@ export async function fetchDoctorPatients(doctorId: string) {
   return data ?? [];
 }
 
+/** Fetch all patients with the same minimal shape as fetchDoctorPatients (admin/support use). */
+export async function fetchAllPatientsBasic() {
+  const { data, error } = await supabase
+    .from("patients")
+    .select("id, full_name, organ_type, risk_level, risk_score, last_risk_evaluation, created_at, transplant_date, patient_number");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function fetchAllPatients() {
   const { data, error } = await supabase
     .from("patients")

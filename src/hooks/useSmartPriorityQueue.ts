@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchDoctorPatients } from "@/services/patientService";
+import { fetchDoctorPatients, fetchAllPatientsBasic } from "@/services/patientService";
 import { fetchLatestLabsByPatientIds, type LatestLabSummary } from "@/services/labService";
 import { computeSmartPriority, comparePriority, type SmartPriorityResult } from "@/utils/smartPriority";
 
@@ -74,11 +74,14 @@ async function fetchMissedMedDays(patientIds: string[]): Promise<Record<string, 
 }
 
 export function useSmartPriorityQueue() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdminLike = role === "admin" || role === "support";
   return useQuery({
-    queryKey: ["smart-priority-queue", user?.id],
+    queryKey: ["smart-priority-queue", user?.id, role],
     queryFn: async (): Promise<SmartPatient[]> => {
-      const patients = await fetchDoctorPatients(user!.id);
+      const patients = isAdminLike
+        ? await fetchAllPatientsBasic()
+        : await fetchDoctorPatients(user!.id);
       const ids = patients.map(p => p.id);
 
       const [latestLabs, previousLabs, overdueSet, missedMap] = await Promise.all([
@@ -114,7 +117,7 @@ export function useSmartPriorityQueue() {
       result.sort((a, b) => comparePriority(a.priority, b.priority));
       return result;
     },
-    enabled: !!user,
+    enabled: !!user && !!role,
     staleTime: 60_000,
   });
 }
