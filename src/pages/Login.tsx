@@ -17,6 +17,13 @@ import type { AppRole } from "@/types/roles";
 
 type Mode = "email" | "phone";
 
+const ROLES: { role: AppRole; icon: typeof User; titleKey: string; descKey: string }[] = [
+  { role: "doctor", icon: Stethoscope, titleKey: "role.doctor", descKey: "role.doctorDesc" },
+  { role: "patient", icon: User, titleKey: "role.patient", descKey: "role.patientDesc" },
+  { role: "support", icon: HeadsetIcon, titleKey: "role.support", descKey: "role.supportDesc" },
+  { role: "admin", icon: ShieldCheck, titleKey: "role.admin", descKey: "role.adminDesc" },
+];
+
 export default function Login() {
   const [mode, setMode] = useState<Mode>("email");
   const [isForgot, setIsForgot] = useState(false);
