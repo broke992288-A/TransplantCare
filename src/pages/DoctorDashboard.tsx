@@ -112,7 +112,7 @@ export default function DoctorDashboard() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="pt-2 px-3 sm:px-6">
               {loading ? (
                 <SkeletonChart />
               ) : patients.length === 0 ? (
@@ -124,8 +124,8 @@ export default function DoctorDashboard() {
                   onAction={() => navigate("/add-patient")}
                 />
               ) : (
-                <div className="flex flex-col items-center">
-                  <div className="relative w-full" style={{ height: 220 }}>
+                <div className="flex flex-col items-center w-full min-w-0">
+                  <div className="relative w-full min-w-0 overflow-hidden" style={{ height: 220 }}>
                     <LazyMount minHeight={220} rootMargin="100px" className="h-full w-full">
                       <Suspense fallback={<SkeletonChart />}>
                         <RiskDistributionPie pieData={pieData} total={patients.length} />
@@ -143,7 +143,7 @@ export default function DoctorDashboard() {
                   </div>
 
                   {/* Custom legend with stats */}
-                  <div className="grid grid-cols-3 gap-2 w-full mt-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full mt-2 min-w-0">
                     {[
                       { label: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(var(--destructive))", bg: "bg-destructive/5", text: "text-destructive", border: "border-destructive/20" },
                       { label: t("dashboard.mediumRisk"), value: mediumRisk.length, color: "hsl(var(--warning))", bg: "bg-warning/5", text: "text-warning", border: "border-warning/20" },
@@ -153,7 +153,7 @@ export default function DoctorDashboard() {
                       return (
                         <div
                           key={item.label}
-                          className={`relative rounded-lg border ${item.border} ${item.bg} p-2 flex flex-col items-center gap-0.5 transition-all hover:scale-105 hover:shadow-md`}
+                          className={`relative rounded-lg border ${item.border} ${item.bg} p-1.5 sm:p-2 min-w-0 flex flex-col items-center gap-0.5 transition-all hover:shadow-md`}
                         >
                           <span
                             className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
