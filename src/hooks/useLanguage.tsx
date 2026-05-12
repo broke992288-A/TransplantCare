@@ -51,6 +51,8 @@ const translations: Record<Language, Record<string, string>> = {
     "login.accountCreated": "Account created",
     "login.checkEmail": "Please check your email to verify your account.",
     "login.forgotPassword": "Forgot password?",
+    "login.showPassword": "Show password",
+    "login.hidePassword": "Hide password",
     "login.resetPassword": "Reset Password",
     "login.resetDesc": "Enter your email to receive a password reset link",
     "login.sendResetLink": "Send Reset Link",
