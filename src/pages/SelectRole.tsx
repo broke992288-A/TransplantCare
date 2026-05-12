@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
 import organsImg from "@/assets/organs.png";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import type { AppRole } from "@/types/roles";
@@ -55,9 +55,8 @@ export default function SelectRole() {
     }
   };
 
-  useEffect(() => {
-    if (!authLoading && role) navigate(getRoleRedirect(role), { replace: true });
-  }, [role, authLoading, navigate]);
+  // Note: We intentionally do NOT auto-redirect when a role already exists.
+  // Users must explicitly select a role on every login.
 
   if (!user) {
     navigate("/login", { replace: true });
