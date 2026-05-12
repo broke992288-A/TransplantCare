@@ -16,10 +16,19 @@ interface TopHeaderProps {
 
 export function TopHeader({ onMenuClick }: TopHeaderProps) {
   const { t } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const { data: unreadCount = 0 } = useUnreadAlertCount();
   const navigate = useNavigate();
   const name = user?.user_metadata?.full_name || user?.email || "User";
+
+  const ROLE_META: Record<AppRole, { icon: typeof Shield; cls: string; key: string }> = {
+    admin:   { icon: Shield,       cls: "bg-destructive/10 text-destructive border-destructive/30", key: "role.admin" },
+    doctor:  { icon: Stethoscope,  cls: "bg-primary/10 text-primary border-primary/30",             key: "role.doctor" },
+    support: { icon: LifeBuoy,     cls: "bg-warning/10 text-warning border-warning/30",             key: "role.support" },
+    patient: { icon: UserIcon,     cls: "bg-success/10 text-success border-success/30",             key: "role.patient" },
+  };
+  const roleMeta = role ? ROLE_META[role] : null;
+  const RoleIcon = roleMeta?.icon;
 
   const handleLogout = async () => {
     await signOut();
