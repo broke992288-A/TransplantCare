@@ -1,12 +1,14 @@
-import { Bell, Menu, LogOut } from "lucide-react";
+import { Bell, Menu, LogOut, Shield, Stethoscope, LifeBuoy, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import LanguageSelector from "@/components/features/LanguageSelector";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadAlertCount } from "@/hooks/useUnreadAlerts";
 import { useNavigate } from "react-router-dom";
+import type { AppRole } from "@/types/roles";
 
 interface TopHeaderProps {
   onMenuClick?: () => void;
