@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Mail, Phone } from "lucide-react";
+import { Loader2, Mail, Phone, User, Stethoscope, HeadsetIcon, ShieldCheck } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import LanguageSelector from "@/components/features/LanguageSelector";
 import { resetPasswordForEmail } from "@/services/authService";
 import { logAudit } from "@/services/auditService";
+import type { AppRole } from "@/types/roles";
 
 type Mode = "email" | "phone";
 
