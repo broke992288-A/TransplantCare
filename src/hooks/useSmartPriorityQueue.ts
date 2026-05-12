@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchDoctorPatients } from "@/services/patientService";
+import { fetchDoctorPatients, fetchAllPatientsBasic } from "@/services/patientService";
 import { fetchLatestLabsByPatientIds, type LatestLabSummary } from "@/services/labService";
 import { computeSmartPriority, comparePriority, type SmartPriorityResult } from "@/utils/smartPriority";
 
