@@ -124,8 +124,8 @@ export default function DoctorDashboard() {
                   onAction={() => navigate("/add-patient")}
                 />
               ) : (
-                <div className="flex flex-col items-center">
-                  <div className="relative w-full" style={{ height: 220 }}>
+                <div className="flex flex-col items-center w-full min-w-0">
+                  <div className="relative w-full min-w-0 overflow-hidden" style={{ height: 220 }}>
                     <LazyMount minHeight={220} rootMargin="100px" className="h-full w-full">
                       <Suspense fallback={<SkeletonChart />}>
                         <RiskDistributionPie pieData={pieData} total={patients.length} />
