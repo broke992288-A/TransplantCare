@@ -862,6 +862,8 @@ const translations: Record<Language, Record<string, string>> = {
     "login.accountCreated": "Аккаунт создан",
     "login.checkEmail": "Проверьте почту для подтверждения.",
     "login.forgotPassword": "Забыли пароль?",
+    "login.showPassword": "Показать пароль",
+    "login.hidePassword": "Скрыть пароль",
     "login.resetPassword": "Сброс пароля",
     "login.resetDesc": "Введите email для получения ссылки сброса пароля",
     "login.sendResetLink": "Отправить ссылку",
