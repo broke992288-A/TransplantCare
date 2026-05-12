@@ -20,15 +20,18 @@ export function useDoctorPatients() {
 }
 
 export function useDoctorPatientsWithLabs() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdminLike = role === "admin" || role === "support";
   return useQuery({
-    queryKey: ["doctor-patients-with-labs", user?.id],
+    queryKey: ["doctor-patients-with-labs", user?.id, role],
     queryFn: async () => {
-      const patients = await fetchDoctorPatients(user!.id);
+      const patients = isAdminLike
+        ? await fetchAllPatientsBasic()
+        : await fetchDoctorPatients(user!.id);
       const labs = await fetchLatestLabsByPatientIds(patients.map((p) => p.id));
       return { patients, labs };
     },
-    enabled: !!user,
+    enabled: !!user && !!role,
   });
 }
 
