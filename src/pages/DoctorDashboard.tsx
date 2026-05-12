@@ -143,7 +143,7 @@ export default function DoctorDashboard() {
                   </div>
 
                   {/* Custom legend with stats */}
-                  <div className="grid grid-cols-3 gap-2 w-full mt-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full mt-2 min-w-0">
                     {[
                       { label: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(var(--destructive))", bg: "bg-destructive/5", text: "text-destructive", border: "border-destructive/20" },
                       { label: t("dashboard.mediumRisk"), value: mediumRisk.length, color: "hsl(var(--warning))", bg: "bg-warning/5", text: "text-warning", border: "border-warning/20" },
