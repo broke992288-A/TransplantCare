@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   fetchDoctorPatients,
   fetchAllPatients,
+  fetchAllPatientsBasic,
   fetchLinkedPatient,
   fetchPaginatedPatients,
   type PatientFilters,
