@@ -124,26 +124,26 @@ export default function DoctorDashboard() {
                   onAction={() => navigate("/add-patient")}
                 />
               ) : (
-                <div className="flex flex-col items-center w-full min-w-0">
-                  <div className="relative w-full max-w-[220px] mx-auto min-w-0 overflow-hidden" style={{ height: 180 }}>
-                    <LazyMount minHeight={180} rootMargin="100px" className="h-full w-full">
+                <div className="flex flex-col items-center w-full min-w-0 overflow-hidden">
+                  <div className="relative mx-auto size-[clamp(150px,48vw,220px)] min-w-0 overflow-hidden">
+                    <LazyMount minHeight={150} rootMargin="100px" className="h-full w-full">
                       <Suspense fallback={<SkeletonChart />}>
                         <RiskDistributionPie pieData={pieData} total={patients.length} />
                       </Suspense>
                     </LazyMount>
                     {/* Center stat overlay */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-3xl font-bold tabular-nums leading-none bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      <span className="text-2xl sm:text-3xl font-bold tabular-nums leading-none bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                         {patients.length}
                       </span>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1 font-medium">
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest text-muted-foreground mt-1 font-medium">
                         {t("dashboard.totalPatients")}
                       </span>
                     </div>
                   </div>
 
                   {/* Custom legend with stats */}
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full mt-2 min-w-0">
+                  <div className="grid w-full min-w-0 grid-cols-[repeat(auto-fit,minmax(76px,1fr))] gap-1 sm:gap-2 mt-2">
                     {[
                       { label: t("dashboard.highRisk"), value: highRisk.length, color: "hsl(var(--destructive))", bg: "bg-destructive/5", text: "text-destructive", border: "border-destructive/20" },
                       { label: t("dashboard.mediumRisk"), value: mediumRisk.length, color: "hsl(var(--warning))", bg: "bg-warning/5", text: "text-warning", border: "border-warning/20" },
@@ -153,17 +153,17 @@ export default function DoctorDashboard() {
                       return (
                         <div
                           key={item.label}
-                          className={`relative rounded-lg border ${item.border} ${item.bg} p-1.5 sm:p-2 min-w-0 flex flex-col items-center gap-0.5 transition-all hover:shadow-md`}
+                            className={`relative rounded-lg border ${item.border} ${item.bg} px-1 py-1.5 sm:p-2 min-w-0 flex flex-col items-center gap-0.5 transition-all hover:shadow-md`}
                         >
                           <span
                             className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
                             style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }}
                           />
-                          <span className={`text-lg font-bold tabular-nums ${item.text}`}>{item.value}</span>
-                          <span className="text-[9px] uppercase tracking-wide text-muted-foreground font-medium leading-tight text-center">
+                          <span className={`text-base sm:text-lg font-bold tabular-nums leading-none ${item.text}`}>{item.value}</span>
+                          <span className="w-full truncate text-[8px] sm:text-[9px] uppercase tracking-normal text-muted-foreground font-medium leading-tight text-center">
                             {item.label}
                           </span>
-                          <span className="text-[10px] font-semibold tabular-nums text-muted-foreground/80">
+                          <span className="text-[9px] sm:text-[10px] font-semibold tabular-nums text-muted-foreground/80 leading-none">
                             {pct}%
                           </span>
                         </div>

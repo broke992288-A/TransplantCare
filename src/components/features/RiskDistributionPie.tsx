@@ -34,8 +34,8 @@ function RiskDistributionPieInner({ pieData, total }: Props) {
           data={pieData}
           cx="50%"
           cy="50%"
-          innerRadius={62}
-          outerRadius={92}
+          innerRadius="44%"
+          outerRadius="66%"
           paddingAngle={4}
           dataKey="value"
           stroke="hsl(var(--background))"
