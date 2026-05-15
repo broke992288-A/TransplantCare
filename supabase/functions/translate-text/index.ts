@@ -31,6 +31,18 @@ const LANG_NAMES: Record<string, string> = {
   uz: "Uzbek (Latin script)",
 };
 
+function fallbackTranslationResponse(
+  texts: string[],
+  corsHeaders: Record<string, string>,
+  message: string,
+  code: "PAYMENT_REQUIRED" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE",
+) {
+  return new Response(
+    JSON.stringify({ translations: texts, fallback: true, error: code, message }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -87,11 +99,20 @@ serve(async (req) => {
 
     if (!response.ok) {
       const status = response.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const t = await response.text();
       log("error", FN_NAME, "AI gateway error", { requestId, userId, status, error: t });
-      throw new Error("AI translation failed");
+
+      if (status === 402) {
+        return fallbackTranslationResponse(texts, corsHeaders, "AI credits are exhausted. Showing original text.", "PAYMENT_REQUIRED");
+      }
+      if (status === 429) {
+        return fallbackTranslationResponse(texts, corsHeaders, "AI translation is rate limited. Showing original text.", "RATE_LIMITED");
+      }
+      if (status >= 500) {
+        return fallbackTranslationResponse(texts, corsHeaders, "AI translation is temporarily unavailable. Showing original text.", "SERVICE_UNAVAILABLE");
+      }
+
+      return new Response(JSON.stringify({ error: "AI translation failed" }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = await response.json();
@@ -116,8 +137,8 @@ serve(async (req) => {
   } catch (e) {
     log("error", FN_NAME, "Translation error", { requestId, userId, error: e instanceof Error ? e.message : "Unknown" });
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ translations: [], fallback: true, error: "SERVICE_UNAVAILABLE", message: "Translation is temporarily unavailable." }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
