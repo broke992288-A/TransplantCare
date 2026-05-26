@@ -8,7 +8,7 @@ import { Plus, AlertTriangle, Clock, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
-import { useOverdueLabs } from "@/hooks/useLabSchedule";
+import { useOverdueLabSchedules } from "@/hooks/useLabSchedule";
 import { riskColorClass } from "@/utils/risk";
 import { SkeletonTable } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
