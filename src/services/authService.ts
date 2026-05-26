@@ -115,3 +115,33 @@ export async function upsertUserRole(userId: string, role: AppRole) {
     .upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
   if (error) throw error;
 }
+
+/**
+ * 2FA warning for clinical accounts (doctor/admin).
+ * Non-blocking advisory — login still succeeds.
+ * Dismissal is stored per-session in sessionStorage.
+ */
+const TWO_FA_DISMISS_KEY = "twoFactorWarningDismissed";
+const TWO_FA_WARNING_MESSAGE =
+  "Two-factor authentication is recommended for clinical accounts.";
+
+export function getTwoFactorWarning(role: AppRole | null): string | null {
+  if (role !== "doctor" && role !== "admin") return null;
+  try {
+    if (sessionStorage.getItem(TWO_FA_DISMISS_KEY) === "1") return null;
+  } catch {
+    /* sessionStorage unavailable — show warning anyway */
+  }
+  // MFA factor enrollment is not configured for this project yet —
+  // until enrollment exists, every doctor/admin account is implicitly
+  // "2FA not enabled" and should see the advisory.
+  return TWO_FA_WARNING_MESSAGE;
+}
+
+export function dismissTwoFactorWarning(): void {
+  try {
+    sessionStorage.setItem(TWO_FA_DISMISS_KEY, "1");
+  } catch {
+    /* sessionStorage unavailable — ignore */
+  }
+}
