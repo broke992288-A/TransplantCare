@@ -1,6 +1,30 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { LabResult } from "@/types/patient";
 
+/**
+ * Best-effort audit log for prediction failures.
+ * Never throws — audit failures must not break clinical workflows.
+ * Never includes PHI in metadata (only provider + status + timestamp).
+ */
+async function logPredictionFailure(patientId: string, provider: string) {
+  try {
+    await supabase.from("audit_logs").insert({
+      action: "prediction_failed",
+      entity_type: "patient",
+      entity_id: patientId,
+      metadata: {
+        provider,
+        status: "unavailable",
+        timestamp: new Date().toISOString(),
+      },
+    } as never);
+  } catch {
+    /* silently ignore — audit must never break workflow */
+  }
+}
+
+const PREDICTION_PROVIDER = "lovable-ai:predict-rejection";
+
 export interface PredictionResult {
   available: boolean;
   prediction_risk: "low" | "medium" | "high" | null;
@@ -34,14 +58,17 @@ export async function fetchPrediction(
     });
     if (error) {
       console.warn("[prediction] edge function error:", error);
+      void logPredictionFailure(patientId, PREDICTION_PROVIDER);
       return { ...UNAVAILABLE, error: error.message };
     }
     if (!data || data.error) {
+      void logPredictionFailure(patientId, PREDICTION_PROVIDER);
       return { ...UNAVAILABLE, error: data?.error };
     }
     return { available: true, ...(data as Omit<PredictionResult, "available">) };
   } catch (e) {
     console.warn("[prediction] unexpected error:", e);
+    void logPredictionFailure(patientId, PREDICTION_PROVIDER);
     return { ...UNAVAILABLE, error: e instanceof Error ? e.message : "Unknown" };
   }
 }

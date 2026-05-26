@@ -105,6 +105,48 @@ function countMarkers(groups: OCRGroupValues[]): number {
 }
 
 /**
+ * Strip PHI / raw OCR contents from error messages before logging.
+ * Keeps only error class + short code; truncates aggressively.
+ */
+function sanitizeErrorSummary(err: unknown): string {
+  if (!err) return "unknown";
+  const raw = err instanceof Error ? `${err.name}:${err.message}` : String(err);
+  // Drop anything that looks like a value (numbers, names) — keep code-shape tokens only.
+  const stripped = raw
+    .replace(/[\u0400-\u04FF]+/g, "") // Cyrillic (patient names)
+    .replace(/\b\d[\d.,/-]*\b/g, "") // numeric values
+    .replace(/\s+/g, " ")
+    .trim();
+  return stripped.slice(0, 120);
+}
+
+/**
+ * Best-effort OCR failure audit log.
+ * Never throws, never includes raw OCR contents or PHI.
+ */
+async function logOCRFailure(
+  patientId: string,
+  fileType: string | undefined,
+  err: unknown,
+  fallbackUsed: boolean,
+) {
+  try {
+    await supabase.from("audit_logs").insert({
+      action: "ocr_failed",
+      entity_type: "patient",
+      entity_id: patientId,
+      metadata: {
+        file_type: fileType ?? "unknown",
+        sanitized_error_summary: sanitizeErrorSummary(err),
+        fallback_used: fallbackUsed,
+      },
+    } as never);
+  } catch {
+    /* silently ignore — audit must never break workflow */
+  }
+}
+
+/**
  * Process a single file end-to-end. Returns OCR groups + storage handle.
  */
 export async function processFileOCR(
@@ -122,6 +164,8 @@ export async function processFileOCR(
 
   const tStart = performance.now();
   let upload: UploadHandle | null = null;
+  let aiFallbackUsed = false;
+  let observedFileType: string | undefined = file.type || undefined;
 
   try {
     // ─── Stage 1: extract (preprocess for OCR; also yields storage file) ───
@@ -144,8 +188,8 @@ export async function processFileOCR(
     const source: OCRSource = preprocessed.extractionSource ?? "ai-image";
     const hasDeterministic =
       !!preprocessed.deterministicGroups && preprocessed.deterministicGroups.length > 0;
-
-    // ─── Stage 2: upload FIRST (fast, isolated from slow AI OCR) ───
+    observedFileType = preprocessed.fileType ?? observedFileType;
+    aiFallbackUsed = !hasDeterministic;
     // Upload is short and predictable; doing it before AI OCR prevents the
     // combined wall-clock from blowing past a single timeout budget.
     onStage?.("upload");
@@ -278,6 +322,7 @@ export async function processFileOCR(
         ms: Math.round(performance.now() - tStart),
         error: err instanceof Error ? err.message : String(err),
       });
+      void logOCRFailure(patientId, observedFileType, err, aiFallbackUsed);
     }
     throw err;
   } finally {
