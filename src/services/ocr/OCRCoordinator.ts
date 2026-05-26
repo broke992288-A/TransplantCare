@@ -188,8 +188,8 @@ export async function processFileOCR(
     const source: OCRSource = preprocessed.extractionSource ?? "ai-image";
     const hasDeterministic =
       !!preprocessed.deterministicGroups && preprocessed.deterministicGroups.length > 0;
-
-    // ─── Stage 2: upload FIRST (fast, isolated from slow AI OCR) ───
+    observedFileType = preprocessed.fileType ?? observedFileType;
+    aiFallbackUsed = !hasDeterministic;
     // Upload is short and predictable; doing it before AI OCR prevents the
     // combined wall-clock from blowing past a single timeout budget.
     onStage?.("upload");
