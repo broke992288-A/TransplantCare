@@ -14,6 +14,25 @@ import { SkeletonTable } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
 
+/** Lightweight relative time for dashboard */
+function relativeLabText(recordedAt: string | undefined | null, t: (k: string) => string): string {
+  if (!recordedAt) return t("dashboard.noRecentLabs");
+  const days = Math.floor((Date.now() - new Date(recordedAt).getTime()) / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "1d ago";
+  return `${days}d ago`;
+}
+
+/** Compact transplant age: 3d, 27d, 4mo, 2y */
+function txAgeText(transplantDate: string | undefined | null): string {
+  if (!transplantDate) return "Unknown";
+  const days = Math.floor((Date.now() - new Date(transplantDate).getTime()) / 86400000);
+  if (days < 0) return "Unknown";
+  if (days < 30) return `${days}d`;
+  if (days < 365) return `${Math.floor(days / 30)}mo`;
+  return `${Math.floor(days / 365)}y`;
+}
+
 export default function DoctorDashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -35,8 +54,6 @@ export default function DoctorDashboard() {
     });
   }, [patients]);
 
-  const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : "—");
-
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -46,10 +63,12 @@ export default function DoctorDashboard() {
             <AlertTriangle className="h-3 w-3" />
             {t("dashboard.highRisk")}: {highRiskCount}
           </Badge>
-          <Badge variant="secondary" className="gap-1">
-            <Clock className="h-3 w-3" />
-            {t("dashboard.overdueLabs") ?? "Overdue labs"}: {overdueCount}
-          </Badge>
+          {overdueCount > 0 && (
+            <Badge variant="outline" className="gap-1 border-orange-400 text-orange-600 bg-orange-50">
+              <Clock className="h-3 w-3" />
+              {t("dashboard.overdueLabs")}: {overdueCount}
+            </Badge>
+          )}
           <Badge variant="outline">
             {t("dashboard.totalPatients")}: {patients.length}
           </Badge>
@@ -59,7 +78,7 @@ export default function DoctorDashboard() {
         <Card>
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-4"><SkeletonTable rows={8} cols={5} /></div>
+              <div className="p-4"><SkeletonTable rows={8} cols={6} /></div>
             ) : sorted.length === 0 ? (
               <div className="p-6">
                 <EmptyState
@@ -77,13 +96,14 @@ export default function DoctorDashboard() {
                     <TableHead>{t("dashboard.patient")}</TableHead>
                     <TableHead>{t("dashboard.organ")}</TableHead>
                     <TableHead>{t("dashboard.risk")}</TableHead>
-                    <TableHead>{t("dashboard.keyLab") ?? "Last lab"}</TableHead>
+                    <TableHead>{t("dashboard.lastLab")}</TableHead>
+                    <TableHead>{t("dashboard.txAge")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sorted.map((p) => {
-                    const lab = labs[p.id] as { created_at?: string } | undefined;
+                    const lab = labs[p.id];
                     return (
                       <TableRow
                         key={p.id}
@@ -95,7 +115,8 @@ export default function DoctorDashboard() {
                         <TableCell className="py-2">
                           <Badge className={riskColorClass(p.risk_level)}>{t(`risk.${p.risk_level}`)}</Badge>
                         </TableCell>
-                        <TableCell className="py-2 text-sm text-muted-foreground">{fmtDate(lab?.created_at)}</TableCell>
+                        <TableCell className="py-2 text-sm text-muted-foreground">{relativeLabText(lab?.recorded_at, t)}</TableCell>
+                        <TableCell className="py-2 text-sm text-muted-foreground">{txAgeText(p.transplant_date)}</TableCell>
                         <TableCell className="py-2 text-muted-foreground"><ChevronRight className="h-4 w-4" /></TableCell>
                       </TableRow>
                     );
