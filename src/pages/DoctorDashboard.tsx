@@ -17,15 +17,14 @@ import { Users } from "lucide-react";
 export default function DoctorDashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { data, isLoading: loading } = useDoctorPatientsWithLabs();
   const { data: overdue } = useOverdueLabSchedules();
 
   const patients = data?.patients ?? [];
   const labs = data?.labs ?? {};
 
   const highRiskCount = patients.filter((p) => p.risk_level === "high").length;
-  const overdueCount = Array.isArray((overdueQuery as { data?: unknown[] })?.data)
-    ? ((overdueQuery as { data?: unknown[] }).data as unknown[]).length
-    : 0;
+  const overdueCount = Array.isArray(overdue) ? overdue.length : 0;
 
   const sorted = useMemo(() => {
     const rank = (lvl: string) => (lvl === "high" ? 0 : lvl === "medium" ? 1 : 2);
