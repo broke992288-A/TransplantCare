@@ -322,6 +322,7 @@ export async function processFileOCR(
         ms: Math.round(performance.now() - tStart),
         error: err instanceof Error ? err.message : String(err),
       });
+      void logOCRFailure(patientId, observedFileType, err, aiFallbackUsed);
     }
     throw err;
   } finally {
