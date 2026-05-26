@@ -20,21 +20,26 @@ export interface SmartPatient {
 
 async function fetchPreviousLabs(patientIds: string[]): Promise<Record<string, LatestLabSummary>> {
   if (patientIds.length === 0) return {};
-  // Get 2nd most recent lab per patient by fetching top 2 and picking #2
+  // Single batch query bounded — dashboard only needs latest + previous (2 rows per patient).
   const { data, error } = await supabase
     .from("lab_results")
     .select("patient_id, tacrolimus_level, creatinine, alt, ast, total_bilirubin, egfr, potassium, recorded_at")
     .in("patient_id", patientIds)
-    .order("recorded_at", { ascending: false });
+    .order("recorded_at", { ascending: false })
+    .limit(Math.max(10, patientIds.length * 2));
   if (error) throw error;
 
-  const countMap: Record<string, number> = {};
+  // Map-based grouping: O(n), deterministic by recorded_at DESC.
+  const grouped = new Map<string, LatestLabSummary[]>();
+  (data ?? []).forEach((l) => {
+    const arr = grouped.get(l.patient_id) ?? [];
+    if (arr.length < 2) arr.push(l as LatestLabSummary);
+    grouped.set(l.patient_id, arr);
+  });
+
   const prevMap: Record<string, LatestLabSummary> = {};
-  data?.forEach((l) => {
-    countMap[l.patient_id] = (countMap[l.patient_id] ?? 0) + 1;
-    if (countMap[l.patient_id] === 2) {
-      prevMap[l.patient_id] = l as LatestLabSummary;
-    }
+  grouped.forEach((arr, pid) => {
+    if (arr[1]) prevMap[pid] = arr[1];
   });
   return prevMap;
 }
