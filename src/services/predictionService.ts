@@ -58,14 +58,17 @@ export async function fetchPrediction(
     });
     if (error) {
       console.warn("[prediction] edge function error:", error);
+      void logPredictionFailure(patientId, PREDICTION_PROVIDER);
       return { ...UNAVAILABLE, error: error.message };
     }
     if (!data || data.error) {
+      void logPredictionFailure(patientId, PREDICTION_PROVIDER);
       return { ...UNAVAILABLE, error: data?.error };
     }
     return { available: true, ...(data as Omit<PredictionResult, "available">) };
   } catch (e) {
     console.warn("[prediction] unexpected error:", e);
+    void logPredictionFailure(patientId, PREDICTION_PROVIDER);
     return { ...UNAVAILABLE, error: e instanceof Error ? e.message : "Unknown" };
   }
 }
