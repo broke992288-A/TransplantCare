@@ -105,6 +105,48 @@ function countMarkers(groups: OCRGroupValues[]): number {
 }
 
 /**
+ * Strip PHI / raw OCR contents from error messages before logging.
+ * Keeps only error class + short code; truncates aggressively.
+ */
+function sanitizeErrorSummary(err: unknown): string {
+  if (!err) return "unknown";
+  const raw = err instanceof Error ? `${err.name}:${err.message}` : String(err);
+  // Drop anything that looks like a value (numbers, names) — keep code-shape tokens only.
+  const stripped = raw
+    .replace(/[\u0400-\u04FF]+/g, "") // Cyrillic (patient names)
+    .replace(/\b\d[\d.,/-]*\b/g, "") // numeric values
+    .replace(/\s+/g, " ")
+    .trim();
+  return stripped.slice(0, 120);
+}
+
+/**
+ * Best-effort OCR failure audit log.
+ * Never throws, never includes raw OCR contents or PHI.
+ */
+async function logOCRFailure(
+  patientId: string,
+  fileType: string | undefined,
+  err: unknown,
+  fallbackUsed: boolean,
+) {
+  try {
+    await supabase.from("audit_logs").insert({
+      action: "ocr_failed",
+      entity_type: "patient",
+      entity_id: patientId,
+      metadata: {
+        file_type: fileType ?? "unknown",
+        sanitized_error_summary: sanitizeErrorSummary(err),
+        fallback_used: fallbackUsed,
+      },
+    } as never);
+  } catch {
+    /* silently ignore — audit must never break workflow */
+  }
+}
+
+/**
  * Process a single file end-to-end. Returns OCR groups + storage handle.
  */
 export async function processFileOCR(
