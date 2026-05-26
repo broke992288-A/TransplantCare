@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { deletePatient } from "@/services/patientService";
 import { riskColorClass } from "@/utils/risk";
 import { useLabSchedules } from "@/hooks/useLabSchedule";
-import patientPhotoAbdulhayot from "@/assets/patient-photo-edited.jpg";
+
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
 import { useClinicalLogic } from "@/hooks/useClinicalLogic";
 import type { OrganType } from "@/types/patient";
@@ -58,11 +58,6 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
             <Button variant="ghost" size="icon" className="shrink-0 -ml-1" onClick={() => navigate("/patients")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            {patient.full_name.includes("bdulhayot") && (
-              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg overflow-hidden border-2 border-primary/20 shrink-0">
-                <img src={patientPhotoAbdulhayot} alt={patient.full_name} className="h-full w-full object-cover object-[50%_0%] scale-125" />
-              </div>
-            )}
             <div className="flex-1 min-w-0">
               <h1 className="text-base sm:text-xl font-bold leading-tight break-words">{patient.full_name}</h1>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs sm:text-sm text-muted-foreground">

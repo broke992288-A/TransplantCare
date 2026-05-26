@@ -2,45 +2,37 @@
 // Lives in /public so its URL is stable: /push-handler.js
 /* eslint-disable no-undef */
 
+// PHI-safe: notification body/title contain NO patient names, lab values, or diagnoses.
+// Only generic clinical prompts are allowed. Routing URL is read from payload but never rendered.
+const SAFE_TITLE = "TransplantCare";
+const SAFE_BODY = "New result requires review";
+
 self.addEventListener("push", (event) => {
-  let data = {
-    title: "TransplantCare",
-    body: "Yangi bildirishnoma",
-    url: "/",
-    tag: "transplantcare-notification",
-  };
+  let url = "/";
+  let tag = "transplantcare-notification";
 
   try {
     if (event.data) {
       const parsed = event.data.json();
-      data = {
-        title: parsed.title || data.title,
-        body: parsed.body || data.body,
-        url: parsed.url || data.url,
-        tag: parsed.tag || data.tag,
-      };
+      if (parsed && typeof parsed.url === "string") url = parsed.url;
+      if (parsed && typeof parsed.tag === "string") tag = parsed.tag;
     }
-  } catch (e) {
-    try {
-      const text = event.data && event.data.text();
-      if (text) data.body = text;
-    } catch (_) {
-      // fallback to defaults
-    }
+  } catch (_) {
+    // ignore — keep defaults
   }
 
   const options = {
-    body: data.body,
+    body: SAFE_BODY,
     icon: "/pwa-icon-192.png",
     badge: "/pwa-icon-192.png",
     vibrate: [200, 100, 200],
-    tag: data.tag,
+    tag,
     renotify: true,
     requireInteraction: false,
-    data: { url: data.url },
+    data: { url },
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  event.waitUntil(self.registration.showNotification(SAFE_TITLE, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
