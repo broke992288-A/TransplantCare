@@ -207,6 +207,8 @@ export type Database = {
           creatinine: number | null
           crp: number | null
           cyclosporine: number | null
+          deleted_at: string | null
+          deleted_by: string | null
           direct_bilirubin: number | null
           dsa_mfi: number | null
           egfr: number | null
@@ -247,6 +249,8 @@ export type Database = {
           creatinine?: number | null
           crp?: number | null
           cyclosporine?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           direct_bilirubin?: number | null
           dsa_mfi?: number | null
           egfr?: number | null
@@ -287,6 +291,8 @@ export type Database = {
           creatinine?: number | null
           crp?: number | null
           cyclosporine?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           direct_bilirubin?: number | null
           dsa_mfi?: number | null
           egfr?: number | null
@@ -315,6 +321,13 @@ export type Database = {
           uric_acid?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_lab_patient"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_results_patient_id_fkey"
             columns: ["patient_id"]
@@ -474,6 +487,8 @@ export type Database = {
       medications: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           dosage: string
           end_date: string | null
           frequency: string
@@ -488,6 +503,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           dosage: string
           end_date?: string | null
           frequency?: string
@@ -502,6 +519,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           dosage?: string
           end_date?: string | null
           frequency?: string
@@ -515,6 +534,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_med_patient"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "medications_patient_id_fkey"
             columns: ["patient_id"]
@@ -559,6 +585,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_alert_patient"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patient_alerts_patient_id_fkey"
             columns: ["patient_id"]
@@ -618,6 +651,8 @@ export type Database = {
           country: string
           created_at: string
           date_of_birth: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           dialysis_history: boolean | null
           district: string | null
           donor_blood_type: string | null
@@ -646,6 +681,8 @@ export type Database = {
           country?: string
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           dialysis_history?: boolean | null
           district?: string | null
           donor_blood_type?: string | null
@@ -674,6 +711,8 @@ export type Database = {
           country?: string
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           dialysis_history?: boolean | null
           district?: string | null
           donor_blood_type?: string | null
