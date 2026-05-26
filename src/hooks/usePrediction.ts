@@ -1,39 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchPrediction } from "@/services/predictionService";
+import type { PredictionResult } from "@/services/predictionService";
 import { fetchLabsByPatientId } from "@/services/labService";
+
+const UNAVAILABLE: PredictionResult = {
+  available: false,
+  prediction_risk: null,
+  score: null,
+  message: "Prediction unavailable — manual clinical review required",
+  reasons: [],
+  disclaimer: "This prediction is AI-assisted and should be reviewed by a healthcare professional.",
+};
 
 export function usePrediction(
   patientId: string | undefined,
   organType: string | undefined,
   patientData?: { blood_type?: string | null; donor_blood_type?: string | null; titer_therapy?: boolean | null },
 ) {
-  return useQuery({
-    // No language in key — prediction is always English, translated on client
+  return useQuery<PredictionResult>({
     queryKey: ["prediction", patientId],
     queryFn: async () => {
       const labs = await fetchLabsByPatientId(patientId!, 5);
       if (labs.length < 2) {
-        return {
-          prediction_risk: "low" as const,
-          score: 0,
-          message: "Insufficient lab data for prediction.",
-          reasons: [],
-          disclaimer: "This prediction is AI-assisted and should be reviewed by a healthcare professional.",
-        };
+        return { ...UNAVAILABLE, message: "Insufficient lab data — manual clinical review required" };
       }
       try {
-        // Always request in English for consistency
         return await fetchPrediction(patientId!, organType!, labs, "en", patientData);
       } catch (err) {
-        console.warn("Prediction fetch failed, returning fallback:", err);
-        return {
-          prediction_risk: "low" as const,
-          score: 0,
-          message: "Unable to generate prediction at this time.",
-          reasons: [],
-          disclaimer: "This prediction is AI-assisted and should be reviewed by a healthcare professional.",
-          error: "Service temporarily unavailable",
-        };
+        console.warn("Prediction fetch failed:", err);
+        return { ...UNAVAILABLE, error: err instanceof Error ? err.message : "Unknown" };
       }
     },
     enabled: !!patientId && !!organType,
