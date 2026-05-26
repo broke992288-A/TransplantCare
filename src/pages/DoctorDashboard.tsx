@@ -17,10 +17,7 @@ import { Users } from "lucide-react";
 export default function DoctorDashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { data, isLoading: loading } = useDoctorPatientsWithLabs();
-  const overdueQuery = (() => {
-    try { return useOverdueLabs?.(); } catch { return { data: [] as unknown[] }; }
-  })();
+  const { data: overdue } = useOverdueLabSchedules();
 
   const patients = data?.patients ?? [];
   const labs = data?.labs ?? {};
