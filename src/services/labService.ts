@@ -20,17 +20,22 @@ export async function fetchLatestLabsByPatientIds(
 ): Promise<Record<string, LatestLabSummary>> {
   if (patientIds.length === 0) return {};
 
+  // Single batch query bounded to current dashboard needs (latest per patient).
   const { data, error } = await supabase
     .from("lab_results")
     .select("patient_id, tacrolimus_level, creatinine, alt, ast, total_bilirubin, egfr, potassium, recorded_at")
     .in("patient_id", patientIds)
-    .order("recorded_at", { ascending: false });
+    .order("recorded_at", { ascending: false })
+    .limit(Math.max(10, patientIds.length * 2));
   if (error) throw error;
 
-  const labMap: Record<string, LatestLabSummary> = {};
-  data?.forEach((l) => {
-    if (!labMap[l.patient_id]) labMap[l.patient_id] = l as LatestLabSummary;
+  // Map-based grouping (O(n)) — first occurrence per patient is latest by DESC order.
+  const seen = new Map<string, LatestLabSummary>();
+  (data ?? []).forEach((l) => {
+    if (!seen.has(l.patient_id)) seen.set(l.patient_id, l as LatestLabSummary);
   });
+  const labMap: Record<string, LatestLabSummary> = {};
+  seen.forEach((v, k) => { labMap[k] = v; });
   return labMap;
 }
 
