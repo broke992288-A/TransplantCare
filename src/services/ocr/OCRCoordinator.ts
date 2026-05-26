@@ -164,6 +164,8 @@ export async function processFileOCR(
 
   const tStart = performance.now();
   let upload: UploadHandle | null = null;
+  let aiFallbackUsed = false;
+  let observedFileType: string | undefined = file.type || undefined;
 
   try {
     // ─── Stage 1: extract (preprocess for OCR; also yields storage file) ───
