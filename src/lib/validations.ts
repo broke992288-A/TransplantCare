@@ -34,51 +34,68 @@ export const patientSchema = z.object({
 });
 
 // ── Lab Results (Liver) ─────────────────────────────
+// HARD BLOCK = only physiologically impossible values (negatives, malformed,
+// or beyond absolute limits). Unusual-but-possible values pass here and are
+// surfaced as SOFT WARNINGS via utils/labValidation.ts.
+const labNum = (label: string, max: number) =>
+  z.coerce
+    .number({ invalid_type_error: `${label} — raqam kiriting` })
+    .refine((v) => !Number.isNaN(v), { message: `${label} — noto'g'ri raqam` })
+    .min(0, `${label} manfiy bo'lishi mumkin emas`)
+    .max(max, `${label} — fiziologik jihatdan imkonsiz qiymat`);
+
 export const liverLabSchema = z.object({
-  tacrolimus_level: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0.1, "Tacrolimus камида 0.1 бўлиши керак")
-    .max(50, "Tacrolimus 50 дан ошмаслиги керак"),
-  alt: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0, "ALT манфий бўлиши мумкин эмас")
-    .max(5000, "ALT 5000 дан ошмаслиги керак"),
-  ast: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0, "AST манфий бўлиши мумкин эмас")
-    .max(5000, "AST 5000 дан ошмаслиги керак"),
-  total_bilirubin: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0, "Умумий билирубин манфий бўлиши мумкин эмас")
-    .max(50, "Умумий билирубин 50 дан ошмаслиги керак"),
-  direct_bilirubin: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0, "Тўғридан-тўғри билирубин манфий бўлиши мумкин эмас")
-    .max(30, "Тўғридан-тўғри билирубин 30 дан ошмаслиги керак"),
+  tacrolimus_level: labNum("Tacrolimus", 100),
+  alt: labNum("ALT", 10000),
+  ast: labNum("AST", 10000),
+  total_bilirubin: labNum("Umumiy bilirubin", 50),
+  direct_bilirubin: labNum("To'g'ridan-to'g'ri bilirubin", 30),
 });
 
 // ── Lab Results (Kidney) ────────────────────────────
 export const kidneyLabSchema = z.object({
-  creatinine: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0.1, "Креатинин камида 0.1 бўлиши керак")
-    .max(30, "Креатинин 30 дан ошмаслиги керак"),
+  creatinine: labNum("Kreatinin", 30),
   egfr: z.union([
     z.literal("").transform(() => undefined),
-    z.coerce
-      .number({ invalid_type_error: "Рақам киритинг" })
-      .min(0, "eGFR манфий бўлиши мумкин эмас")
-      .max(200, "eGFR 200 дан ошмаслиги керак"),
+    labNum("eGFR", 250),
   ]).optional(),
-  proteinuria: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(0, "Протеинурия манфий бўлиши мумкин эмас")
-    .max(20, "Протеинурия 20 дан ошмаслиги керак"),
-  potassium: z.coerce
-    .number({ invalid_type_error: "Рақам киритинг" })
-    .min(1, "Калий камида 1 бўлиши керак")
-    .max(10, "Калий 10 дан ошмаслиги керак"),
+  proteinuria: labNum("Proteinuriya", 30),
+  potassium: labNum("Kaliy", 15),
 });
+
+// ── Lab Date Validation ─────────────────────────────
+/**
+ * Validate a lab recorded_at date.
+ * HARD BLOCK: future dates, dates before patient's transplant date, malformed dates.
+ * Empty/missing dates pass (caller decides whether to require).
+ */
+export function validateLabDate(
+  dateStr: string | null | undefined,
+  transplantDate?: string | null
+): { ok: boolean; error?: string } {
+  if (!dateStr) return { ok: true };
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return { ok: false, error: "Lab sanasi noto'g'ri formatda" };
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  if (d.getTime() > endOfToday.getTime()) {
+    return { ok: false, error: "Lab sanasi kelajakda bo'lishi mumkin emas" };
+  }
+  if (transplantDate) {
+    const tx = new Date(transplantDate);
+    if (!isNaN(tx.getTime())) {
+      // Strip time on transplant date for fair comparison
+      tx.setHours(0, 0, 0, 0);
+      if (d.getTime() < tx.getTime()) {
+        return {
+          ok: false,
+          error: "Lab sanasi transplantatsiya sanasidan oldin bo'lishi mumkin emas",
+        };
+      }
+    }
+  }
+  return { ok: true };
+}
 
 // ── Medication ──────────────────────────────────────
 export const medicationSchema = z.object({
