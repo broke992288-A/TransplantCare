@@ -49,8 +49,12 @@ describe("liverLabSchema", () => {
     expect(liverLabSchema.safeParse(valid).success).toBe(true);
   });
 
-  it("fails when tacrolimus > 50", () => {
-    expect(liverLabSchema.safeParse({ ...valid, tacrolimus_level: 60 }).success).toBe(false);
+  it("allows unusual but possible tacrolimus (60) — soft warning, not hard block", () => {
+    expect(liverLabSchema.safeParse({ ...valid, tacrolimus_level: 60 }).success).toBe(true);
+  });
+
+  it("fails when tacrolimus is impossibly high (>100)", () => {
+    expect(liverLabSchema.safeParse({ ...valid, tacrolimus_level: 150 }).success).toBe(false);
   });
 
   it("fails with negative ALT", () => {
@@ -74,8 +78,12 @@ describe("kidneyLabSchema", () => {
     expect(kidneyLabSchema.safeParse({ ...valid, creatinine: 35 }).success).toBe(false);
   });
 
-  it("fails when potassium < 1", () => {
-    expect(kidneyLabSchema.safeParse({ ...valid, potassium: 0.5 }).success).toBe(false);
+  it("allows unusual but possible potassium (0.5) — soft warning, not hard block", () => {
+    expect(kidneyLabSchema.safeParse({ ...valid, potassium: 0.5 }).success).toBe(true);
+  });
+
+  it("fails with negative potassium (impossible)", () => {
+    expect(kidneyLabSchema.safeParse({ ...valid, potassium: -1 }).success).toBe(false);
   });
 });
 

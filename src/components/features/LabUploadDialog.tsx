@@ -17,6 +17,7 @@ import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
+import { validateLabDate } from "@/lib/validations";
 
 
 const LAB_FIELDS = [
@@ -55,7 +56,7 @@ const LAB_FIELDS = [
 interface Props {
   patientId: string;
   organType?: string;
-  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null };
+  patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null };
   onLabAdded: () => void;
   patientCountry?: string;
 }
@@ -505,6 +506,42 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         }
       }
       const mergedGroups = Array.from(mergedMap.values());
+
+      // ── HARD BLOCK VALIDATION ─────────────────────────────────────────
+      // Only impossible values stop saving: future dates, pre-transplant dates,
+      // malformed numbers, negative lab values. Unusual-but-possible values
+      // pass and are surfaced as soft warnings in the UI.
+      const blockingErrors: string[] = [];
+      for (const group of mergedGroups) {
+        const dateCheck = validateLabDate(
+          group.date === "unknown" ? null : group.date,
+          patientData?.transplant_date ?? null
+        );
+        if (!dateCheck.ok && dateCheck.error) {
+          blockingErrors.push(`${group.date}: ${dateCheck.error}`);
+        }
+        for (const field of LAB_FIELDS) {
+          const raw = group.values[field.key];
+          if (raw === undefined || raw === null || raw === "") continue;
+          const n = parseFloat(raw);
+          if (Number.isNaN(n)) {
+            blockingErrors.push(`${field.label}: "${raw}" — raqam emas`);
+            continue;
+          }
+          if (n < 0) {
+            blockingErrors.push(`${field.label}: ${n} — manfiy qiymat saqlanmaydi`);
+          }
+        }
+      }
+      if (blockingErrors.length > 0) {
+        toast({
+          title: t("common.error"),
+          description: `Tekshiring va to'g'rilang:\n• ${blockingErrors.slice(0, 6).join("\n• ")}${blockingErrors.length > 6 ? `\n+${blockingErrors.length - 6} ...` : ""}`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
 
       let totalFilled = 0;
 
