@@ -78,8 +78,12 @@ describe("kidneyLabSchema", () => {
     expect(kidneyLabSchema.safeParse({ ...valid, creatinine: 35 }).success).toBe(false);
   });
 
-  it("fails when potassium < 1", () => {
-    expect(kidneyLabSchema.safeParse({ ...valid, potassium: 0.5 }).success).toBe(false);
+  it("allows unusual but possible potassium (0.5) — soft warning, not hard block", () => {
+    expect(kidneyLabSchema.safeParse({ ...valid, potassium: 0.5 }).success).toBe(true);
+  });
+
+  it("fails with negative potassium (impossible)", () => {
+    expect(kidneyLabSchema.safeParse({ ...valid, potassium: -1 }).success).toBe(false);
   });
 });
 
