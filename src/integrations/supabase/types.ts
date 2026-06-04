@@ -552,36 +552,54 @@ export type Database = {
       }
       patient_alerts: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           alert_type: string
           created_at: string
           id: string
           is_read: boolean
           message: string | null
           patient_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           risk_snapshot_id: string | null
           severity: string
+          status: string
           title: string
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           alert_type?: string
           created_at?: string
           id?: string
           is_read?: boolean
           message?: string | null
           patient_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           risk_snapshot_id?: string | null
           severity?: string
+          status?: string
           title: string
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           alert_type?: string
           created_at?: string
           id?: string
           is_read?: boolean
           message?: string | null
           patient_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           risk_snapshot_id?: string | null
           severity?: string
+          status?: string
           title?: string
         }
         Relationships: [
