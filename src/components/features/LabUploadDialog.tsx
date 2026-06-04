@@ -17,6 +17,7 @@ import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
+import { validateLabDate } from "@/lib/validations";
 
 
 const LAB_FIELDS = [
