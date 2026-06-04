@@ -40,9 +40,9 @@ export const patientSchema = z.object({
 const labNum = (label: string, max: number) =>
   z.coerce
     .number({ invalid_type_error: `${label} — raqam kiriting` })
-    .refine((v) => !Number.isNaN(v), { message: `${label} — noto'g'ri raqam` })
     .min(0, `${label} manfiy bo'lishi mumkin emas`)
-    .max(max, `${label} — fiziologik jihatdan imkonsiz qiymat`);
+    .max(max, `${label} — fiziologik jihatdan imkonsiz qiymat`)
+    .refine((v) => !Number.isNaN(v), { message: `${label} — noto'g'ri raqam` });
 
 export const liverLabSchema = z.object({
   tacrolimus_level: labNum("Tacrolimus", 100),
