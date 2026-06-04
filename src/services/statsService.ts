@@ -28,7 +28,8 @@ export async function fetchAllUnreadAlertCount() {
   const { count, error } = await supabase
     .from("patient_alerts")
     .select("id", { count: "exact", head: true })
-    .eq("is_read", false);
+    .eq("status", "new");
   if (error) throw error;
   return count ?? 0;
 }
+

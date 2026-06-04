@@ -1,10 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchPatientAlerts, fetchUnreadAlertCount } from "@/services/patientAlertService";
 
-export function usePatientAlerts(patientId: string | undefined, limit = 20) {
+export function usePatientAlerts(
+  patientId: string | undefined,
+  limit = 20,
+  includeClosed = false,
+) {
   return useQuery({
-    queryKey: ["patient-alerts", patientId, limit],
-    queryFn: () => fetchPatientAlerts(patientId!, limit),
+    queryKey: ["patient-alerts", patientId, limit, includeClosed],
+    queryFn: () => fetchPatientAlerts(patientId!, limit, { includeClosed }),
     enabled: !!patientId,
   });
 }
