@@ -199,13 +199,16 @@ serve(async (req) => {
 
       for (let i = 0; i < labs.length; i++) {
         const lab = labs[i];
-        const prevWindow = labs.slice(Math.max(0, i - 4), i);
+        // Trend baseline: only consider labs within the clinical window (14 days)
+        const labTime = new Date(lab.recorded_at).getTime();
+        const windowStart = labTime - TREND_WINDOW_DAYS * 86400000;
+        const prevWindow = labs
+          .slice(0, i)
+          .filter((l: any) => new Date(l.recorded_at).getTime() >= windowStart)
+          .slice(-4);
 
-        const CONVERTIBLE = ["total_bilirubin", "direct_bilirubin", "creatinine", "urea", "hb", "platelets", "tlc"];
-        const patientCountry = patient.country ?? "uzbekistan";
-        for (const param of CONVERTIBLE) {
-          if (lab[param] != null) lab[param] = normalizeForCountry(param, lab[param], patientCountry);
-        }
+        // NOTE: Magnitude-based unit conversion removed. Values are consumed
+        // as stored. Provenance-normalized values should be persisted upstream.
 
         if (lab.egfr == null && lab.creatinine && age) {
           lab.egfr = calculateEgfr(lab.creatinine, age, sex);
