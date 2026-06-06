@@ -634,6 +634,13 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
           }
           totalFilled += filledCount;
 
+          // Persist provenance rows (best-effort, never blocks save).
+          if (savedLab?.id) {
+            void insertProvenanceRows(
+              provenanceForGroup.map((p) => ({ ...p, lab_result_id: savedLab.id })),
+            );
+          }
+
           // --- Compute risk score for each saved lab ---
           if (organType) {
             try {
