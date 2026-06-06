@@ -1198,7 +1198,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleConfirm} disabled={saving} className="flex-1 gap-2">
+              <Button
+                onClick={handleConfirm}
+                disabled={saving || !verificationStatus.ready || (identityCheck?.status === "mismatch" && !identityOverride)}
+                className="flex-1 gap-2"
+              >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {dateGroups.length > 1
                   ? `${dateGroups.length} ${t("upload.saveResults")}`
