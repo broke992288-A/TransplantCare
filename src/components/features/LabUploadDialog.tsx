@@ -999,10 +999,15 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                       )}
                     </div>
                     <DateGroupValues
+                      groupIndex={i}
                       group={group}
                       onValueChange={(key, value) => updateGroupValue(i, key, value)}
                       t={t}
                       refMap={refMap}
+                      verifications={verifications}
+                      onToggleVerify={(gi, k, v) =>
+                        setVerifications((prev) => ({ ...prev, [`${gi}:${k}`]: v }))
+                      }
                     />
                   </TabsContent>
                 ))}
