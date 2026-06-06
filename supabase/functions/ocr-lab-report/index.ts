@@ -328,12 +328,22 @@ serve(async (req) => {
       return { date: group.date ?? "unknown", data, confidence, originalText, units };
     });
 
+    const pid = extracted.patient_identity ?? null;
+    const patientIdentity = pid && typeof pid === "object"
+      ? {
+          name: typeof pid.name === "string" ? pid.name : null,
+          dob: typeof pid.dob === "string" ? pid.dob : null,
+          mrn: typeof pid.mrn === "string" ? pid.mrn : null,
+        }
+      : { name: null, dob: null, mrn: null };
+
     const duration = Date.now() - startTime;
     log("info", FN_NAME, "OCR completed", { requestId, userId, duration_ms: duration, groups: processedGroups.length, fileType });
 
     return new Response(JSON.stringify({
       success: true, multiDate: true, dateGroups: processedGroups,
       reportType: extracted.report_type ?? "unknown",
+      patientIdentity,
       data: processedGroups[0]?.data ?? {},
       confidence: processedGroups[0]?.confidence ?? {},
       originalText: processedGroups[0]?.originalText ?? {},
