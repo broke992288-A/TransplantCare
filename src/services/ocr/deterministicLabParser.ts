@@ -191,11 +191,14 @@ export function parseLabText(rawText: string): DeterministicParseResult {
     }
 
     const group = ensureGroup(groupsMap, dateForLine);
-    // Don't overwrite if already set (first occurrence wins).
     if (group.data[key] != null) return;
     group.data[key] = value;
     group.confidence[key] = REGEX_CONFIDENCE;
     group.originalText[key] = line.length > 120 ? line.slice(0, 120) + "…" : line;
+    const tail = line.slice(aliasEnd);
+    const printedUnit = extractPrintedUnit(tail);
+    group.units[key] = printedUnit ?? "";
+    group.unitSources[key] = printedUnit ? "detected" : "unknown";
     markerCount++;
   });
 
