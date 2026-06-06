@@ -130,17 +130,20 @@ const SUSPICIOUS_THRESHOLDS: Record<string, number> = {
   tacrolimus_level: 30, calcium: 15, phosphorus: 10,
 };
 
-/** Auto-detect country from extracted lab values */
-function detectCountryFromValues(values: Record<string, string>): { country: string; reason: string } | null {
-  const cr = parseFloat(values.creatinine);
-  if (!isNaN(cr)) {
-    if (cr > 10) return { country: "uzbekistan", reason: `Creatinine ${cr} → µmol/L (O'zbekiston)` };
-    if (cr > 0 && cr < 5) return { country: "india", reason: `Creatinine ${cr} → mg/dL (India)` };
+/**
+ * Unit-driven country detection.
+ * Sprint A contract: NEVER infer from value magnitude.
+ * Switch country only when a printed unit clearly indicates the system
+ * (e.g. µmol/L for creatinine → Uzbekistan; mg/dL → India).
+ */
+function detectCountryFromUnits(group: DateGroup): { country: string; reason: string } | null {
+  const crUnit = (group.units.creatinine ?? "").toLowerCase().replace(/μ|µ/g, "u").replace(/\s+/g, "");
+  if (crUnit) {
+    if (crUnit.includes("umol/l")) return { country: "uzbekistan", reason: `Creatinine unit µmol/L (O'zbekiston)` };
+    if (crUnit.includes("mg/dl")) return { country: "india", reason: `Creatinine unit mg/dL (India)` };
   }
-  const bili = parseFloat(values.total_bilirubin);
-  if (!isNaN(bili)) {
-    if (bili > 3) return { country: "uzbekistan", reason: `Bilirubin ${bili} → µmol/L (O'zbekiston)` };
-  }
+  const biliUnit = (group.units.total_bilirubin ?? "").toLowerCase().replace(/μ|µ/g, "u").replace(/\s+/g, "");
+  if (biliUnit.includes("umol/l")) return { country: "uzbekistan", reason: `Bilirubin unit µmol/L (O'zbekiston)` };
   return null;
 }
 
