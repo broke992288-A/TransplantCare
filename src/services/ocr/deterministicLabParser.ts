@@ -28,11 +28,19 @@ export interface ParsedDateGroup {
   unitSources: Partial<Record<CanonicalLabKey, UnitSource>>;
 }
 
+export interface ParsedPatientIdentity {
+  name?: string | null;
+  dob?: string | null;
+  mrn?: string | null;
+}
+
 export interface DeterministicParseResult {
   dateGroups: ParsedDateGroup[];
   markerCount: number;
   sufficient: boolean;
   durationMs: number;
+  /** Patient identity extracted from header lines (best-effort). */
+  patientIdentity?: ParsedPatientIdentity;
 }
 
 /** Min unique markers required to consider parse "sufficient" (skip AI). */
