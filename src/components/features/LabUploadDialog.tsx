@@ -483,6 +483,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     setReportUrl(null);
     setSaving(false);
     setActiveTab("0");
+    setVerifications({});
+    setIdentityCheck(null);
+    setIdentityOverride(false);
   };
 
   const cancelProcessing = () => {
