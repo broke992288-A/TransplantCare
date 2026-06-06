@@ -396,6 +396,8 @@ export interface PreprocessResult {
    * MUST skip the AI OCR call and use these groups directly.
    */
   deterministicGroups?: ParsedDateGroup[];
+  /** Patient identity extracted deterministically (when available). */
+  deterministicIdentity?: ParsedPatientIdentity;
   /** Diagnostic source label for logging. */
   extractionSource?: "deterministic-pdf" | "deterministic-text" | "ai-image" | "ai-pdf" | "ai-office";
 }
