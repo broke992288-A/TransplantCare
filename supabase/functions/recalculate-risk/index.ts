@@ -24,39 +24,15 @@ async function authenticateRequest(req: Request, corsHeaders: Record<string, str
 }
 
 const FN_NAME = "recalculate-risk";
-const ALGORITHM_VERSION = "v3.0-kdigo2024-aasld2023";
+const ALGORITHM_VERSION = "v5.0-coalesced-window";
 const BATCH_SIZE = 20;
+const TREND_WINDOW_DAYS = 14;
 
-// ─── Country-aware unit conversion ───
-// Uzbekistan stores creatinine/bilirubin in µmol/L; India uses mg/dL (standard).
-// Risk engine always operates in mg/dL (standard SI).
-function normalizeForCountry(param: string, value: number, country: string): number {
-  if (country === "india") {
-    // India values are already in mg/dL (standard) — no conversion needed
-    return value;
-  }
-  // Uzbekistan (default): convert µmol/L → mg/dL
-  switch (param) {
-    case "total_bilirubin":
-    case "direct_bilirubin":
-      // µmol/L → mg/dL (÷ 17.1). Only convert if value looks like µmol/L (> 3 mg/dL boundary)
-      return value > 3 ? Math.round((value / 17.1) * 100) / 100 : value;
-    case "creatinine":
-      // µmol/L → mg/dL (÷ 88.4). Only convert if value looks like µmol/L
-      return value > 10 ? Math.round((value / 88.4) * 100) / 100 : value;
-    case "urea":
-      // mmol/L → mg/dL (× 6). Uzbekistan urea typically 2.5-8.2 mmol/L
-      return value < 15 ? Math.round(value * 6 * 100) / 100 : value;
-    case "hb":
-      return value > 25 ? Math.round((value / 10) * 100) / 100 : value;
-    case "platelets":
-      return value > 1000 ? Math.round((value / 1000) * 100) / 100 : value;
-    case "tlc":
-      return value > 100 ? Math.round((value / 1000) * 100) / 100 : value;
-    default:
-      return value;
-  }
-}
+// Magnitude-based unit inference has been removed (CHECK 3 — Risk Engine
+// Clinical Safety Sprint). The engine now consumes values as stored. When
+// provenance is unavailable, raw values are used and flagged unit_unverified.
+// This avoids silently converting a 9.0 mg/dL creatinine ("ok") or a 12 µmol/L
+// creatinine ("ok") incorrectly.
 
 function calculateEgfr(creatinine: number, age: number, sex: string): number {
   if (creatinine <= 0 || age <= 0) return 0;
