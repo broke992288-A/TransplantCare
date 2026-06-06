@@ -28,11 +28,19 @@ export interface ParsedDateGroup {
   unitSources: Partial<Record<CanonicalLabKey, UnitSource>>;
 }
 
+export interface ParsedPatientIdentity {
+  name?: string | null;
+  dob?: string | null;
+  mrn?: string | null;
+}
+
 export interface DeterministicParseResult {
   dateGroups: ParsedDateGroup[];
   markerCount: number;
   sufficient: boolean;
   durationMs: number;
+  /** Patient identity extracted from header lines (best-effort). */
+  patientIdentity?: ParsedPatientIdentity;
 }
 
 /** Min unique markers required to consider parse "sufficient" (skip AI). */
@@ -134,8 +142,108 @@ function aliasMatchIndex(line: string, key: CanonicalLabKey): number {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Main parser
+// Patient identity extraction (deterministic, header-scan only)
 // ────────────────────────────────────────────────────────────────────
+
+const NAME_LABELS = [
+  "patient name", "patient", "name", "ф.и.о", "фио", "пациент", "ism sharif", "bemor",
+];
+const DOB_LABELS = [
+  "date of birth", "dob", "d.o.b", "birth date", "born", "дата рождения", "д.р.", "tug'ilgan",
+];
+const MRN_LABELS = [
+  "mrn", "medical record", "patient id", "patient no", "patient #", "hospital id",
+  "id no", "uhid", "ip no", "mr no", "mrn no", "карта", "ист.болезни", "история болезни",
+];
+
+function cleanFieldValue(s: string): string {
+  return s.replace(/[\s:|·•\-–—]+$/g, "").replace(/^[\s:|·•\-–—]+/g, "").trim();
+}
+
+function findLabeledValue(line: string, labels: string[]): string | null {
+  const lower = line.toLowerCase();
+  for (const label of labels) {
+    const idx = lower.indexOf(label);
+    if (idx < 0) continue;
+    // ensure word-boundary-ish on the left
+    if (idx > 0 && /[a-zа-я0-9]/i.test(lower[idx - 1])) continue;
+    const after = line.slice(idx + label.length);
+    // require a separator (: or whitespace) before the value
+    const sepMatch = after.match(/^\s*[:\-]?\s*(.+)$/);
+    if (!sepMatch) continue;
+    const val = cleanFieldValue(sepMatch[1]);
+    if (val) return val;
+  }
+  return null;
+}
+
+/** Normalize a captured DOB string to YYYY-MM-DD when possible. */
+function normalizeDob(raw: string): string | null {
+  const m = raw.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
+  if (m) {
+    const iso = toIsoDate(parseInt(m[3], 10), parseInt(m[2], 10), parseInt(m[1], 10));
+    if (iso) return iso;
+  }
+  const m2 = raw.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+  if (m2) {
+    const iso = toIsoDate(parseInt(m2[1], 10), parseInt(m2[2], 10), parseInt(m2[3], 10));
+    if (iso) return iso;
+  }
+  return null;
+}
+
+/** Looks like a plausible person name: 2+ tokens, letters only, no digits. */
+function looksLikeName(raw: string): boolean {
+  if (!raw || raw.length < 3 || raw.length > 80) return false;
+  if (/\d/.test(raw)) return false;
+  const tokens = raw.split(/\s+/).filter((t) => t.length >= 2);
+  if (tokens.length < 2) return false;
+  return tokens.every((t) => /^[A-Za-zА-Яа-яЁёЎўҚқҒғҲҳ'’.\-]+$/.test(t));
+}
+
+function looksLikeMrn(raw: string): boolean {
+  if (!raw || raw.length < 2 || raw.length > 32) return false;
+  // alphanumerics with optional separators, must contain a digit
+  if (!/\d/.test(raw)) return false;
+  return /^[A-Za-z0-9._\-/]+$/.test(raw.split(/\s+/)[0]);
+}
+
+function extractPatientIdentity(lines: string[]): ParsedPatientIdentity | undefined {
+  // Scan only the header (first ~25 non-empty lines) to avoid mid-report false positives.
+  const header = lines.slice(0, 25);
+  let name: string | null = null;
+  let dob: string | null = null;
+  let mrn: string | null = null;
+
+  for (const line of header) {
+    if (!name) {
+      const v = findLabeledValue(line, NAME_LABELS);
+      if (v) {
+        // strip trailing tokens (e.g., "John Doe Age 45") — take alpha run from start
+        const cleaned = cleanFieldValue(v.split(/\s{2,}|\|/)[0]);
+        if (looksLikeName(cleaned)) name = cleaned;
+      }
+    }
+    if (!dob) {
+      const v = findLabeledValue(line, DOB_LABELS);
+      if (v) {
+        const iso = normalizeDob(v);
+        if (iso) dob = iso;
+      }
+    }
+    if (!mrn) {
+      const v = findLabeledValue(line, MRN_LABELS);
+      if (v) {
+        const token = v.split(/\s+/)[0];
+        if (looksLikeMrn(token)) mrn = token;
+      }
+    }
+    if (name && dob && mrn) break;
+  }
+
+  if (!name && !dob && !mrn) return undefined;
+  return { name, dob, mrn };
+}
 
 export function parseLabText(rawText: string): DeterministicParseResult {
   const t0 = performance.now();
@@ -144,6 +252,7 @@ export function parseLabText(rawText: string): DeterministicParseResult {
 
   const dateHits = findDates(lines);
   const uniqueDates = Array.from(new Set(dateHits.map((d) => d.iso)));
+  const patientIdentity = extractPatientIdentity(lines);
 
   // Group factory
   const ensureGroup = (
@@ -210,5 +319,6 @@ export function parseLabText(rawText: string): DeterministicParseResult {
     markerCount,
     sufficient,
     durationMs: Math.round(performance.now() - t0),
+    patientIdentity,
   };
 }

@@ -1088,6 +1088,20 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 <CheckCircle2 className="h-4 w-4" /> Identity match: {identityCheck.reason}
               </div>
             )}
+            {identityCheck && identityCheck.status === "unknown" && (
+              <div className="rounded-lg border border-warning/40 bg-warning/5 p-2 flex items-start gap-2 text-xs text-warning">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Patient identity could not be verified from this report.</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {identityCheck.reason}
+                    {!patientName && !patientDOB && !patientMRN
+                      ? " · No stored patient identity available for comparison."
+                      : ""}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* ── Verification completeness summary ── */}
             <div className={`rounded-lg border p-2 text-xs flex items-center justify-between ${verificationStatus.ready ? "border-primary/30 bg-primary/5 text-primary" : "border-warning/40 bg-warning/5 text-warning"}`}>

@@ -236,7 +236,8 @@ export async function processFileOCR(
 
     if (hasDeterministic) {
       onStage?.("parse");
-      groups = preprocessed.deterministicGroups!.map((g) => {
+      const detIdentity = preprocessed.deterministicIdentity;
+      groups = preprocessed.deterministicGroups!.map((g, idx) => {
         const values = valuesFromData(g.data as Record<string, number | null> | undefined);
         const units = (g.units ?? {}) as Record<string, string>;
         return {
@@ -248,6 +249,7 @@ export async function processFileOCR(
           unitSources:
             (g.unitSources as Record<string, "detected" | "assumed" | "unknown">) ??
             unitSourcesFromUnits(units, values),
+          patientIdentity: idx === 0 && detIdentity ? detIdentity : undefined,
         };
       });
       reportType = "deterministic";

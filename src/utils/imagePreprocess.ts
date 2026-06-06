@@ -8,7 +8,7 @@
  */
 
 import { extractPdfText, readTextFileAsString } from "@/services/ocr/pdfTextExtractor";
-import { parseLabText, type ParsedDateGroup } from "@/services/ocr/deterministicLabParser";
+import { parseLabText, type ParsedDateGroup, type ParsedPatientIdentity } from "@/services/ocr/deterministicLabParser";
 
 export interface PreprocessOptions {
   signal?: AbortSignal;
@@ -396,6 +396,8 @@ export interface PreprocessResult {
    * MUST skip the AI OCR call and use these groups directly.
    */
   deterministicGroups?: ParsedDateGroup[];
+  /** Patient identity extracted deterministically (when available). */
+  deterministicIdentity?: ParsedPatientIdentity;
   /** Diagnostic source label for logging. */
   extractionSource?: "deterministic-pdf" | "deterministic-text" | "ai-image" | "ai-pdf" | "ai-office";
 }
@@ -424,6 +426,7 @@ export async function preprocessLabImage(file: File, options: PreprocessOptions 
       return {
         base64, file, fileType: ext, textContent,
         deterministicGroups: parsed.dateGroups,
+        deterministicIdentity: parsed.patientIdentity,
         extractionSource: "deterministic-text",
       };
     }
@@ -460,6 +463,7 @@ export async function preprocessLabImage(file: File, options: PreprocessOptions 
             base64, file, fileType: "pdf", storageFile: file,
             textContent: textResult.text,
             deterministicGroups: parsed.dateGroups,
+            deterministicIdentity: parsed.patientIdentity,
             extractionSource: "deterministic-pdf",
           };
         }

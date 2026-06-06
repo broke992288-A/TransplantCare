@@ -85,7 +85,7 @@ export default function PatientProfile() {
               </div>
             </div>
           </div>
-          <LabUploadDialog patientId={patient.id} organType={patient.organ_type} patientData={{ transplant_number: patient.transplant_number, dialysis_history: patient.dialysis_history }} onLabAdded={invalidate} />
+          <LabUploadDialog patientId={patient.id} organType={patient.organ_type} patientData={{ transplant_number: patient.transplant_number, dialysis_history: patient.dialysis_history }} onLabAdded={invalidate} patientName={patient.full_name} patientDOB={patient.date_of_birth} patientMRN={patient.patient_number != null ? String(patient.patient_number) : null} />
         </div>
 
         {/* Tabs */}
