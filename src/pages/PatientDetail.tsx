@@ -146,7 +146,7 @@ export default function PatientDetail() {
               <LatestLabsTable labs={allLabs} organType={patient.organ_type} />
               <div className="flex flex-wrap gap-2">
                 <AddLabDialog patientId={patient.id} organType={patient.organ_type} onLabAdded={invalidateAll} patientData={{ transplant_number: patient.transplant_number, dialysis_history: patient.dialysis_history, transplant_date: patient.transplant_date, date_of_birth: patient.date_of_birth, gender: patient.gender }} patientCountry={(patient as Record<string, unknown>).country as string} />
-                <LabUploadDialog patientId={patient.id} organType={patient.organ_type} onLabAdded={invalidateAll} patientData={{ transplant_number: patient.transplant_number, dialysis_history: patient.dialysis_history }} patientCountry={(patient as Record<string, unknown>).country as string} />
+                <LabUploadDialog patientId={patient.id} organType={patient.organ_type} onLabAdded={invalidateAll} patientData={{ transplant_number: patient.transplant_number, dialysis_history: patient.dialysis_history }} patientCountry={(patient as Record<string, unknown>).country as string} patientName={patient.full_name} patientDOB={patient.date_of_birth} patientMRN={patient.patient_number != null ? String(patient.patient_number) : null} />
                 <BulkLabEntryDialog patientId={patient.id} organType={patient.organ_type} onLabsAdded={invalidateAll} patientData={{ transplant_number: patient.transplant_number, dialysis_history: patient.dialysis_history, transplant_date: patient.transplant_date, date_of_birth: patient.date_of_birth, gender: patient.gender }} />
               </div>
             </div>
