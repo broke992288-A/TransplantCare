@@ -319,5 +319,6 @@ export function parseLabText(rawText: string): DeterministicParseResult {
     markerCount,
     sufficient,
     durationMs: Math.round(performance.now() - t0),
+    patientIdentity,
   };
 }
