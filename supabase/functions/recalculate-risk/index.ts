@@ -181,7 +181,7 @@ serve(async (req) => {
 
     for (const patient of patients ?? []) {
       const { data: labs, error: labErr } = await supabase
-        .from("lab_results").select("*").eq("patient_id", patient.id).order("recorded_at", { ascending: true });
+        .from("lab_results").select("*").eq("patient_id", patient.id).is("deleted_at", null).order("recorded_at", { ascending: true });
       if (labErr || !labs || labs.length === 0) continue;
 
       const organThresholds = thresholds.filter((t) => t.organ_type === patient.organ_type);
