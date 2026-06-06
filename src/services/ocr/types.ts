@@ -24,6 +24,15 @@ export type OCRSource =
   | "ai-pdf"
   | "ai-office";
 
+export interface OCRPatientIdentity {
+  /** Patient full name as printed on the report (best-effort). */
+  name?: string | null;
+  /** Date-of-birth as printed (YYYY-MM-DD when parseable). */
+  dob?: string | null;
+  /** Medical Record Number / hospital ID as printed. */
+  mrn?: string | null;
+}
+
 export interface OCRGroupValues {
   /** ISO date (YYYY-MM-DD) or "unknown". */
   date: string;
@@ -37,6 +46,8 @@ export interface OCRGroupValues {
   units: Record<string, string>;
   /** Lab key → unit_source: "detected" | "assumed" | "unknown". */
   unitSources: Record<string, "detected" | "assumed" | "unknown">;
+  /** Patient identity extracted from the report header (best-effort). */
+  patientIdentity?: OCRPatientIdentity;
 }
 
 export interface OCRResult {

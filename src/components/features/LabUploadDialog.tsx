@@ -62,9 +62,19 @@ interface Props {
   patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null };
   onLabAdded: () => void;
   patientCountry?: string;
+  /** Currently-opened patient identity, used for OCR identity-mismatch safety. */
+  patientName?: string | null;
+  patientDOB?: string | null;
+  patientMRN?: string | null;
 }
 
 type Step = "upload" | "processing" | "confirm";
+
+interface PatientIdentity {
+  name?: string | null;
+  dob?: string | null;
+  mrn?: string | null;
+}
 
 interface DateGroup {
   date: string;
@@ -73,6 +83,7 @@ interface DateGroup {
   originalText: Record<string, string>;
   units: Record<string, string>;
   unitSources: Record<string, "detected" | "assumed" | "unknown">;
+  patientIdentity?: PatientIdentity;
 }
 
 interface OcrDateGroupResponse {
@@ -160,49 +171,168 @@ function isSuspicious(key: string, value: number): boolean {
 // the risk engine compares against those profiles — no conversion is applied.
 
 
+/** Normalize a name for fuzzy comparison: lowercased, trimmed, alpha only. */
+function normalizeName(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .replace(/[\u0400-\u04FF]/g, (c) => c) // keep cyrillic
+    .replace(/[^a-zа-яё\s]/giu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Light fuzzy match: shared token count / max token count. */
+function nameSimilarity(a: string, b: string): number {
+  const at = normalizeName(a).split(" ").filter(Boolean);
+  const bt = normalizeName(b).split(" ").filter(Boolean);
+  if (at.length === 0 || bt.length === 0) return 0;
+  const setB = new Set(bt);
+  const shared = at.filter((t) => setB.has(t)).length;
+  return shared / Math.max(at.length, bt.length);
+}
+
+/** Compare extracted DOB (any format) with stored DOB (YYYY-MM-DD). */
+function dobMatches(extracted: string | null | undefined, stored: string | null | undefined): boolean {
+  if (!extracted || !stored) return false;
+  const norm = (s: string) => s.replace(/[^0-9]/g, "");
+  const e = norm(extracted);
+  const s = norm(stored);
+  if (!e || !s) return false;
+  // exact 8-digit match (YYYYMMDD vs DDMMYYYY etc.)
+  if (e.length >= 8 && s.length >= 8) {
+    const eYYYYMMDD = e.slice(0, 8);
+    const sYYYYMMDD = s.slice(0, 8);
+    if (eYYYYMMDD === sYYYYMMDD) return true;
+    // try reversing DDMMYYYY → YYYYMMDD
+    const reversed = e.slice(4, 8) + e.slice(2, 4) + e.slice(0, 2);
+    if (reversed === sYYYYMMDD) return true;
+  }
+  return false;
+}
+
+interface IdentityCheck {
+  status: "match" | "mismatch" | "unknown";
+  reason: string;
+  extracted: PatientIdentity;
+}
+
+/** Compare OCR-extracted identity with currently-opened patient. */
+function checkIdentity(
+  extracted: PatientIdentity | undefined,
+  currentName?: string | null,
+  currentDOB?: string | null,
+  currentMRN?: string | null,
+): IdentityCheck {
+  if (!extracted || (!extracted.name && !extracted.dob && !extracted.mrn)) {
+    return { status: "unknown", reason: "No identity block detected on report", extracted: extracted ?? {} };
+  }
+
+  // MRN is the strongest signal
+  if (extracted.mrn && currentMRN) {
+    const e = extracted.mrn.replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const s = currentMRN.replace(/[^a-z0-9]/gi, "").toLowerCase();
+    if (e && s) {
+      if (e === s) return { status: "match", reason: `MRN match: ${extracted.mrn}`, extracted };
+      return { status: "mismatch", reason: `MRN mismatch: report=${extracted.mrn} vs patient=${currentMRN}`, extracted };
+    }
+  }
+
+  const nameSim = currentName ? nameSimilarity(extracted.name ?? "", currentName) : 0;
+  const dobOk = dobMatches(extracted.dob, currentDOB);
+
+  // Strong mismatch: both name and DOB present on report AND both fail
+  if (extracted.name && currentName && nameSim < 0.34 && extracted.dob && currentDOB && !dobOk) {
+    return {
+      status: "mismatch",
+      reason: `Name "${extracted.name}" and DOB "${extracted.dob}" don't match patient "${currentName}" / ${currentDOB}`,
+      extracted,
+    };
+  }
+
+  // Name strong mismatch alone (no DOB on report to confirm)
+  if (extracted.name && currentName && nameSim < 0.2 && !extracted.dob) {
+    return {
+      status: "mismatch",
+      reason: `Name "${extracted.name}" does not match patient "${currentName}"`,
+      extracted,
+    };
+  }
+
+  if (nameSim >= 0.5 || dobOk) {
+    return { status: "match", reason: "Identity match", extracted };
+  }
+
+  return { status: "unknown", reason: "Identity could not be confirmed", extracted };
+}
+
+// NOTE: Lab values are stored AS-IS in the units of the patient's country.
+// Country-specific reference profiles define the matching normal ranges, and
+// the risk engine compares against those profiles — no conversion is applied.
+
+
 function DateGroupValues({
+  groupIndex,
   group,
   onValueChange,
   t,
   refMap,
+  verifications,
+  onToggleVerify,
 }: {
+  groupIndex: number;
   group: DateGroup;
   onValueChange: (key: string, value: string) => void;
   t: (key: string) => string;
   refMap: Record<string, { min: number | null; max: number | null; unit: string }>;
+  verifications: Record<string, boolean>;
+  onToggleVerify: (groupIndex: number, key: string, verified: boolean) => void;
 }) {
-  const filledCount = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "").length;
-  const lowConfFields = LAB_FIELDS.filter(
-    (f) => group.values[f.key] && group.confidence[f.key] != null && group.confidence[f.key] < 80
+  const filledFields = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "");
+  const missingFields = LAB_FIELDS.filter((f) => !group.values[f.key] || group.values[f.key] === "");
+  const lowConfFields = filledFields.filter(
+    (f) => group.confidence[f.key] != null && group.confidence[f.key] < 80
   );
+  const unknownUnitFields = filledFields.filter(
+    (f) => (group.unitSources?.[f.key] ?? "unknown") === "unknown"
+  );
+
+  const requiresReview = (key: string): boolean => {
+    const hasValue = group.values[key] && group.values[key] !== "";
+    if (!hasValue) return false;
+    const conf = group.confidence[key] ?? 100;
+    const uSrc = group.unitSources?.[key] ?? "unknown";
+    return conf < 80 || uSrc === "unknown";
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 p-3">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">{filledCount} {t("upload.valuesFound")}</span>
+      {/* Detected / Missing summary */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+          <p className="text-[11px] uppercase font-semibold text-primary tracking-wide">Detected</p>
+          <p className="text-lg font-bold text-primary">{filledFields.length}</p>
         </div>
-        {lowConfFields.length > 0 && (
-          <span className="flex items-center gap-1 text-xs font-medium text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {lowConfFields.length} {t("upload.needsVerification")}
-          </span>
-        )}
+        <div className="rounded-lg border border-warning/40 bg-warning/5 p-2.5">
+          <p className="text-[11px] uppercase font-semibold text-warning tracking-wide">Not detected</p>
+          <p className="text-lg font-bold text-warning">{missingFields.length}</p>
+        </div>
       </div>
 
-      {lowConfFields.length > 0 && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-          <p className="text-xs font-medium text-destructive mb-1">
-            ⚠ {t("upload.lowConfidence")}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {lowConfFields.map((f) => (
-              <span key={f.key} className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-                {f.label}: {group.values[f.key]} ({group.confidence[f.key]}%)
-              </span>
-            ))}
-          </div>
+      {(lowConfFields.length > 0 || unknownUnitFields.length > 0) && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1">
+          {lowConfFields.length > 0 && (
+            <p className="text-xs text-destructive font-medium flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {lowConfFields.length} {t("upload.needsVerification")}
+            </p>
+          )}
+          {unknownUnitFields.length > 0 && (
+            <p className="text-xs text-destructive font-medium flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {unknownUnitFields.length} field(s) with unknown unit — please verify before continuing
+            </p>
+          )}
         </div>
       )}
 
@@ -212,6 +342,8 @@ function DateGroupValues({
           const conf = group.confidence[field.key] ?? 100;
           const isLowConf = hasValue && conf < 80;
           const origText = group.originalText[field.key];
+          const uSrc = group.unitSources?.[field.key] ?? "unknown";
+          const unknownUnit = hasValue && uSrc === "unknown";
 
           // Use country-specific unit if available
           const ref = refMap[field.key];
@@ -225,19 +357,25 @@ function DateGroupValues({
           );
           const isSusp = !isNaN(numVal) && isSuspicious(field.key, numVal);
 
+          const vKey = `${groupIndex}:${field.key}`;
+          const isVerified = !!verifications[vKey];
+          const reviewRequired = requiresReview(field.key);
+
           return (
             <div
               key={field.key}
               className={`space-y-1 rounded-lg border p-2.5 ${
-                isSusp
+                unknownUnit && !isVerified
+                  ? "border-destructive bg-destructive/10 ring-2 ring-destructive/30"
+                  : isSusp
                   ? "border-destructive bg-destructive/10 ring-2 ring-destructive/40"
-                  : isLowConf
+                  : isLowConf && !isVerified
                   ? "border-destructive/40 bg-destructive/5 ring-1 ring-destructive/20"
                   : isOutOfRange
                   ? "border-warning/40 bg-warning/5"
                   : hasValue
                   ? "border-primary/30 bg-primary/5"
-                  : ""
+                  : "border-muted bg-muted/30"
               }`}
             >
               <Label className="text-xs flex items-center justify-between">
@@ -257,9 +395,17 @@ function DateGroupValues({
                 step="any"
                 value={group.values[field.key] ?? ""}
                 onChange={(e) => onValueChange(field.key, e.target.value)}
-                className={`h-8 text-sm ${isSusp ? "border-destructive ring-1 ring-destructive" : isLowConf ? "border-destructive/40" : isOutOfRange ? "border-warning/40" : ""}`}
-                placeholder="—"
+                className={`h-8 text-sm ${unknownUnit ? "border-destructive" : isSusp ? "border-destructive ring-1 ring-destructive" : isLowConf ? "border-destructive/40" : isOutOfRange ? "border-warning/40" : ""}`}
+                placeholder={hasValue ? "—" : "Not detected — enter manually"}
               />
+              {!hasValue && (
+                <p className="text-[10px] text-warning font-medium">Not detected</p>
+              )}
+              {unknownUnit && (
+                <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
+                  <AlertTriangle className="h-3 w-3" /> Unit could not be determined. Please verify before continuing.
+                </p>
+              )}
               {isSusp && (
                 <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
                   <AlertTriangle className="h-3 w-3" /> Suspicious value — please verify!
@@ -270,6 +416,19 @@ function DateGroupValues({
                   {isOutOfRange ? "⚠️ " : ""}Norma: {refRange} {displayUnit}
                 </p>
               )}
+              {hasValue && (
+                <label className="flex items-center gap-1.5 text-[11px] cursor-pointer select-none pt-1">
+                  <input
+                    type="checkbox"
+                    checked={isVerified}
+                    onChange={(e) => onToggleVerify(groupIndex, field.key, e.target.checked)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className={reviewRequired && !isVerified ? "text-destructive font-medium" : "text-muted-foreground"}>
+                    {isVerified ? "✓ Reviewed" : reviewRequired ? "Review required" : "Reviewed"}
+                  </span>
+                </label>
+              )}
             </div>
           );
         })}
@@ -278,7 +437,7 @@ function DateGroupValues({
   );
 }
 
-export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded, patientCountry }: Props) {
+export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded, patientCountry, patientName, patientDOB, patientMRN }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   const [saving, setSaving] = useState(false);
@@ -287,6 +446,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("0");
   const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
+  /** Per-field verification flags keyed `${groupIndex}:${fieldKey}`. */
+  const [verifications, setVerifications] = useState<Record<string, boolean>>({});
+  /** Identity check + manual override state. */
+  const [identityCheck, setIdentityCheck] = useState<IdentityCheck | null>(null);
+  const [identityOverride, setIdentityOverride] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const processAbortRef = useRef<AbortController | null>(null);
@@ -319,6 +483,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     setReportUrl(null);
     setSaving(false);
     setActiveTab("0");
+    setVerifications({});
+    setIdentityCheck(null);
+    setIdentityOverride(false);
   };
 
   const cancelProcessing = () => {
@@ -415,6 +582,25 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setDateGroups(allGroups);
       setReportType(lastReportType);
       setReportUrl(lastReportUrl);
+      setVerifications({});
+      setIdentityOverride(false);
+
+      // ── Patient identity safety check (uses first group's identity) ──
+      const firstWithIdentity = allGroups.find((g) => g.patientIdentity);
+      const idCheck = checkIdentity(
+        firstWithIdentity?.patientIdentity,
+        patientName,
+        patientDOB,
+        patientMRN,
+      );
+      setIdentityCheck(idCheck);
+      if (idCheck.status === "mismatch") {
+        toast({
+          title: "⚠ Patient identity mismatch",
+          description: "This report may belong to another patient. Please verify before continuing.",
+          variant: "destructive",
+        });
+      }
 
       for (const g of allGroups) {
         const detected = detectCountryFromUnits(g);
@@ -481,7 +667,80 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     );
   };
 
+  /**
+   * Verification completeness across all visible groups.
+   * Save button is enabled only when every required-review field is checked off.
+   */
+  const verificationStatus = useMemo(() => {
+    let detected = 0;
+    let reviewed = 0;
+    let requiredOpen = 0;
+    dateGroups.forEach((g, gi) => {
+      LAB_FIELDS.forEach((f) => {
+        const has = g.values[f.key] && g.values[f.key] !== "";
+        if (!has) return;
+        detected++;
+        const conf = g.confidence[f.key] ?? 100;
+        const uSrc = g.unitSources?.[f.key] ?? "unknown";
+        const required = conf < 80 || uSrc === "unknown";
+        const verified = !!verifications[`${gi}:${f.key}`];
+        if (verified) reviewed++;
+        if (required && !verified) requiredOpen++;
+      });
+    });
+    return { detected, reviewed, requiredOpen, ready: requiredOpen === 0 };
+  }, [dateGroups, verifications]);
+
   const handleConfirm = async () => {
+    // ── Patient identity gate ──
+    if (identityCheck?.status === "mismatch" && !identityOverride) {
+      toast({
+        title: "Blocked: identity mismatch",
+        description: "This report may belong to another patient. Please confirm override before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // ── Verification completeness gate ──
+    if (!verificationStatus.ready) {
+      toast({
+        title: "Verification incomplete",
+        description: `${verificationStatus.requiredOpen} field(s) still require review before saving.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    // ── Audit log for identity override ──
+    if (identityCheck?.status === "mismatch" && identityOverride) {
+      void logAudit({
+        action: "patient_identity_override",
+        entityType: "patient",
+        entityId: patientId,
+        metadata: {
+          reason: identityCheck.reason,
+          extracted: identityCheck.extracted,
+          stored_name: patientName ?? null,
+          stored_dob: patientDOB ?? null,
+        },
+      });
+    }
+    // ── Audit log for unknown-unit confirmations ──
+    dateGroups.forEach((g, gi) => {
+      LAB_FIELDS.forEach((f) => {
+        const has = g.values[f.key] && g.values[f.key] !== "";
+        if (!has) return;
+        const uSrc = g.unitSources?.[f.key] ?? "unknown";
+        if (uSrc === "unknown" && verifications[`${gi}:${f.key}`]) {
+          void logAudit({
+            action: "ocr_unknown_unit_confirmed",
+            entityType: "patient",
+            entityId: patientId,
+            metadata: { field: f.key, value: g.values[f.key], date: g.date },
+          });
+        }
+      });
+    });
+
     setSaving(true);
     try {
       // --- Date unification: merge groups with the same date ---
@@ -790,6 +1049,56 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
         {step === "confirm" && (
           <div className="space-y-4">
+            {/* ── Patient identity safety banner ── */}
+            {identityCheck && identityCheck.status === "mismatch" && (
+              <div className="rounded-lg border-2 border-destructive bg-destructive/10 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-destructive">
+                      This report may belong to another patient. Please verify before continuing.
+                    </p>
+                    <p className="text-xs text-destructive/80 mt-1">{identityCheck.reason}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Report: <strong>{identityCheck.extracted.name ?? "—"}</strong>
+                      {identityCheck.extracted.dob ? ` · DOB ${identityCheck.extracted.dob}` : ""}
+                      {identityCheck.extracted.mrn ? ` · MRN ${identityCheck.extracted.mrn}` : ""}
+                      <br />
+                      Patient: <strong>{patientName ?? "—"}</strong>
+                      {patientDOB ? ` · DOB ${patientDOB}` : ""}
+                      {patientMRN ? ` · MRN ${patientMRN}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={identityOverride}
+                    onChange={(e) => setIdentityOverride(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <span className="font-medium text-destructive">
+                    I have verified this report belongs to the current patient (override will be audited).
+                  </span>
+                </label>
+              </div>
+            )}
+            {identityCheck && identityCheck.status === "match" && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 flex items-center gap-2 text-xs text-primary">
+                <CheckCircle2 className="h-4 w-4" /> Identity match: {identityCheck.reason}
+              </div>
+            )}
+
+            {/* ── Verification completeness summary ── */}
+            <div className={`rounded-lg border p-2 text-xs flex items-center justify-between ${verificationStatus.ready ? "border-primary/30 bg-primary/5 text-primary" : "border-warning/40 bg-warning/5 text-warning"}`}>
+              <span>
+                Detected: <strong>{verificationStatus.detected}</strong> · Reviewed: <strong>{verificationStatus.reviewed}</strong>
+              </span>
+              <span className="font-semibold">
+                {verificationStatus.ready ? "Ready" : `Verification incomplete (${verificationStatus.requiredOpen} required)`}
+              </span>
+            </div>
+
             {dateGroups.length > 1 && (
               <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <Calendar className="h-5 w-5 text-primary" />
@@ -798,6 +1107,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 </span>
               </div>
             )}
+
 
             {dateGroups.length > 1 ? (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -832,10 +1142,15 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                       )}
                     </div>
                     <DateGroupValues
+                      groupIndex={i}
                       group={group}
                       onValueChange={(key, value) => updateGroupValue(i, key, value)}
                       t={t}
                       refMap={refMap}
+                      verifications={verifications}
+                      onToggleVerify={(gi, k, v) =>
+                        setVerifications((prev) => ({ ...prev, [`${gi}:${k}`]: v }))
+                      }
                     />
                   </TabsContent>
                 ))}
@@ -868,17 +1183,26 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 )}
                 {dateGroups[0] && (
                   <DateGroupValues
+                    groupIndex={0}
                     group={dateGroups[0]}
                     onValueChange={(key, value) => updateGroupValue(0, key, value)}
                     t={t}
                     refMap={refMap}
+                    verifications={verifications}
+                    onToggleVerify={(gi, k, v) =>
+                      setVerifications((prev) => ({ ...prev, [`${gi}:${k}`]: v }))
+                    }
                   />
                 )}
               </>
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleConfirm} disabled={saving} className="flex-1 gap-2">
+              <Button
+                onClick={handleConfirm}
+                disabled={saving || !verificationStatus.ready || (identityCheck?.status === "mismatch" && !identityOverride)}
+                className="flex-1 gap-2"
+              >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {dateGroups.length > 1
                   ? `${dateGroups.length} ${t("upload.saveResults")}`

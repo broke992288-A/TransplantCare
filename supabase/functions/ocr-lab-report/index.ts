@@ -86,6 +86,13 @@ const systemPrompt = `You are an expert medical laboratory report OCR system. Yo
 
 CRITICAL: A single document may contain lab results from MULTIPLE DIFFERENT DATES. You MUST detect ALL dates and group results by date.
 
+STEP 0 — PATIENT IDENTITY:
+Find the patient identity block (usually at top of report). Extract:
+- patient name (Ф.И.О / Bemor / Patient Name / Имя)
+- date of birth (DOB / Год рождения / Туғилган санаси) — return as YYYY-MM-DD when possible, else raw text
+- MRN / Medical Record Number / Hospital ID / Card # (История болезни / Карта № / MRN / ID)
+Return null for any field not clearly found. NEVER invent these values.
+
 STEP 1 — DATE DETECTION:
 Scan the entire document for dates. Dates may appear as headers, columns, or labels like "Дата забора", "Sana", "Date", "Дата", etc.
 Common formats: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, DD Month YYYY (in any language).
@@ -134,7 +141,7 @@ Proteinuria / Протеинурия / Protein in urine → proteinuria
 
 STEP 4 — VALUE EXTRACTION:
 - Extract the numeric result value for each detected test
-- ALWAYS capture the EXACT printed unit string (e.g. "mg/dL", "µmol/L", "g/L", "mmol/L", "U/L") into the "unit" field
+- ALWAYS capture the EXACT printed unit string (e.g. "mg/dL", "µmol/L", "g/L") into the "unit" field
 - If NO unit is printed next to the value, return "unit": "" (empty string)
 - NEVER guess, infer, or convert units yourself. Unit-driven conversion is done downstream.
 - For text/CSV files: be especially careful with number parsing (commas vs dots as decimal separators)
@@ -145,9 +152,8 @@ For each extracted value, assign a confidence score (0-100):
 - 80-94: Readable but slightly unclear
 - 60-79: Partially readable, may need verification
 - <60: Very unclear, likely incorrect
-- For text files, confidence is typically 95-100 since values are clearly typed
 
-Use the tool "extract_lab_values" to return results. ALWAYS return an array of date_groups, even if there is only one date.`;
+Use the tool "extract_lab_values" to return results. ALWAYS return an array of date_groups, even if there is only one date. ALWAYS include the patient_identity object at the top level.`;
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -240,6 +246,17 @@ serve(async (req) => {
                 type: "object",
                 properties: {
                   report_type: { type: "string", enum: ["table", "freeform", "mixed", "text", "spreadsheet"] },
+                  patient_identity: {
+                    type: "object",
+                    description: "Patient identity block. Use null for any field not clearly printed.",
+                    properties: {
+                      name: { type: ["string", "null"] },
+                      dob: { type: ["string", "null"], description: "YYYY-MM-DD if parseable, else raw printed string" },
+                      mrn: { type: ["string", "null"] },
+                    },
+                    required: ["name", "dob", "mrn"],
+                    additionalProperties: false,
+                  },
                   date_groups: {
                     type: "array",
                     items: {
@@ -253,7 +270,7 @@ serve(async (req) => {
                     },
                   },
                 },
-                required: ["report_type", "date_groups"],
+                required: ["report_type", "patient_identity", "date_groups"],
                 additionalProperties: false,
               },
             },
@@ -311,12 +328,22 @@ serve(async (req) => {
       return { date: group.date ?? "unknown", data, confidence, originalText, units };
     });
 
+    const pid = extracted.patient_identity ?? null;
+    const patientIdentity = pid && typeof pid === "object"
+      ? {
+          name: typeof pid.name === "string" ? pid.name : null,
+          dob: typeof pid.dob === "string" ? pid.dob : null,
+          mrn: typeof pid.mrn === "string" ? pid.mrn : null,
+        }
+      : { name: null, dob: null, mrn: null };
+
     const duration = Date.now() - startTime;
     log("info", FN_NAME, "OCR completed", { requestId, userId, duration_ms: duration, groups: processedGroups.length, fileType });
 
     return new Response(JSON.stringify({
       success: true, multiDate: true, dateGroups: processedGroups,
       reportType: extracted.report_type ?? "unknown",
+      patientIdentity,
       data: processedGroups[0]?.data ?? {},
       confidence: processedGroups[0]?.confidence ?? {},
       originalText: processedGroups[0]?.originalText ?? {},
