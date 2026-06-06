@@ -294,19 +294,21 @@ serve(async (req) => {
       const data: Record<string, number | null> = {};
       const confidence: Record<string, number> = {};
       const originalText: Record<string, string> = {};
+      const units: Record<string, string> = {};
       for (const key of LAB_MARKERS) {
         const entry = markers[key];
         if (entry && typeof entry === "object") {
           data[key] = typeof entry.value === "number" ? entry.value : null;
           confidence[key] = typeof entry.confidence === "number" ? entry.confidence : 0;
           if (entry.original_text) originalText[key] = entry.original_text;
+          if (typeof entry.unit === "string") units[key] = entry.unit;
         } else if (typeof entry === "number") {
-          data[key] = entry; confidence[key] = 90;
+          data[key] = entry; confidence[key] = 90; units[key] = "";
         } else {
-          data[key] = null; confidence[key] = 0;
+          data[key] = null; confidence[key] = 0; units[key] = "";
         }
       }
-      return { date: group.date ?? "unknown", data, confidence, originalText };
+      return { date: group.date ?? "unknown", data, confidence, originalText, units };
     });
 
     const duration = Date.now() - startTime;
@@ -318,6 +320,7 @@ serve(async (req) => {
       data: processedGroups[0]?.data ?? {},
       confidence: processedGroups[0]?.confidence ?? {},
       originalText: processedGroups[0]?.originalText ?? {},
+      units: processedGroups[0]?.units ?? {},
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     const duration = Date.now() - startTime;
