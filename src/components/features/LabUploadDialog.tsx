@@ -18,6 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
 import { validateLabDate } from "@/lib/validations";
+import { convertByPrintedUnit } from "@/services/ocr/unitDetection";
+import { insertProvenanceRows, type ProvenanceRow } from "@/services/ocr/provenanceService";
+import type { CanonicalLabKey } from "@/services/ocr/labAliases";
 
 
 const LAB_FIELDS = [
