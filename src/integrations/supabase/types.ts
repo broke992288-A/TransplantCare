@@ -382,6 +382,71 @@ export type Database = {
           },
         ]
       }
+      lab_value_provenance: {
+        Row: {
+          confidence: number | null
+          conversion_applied: Json | null
+          created_at: string
+          detected_unit: string | null
+          extraction_source: string
+          field_key: string
+          id: string
+          lab_result_id: string
+          normalized_value: number | null
+          original_text: string | null
+          patient_id: string
+          raw_value: number | null
+          unit_source: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          conversion_applied?: Json | null
+          created_at?: string
+          detected_unit?: string | null
+          extraction_source?: string
+          field_key: string
+          id?: string
+          lab_result_id: string
+          normalized_value?: number | null
+          original_text?: string | null
+          patient_id: string
+          raw_value?: number | null
+          unit_source?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          conversion_applied?: Json | null
+          created_at?: string
+          detected_unit?: string | null
+          extraction_source?: string
+          field_key?: string
+          id?: string
+          lab_result_id?: string
+          normalized_value?: number | null
+          original_text?: string | null
+          patient_id?: string
+          raw_value?: number | null
+          unit_source?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_value_provenance_lab_result_id_fkey"
+            columns: ["lab_result_id"]
+            isOneToOne: false
+            referencedRelation: "lab_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medication_adherence: {
         Row: {
           created_at: string
