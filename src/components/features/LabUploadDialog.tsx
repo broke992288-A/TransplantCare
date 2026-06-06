@@ -437,7 +437,7 @@ function DateGroupValues({
   );
 }
 
-export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded, patientCountry }: Props) {
+export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded, patientCountry, patientName, patientDOB, patientMRN }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   const [saving, setSaving] = useState(false);
