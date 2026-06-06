@@ -426,6 +426,7 @@ export async function preprocessLabImage(file: File, options: PreprocessOptions 
       return {
         base64, file, fileType: ext, textContent,
         deterministicGroups: parsed.dateGroups,
+        deterministicIdentity: parsed.patientIdentity,
         extractionSource: "deterministic-text",
       };
     }
