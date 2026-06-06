@@ -62,9 +62,19 @@ interface Props {
   patientData?: { transplant_number?: number | null; dialysis_history?: boolean | null; transplant_date?: string | null };
   onLabAdded: () => void;
   patientCountry?: string;
+  /** Currently-opened patient identity, used for OCR identity-mismatch safety. */
+  patientName?: string | null;
+  patientDOB?: string | null;
+  patientMRN?: string | null;
 }
 
 type Step = "upload" | "processing" | "confirm";
+
+interface PatientIdentity {
+  name?: string | null;
+  dob?: string | null;
+  mrn?: string | null;
+}
 
 interface DateGroup {
   date: string;
@@ -73,6 +83,7 @@ interface DateGroup {
   originalText: Record<string, string>;
   units: Record<string, string>;
   unitSources: Record<string, "detected" | "assumed" | "unknown">;
+  patientIdentity?: PatientIdentity;
 }
 
 interface OcrDateGroupResponse {
