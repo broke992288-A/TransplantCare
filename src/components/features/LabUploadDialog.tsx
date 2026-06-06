@@ -580,11 +580,34 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         // Save raw values AS-IS in country-specific units. Reference profiles
         // (per country) define the matching normal ranges; risk engine compares
         // values against the country profile, so no conversion is performed here.
+        // Sprint A: also accumulate provenance per field (unit, unit_source, etc.).
+        const provenanceForGroup: Array<Omit<ProvenanceRow, "lab_result_id">> = [];
         for (const field of LAB_FIELDS) {
-          const v = parseFloat(group.values[field.key]);
+          const raw = group.values[field.key];
+          const v = parseFloat(raw);
           if (isNaN(v)) { labData[field.key] = null; continue; }
-          labData[field.key] = v;
+          const printedUnit = group.units?.[field.key] ?? "";
+          const conv = convertByPrintedUnit(
+            field.key as CanonicalLabKey,
+            v,
+            printedUnit && printedUnit.trim() !== "" ? printedUnit : null,
+            { fieldLabel: field.label, patientId },
+          );
+          labData[field.key] = v; // stored AS-IS per existing contract
           filledCount++;
+          provenanceForGroup.push({
+            patient_id: patientId,
+            field_key: field.key,
+            original_text: group.originalText?.[field.key] ?? null,
+            raw_value: v,
+            normalized_value: conv.value,
+            detected_unit: printedUnit || null,
+            unit_source: group.unitSources?.[field.key] ?? conv.unitSource,
+            confidence: group.confidence?.[field.key] ?? null,
+            extraction_source: reportType === "deterministic" ? "deterministic-pdf" : "ai-image",
+            conversion_applied: conv.conversion,
+            verification_status: "unverified",
+          });
         }
 
         if (filledCount > 0) {
