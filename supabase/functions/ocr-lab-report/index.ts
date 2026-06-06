@@ -53,6 +53,11 @@ function buildMarkerProperties() {
         value: { type: ["number", "null"], description: "Extracted numeric value or null if not found" },
         confidence: { type: "number", description: "Confidence score 0-100" },
         original_text: { type: "string", description: "Original text as seen in report" },
+        unit: {
+          type: "string",
+          description:
+            "EXACT printed unit string from the report (e.g. 'mg/dL', 'µmol/L', 'g/L'). Empty string '' if no unit is printed next to the value. NEVER guess or infer.",
+        },
       },
       required: ["value", "confidence"],
       additionalProperties: false,
