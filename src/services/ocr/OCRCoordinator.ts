@@ -42,6 +42,7 @@ interface OcrEdgeDateGroup {
   confidence?: Record<string, number>;
   originalText?: Record<string, string>;
   units?: Record<string, string>;
+  unitSources?: Record<string, "detected" | "assumed" | "unknown">;
 }
 
 interface OcrEdgeResponse {
