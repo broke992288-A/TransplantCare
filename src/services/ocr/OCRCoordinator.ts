@@ -293,8 +293,9 @@ export async function processFileOCR(
       if (data.error) throw new Error(data.error);
 
       const responseDateGroups = Array.isArray(data.dateGroups) ? data.dateGroups : [];
+      const identity = data.patientIdentity ?? null;
       if (data.multiDate && responseDateGroups.length > 0) {
-        groups = responseDateGroups.map((g) => {
+        groups = responseDateGroups.map((g, idx) => {
           const values = valuesFromData(g.data);
           const units = g.units ?? {};
           return {
@@ -304,6 +305,7 @@ export async function processFileOCR(
             originalText: g.originalText ?? {},
             units,
             unitSources: unitSourcesFromUnits(units, values),
+            patientIdentity: idx === 0 && identity ? identity : undefined,
           };
         });
       } else {
@@ -317,6 +319,7 @@ export async function processFileOCR(
             originalText: data.originalText ?? {},
             units,
             unitSources: unitSourcesFromUnits(units, values),
+            patientIdentity: identity ?? undefined,
           },
         ];
       }
