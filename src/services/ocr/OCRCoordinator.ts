@@ -45,6 +45,12 @@ interface OcrEdgeDateGroup {
   unitSources?: Record<string, "detected" | "assumed" | "unknown">;
 }
 
+interface OcrEdgePatientIdentity {
+  name?: string | null;
+  dob?: string | null;
+  mrn?: string | null;
+}
+
 interface OcrEdgeResponse {
   error?: string;
   multiDate?: boolean;
@@ -54,6 +60,7 @@ interface OcrEdgeResponse {
   originalText?: Record<string, string>;
   units?: Record<string, string>;
   reportType?: string;
+  patientIdentity?: OcrEdgePatientIdentity;
 }
 
 function abortError(): Error {
