@@ -7,7 +7,9 @@ export type AuditAction =
   | "lab_result_edit"
   | "doctor_view_patient"
   | "patient_logout"
-  | "password_reset";
+  | "password_reset"
+  | "patient_identity_override"
+  | "ocr_unknown_unit_confirmed";
 
 export async function logAudit(params: {
   action: AuditAction;
