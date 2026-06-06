@@ -15,21 +15,23 @@
  */
 
 import { matchCanonicalKey, type CanonicalLabKey, LAB_ALIASES } from "./labAliases";
+import { extractPrintedUnit, type UnitSource } from "./unitDetection";
 
 export interface ParsedDateGroup {
   date: string; // ISO YYYY-MM-DD or "unknown"
   data: Partial<Record<CanonicalLabKey, number | null>>;
   confidence: Partial<Record<CanonicalLabKey, number>>;
   originalText: Partial<Record<CanonicalLabKey, string>>;
+  /** Printed unit captured per field (empty string when not found). */
+  units: Partial<Record<CanonicalLabKey, string>>;
+  /** Per-field unit_source: "detected" when printed unit captured, else "unknown". */
+  unitSources: Partial<Record<CanonicalLabKey, UnitSource>>;
 }
 
 export interface DeterministicParseResult {
   dateGroups: ParsedDateGroup[];
-  /** Total number of canonical markers extracted across all groups. */
   markerCount: number;
-  /** True when the parser is confident enough to bypass AI fallback. */
   sufficient: boolean;
-  /** ms taken */
   durationMs: number;
 }
 
@@ -150,7 +152,7 @@ export function parseLabText(rawText: string): DeterministicParseResult {
   ): ParsedDateGroup => {
     let g = map.get(date);
     if (!g) {
-      g = { date, data: {}, confidence: {}, originalText: {} };
+      g = { date, data: {}, confidence: {}, originalText: {}, units: {}, unitSources: {} };
       map.set(date, g);
     }
     return g;
@@ -189,11 +191,14 @@ export function parseLabText(rawText: string): DeterministicParseResult {
     }
 
     const group = ensureGroup(groupsMap, dateForLine);
-    // Don't overwrite if already set (first occurrence wins).
     if (group.data[key] != null) return;
     group.data[key] = value;
     group.confidence[key] = REGEX_CONFIDENCE;
     group.originalText[key] = line.length > 120 ? line.slice(0, 120) + "…" : line;
+    const tail = line.slice(aliasEnd);
+    const printedUnit = extractPrintedUnit(tail);
+    group.units[key] = printedUnit ?? "";
+    group.unitSources[key] = printedUnit ? "detected" : "unknown";
     markerCount++;
   });
 

@@ -18,6 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
 import { validateLabDate } from "@/lib/validations";
+import { convertByPrintedUnit } from "@/services/ocr/unitDetection";
+import { insertProvenanceRows, type ProvenanceRow } from "@/services/ocr/provenanceService";
+import type { CanonicalLabKey } from "@/services/ocr/labAliases";
 
 
 const LAB_FIELDS = [
@@ -68,6 +71,8 @@ interface DateGroup {
   values: Record<string, string>;
   confidence: Record<string, number>;
   originalText: Record<string, string>;
+  units: Record<string, string>;
+  unitSources: Record<string, "detected" | "assumed" | "unknown">;
 }
 
 interface OcrDateGroupResponse {
@@ -128,17 +133,20 @@ const SUSPICIOUS_THRESHOLDS: Record<string, number> = {
   tacrolimus_level: 30, calcium: 15, phosphorus: 10,
 };
 
-/** Auto-detect country from extracted lab values */
-function detectCountryFromValues(values: Record<string, string>): { country: string; reason: string } | null {
-  const cr = parseFloat(values.creatinine);
-  if (!isNaN(cr)) {
-    if (cr > 10) return { country: "uzbekistan", reason: `Creatinine ${cr} → µmol/L (O'zbekiston)` };
-    if (cr > 0 && cr < 5) return { country: "india", reason: `Creatinine ${cr} → mg/dL (India)` };
+/**
+ * Unit-driven country detection.
+ * Sprint A contract: NEVER infer from value magnitude.
+ * Switch country only when a printed unit clearly indicates the system
+ * (e.g. µmol/L for creatinine → Uzbekistan; mg/dL → India).
+ */
+function detectCountryFromUnits(group: DateGroup): { country: string; reason: string } | null {
+  const crUnit = (group.units.creatinine ?? "").toLowerCase().replace(/μ|µ/g, "u").replace(/\s+/g, "");
+  if (crUnit) {
+    if (crUnit.includes("umol/l")) return { country: "uzbekistan", reason: `Creatinine unit µmol/L (O'zbekiston)` };
+    if (crUnit.includes("mg/dl")) return { country: "india", reason: `Creatinine unit mg/dL (India)` };
   }
-  const bili = parseFloat(values.total_bilirubin);
-  if (!isNaN(bili)) {
-    if (bili > 3) return { country: "uzbekistan", reason: `Bilirubin ${bili} → µmol/L (O'zbekiston)` };
-  }
+  const biliUnit = (group.units.total_bilirubin ?? "").toLowerCase().replace(/μ|µ/g, "u").replace(/\s+/g, "");
+  if (biliUnit.includes("umol/l")) return { country: "uzbekistan", reason: `Bilirubin unit µmol/L (O'zbekiston)` };
   return null;
 }
 
@@ -409,7 +417,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setReportUrl(lastReportUrl);
 
       for (const g of allGroups) {
-        const detected = detectCountryFromValues(g.values);
+        const detected = detectCountryFromUnits(g);
         if (detected) {
           setCountry(detected.country);
           toast({ title: "🌍 " + t("common.info"), description: detected.reason });
@@ -572,11 +580,34 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         // Save raw values AS-IS in country-specific units. Reference profiles
         // (per country) define the matching normal ranges; risk engine compares
         // values against the country profile, so no conversion is performed here.
+        // Sprint A: also accumulate provenance per field (unit, unit_source, etc.).
+        const provenanceForGroup: Array<Omit<ProvenanceRow, "lab_result_id">> = [];
         for (const field of LAB_FIELDS) {
-          const v = parseFloat(group.values[field.key]);
+          const raw = group.values[field.key];
+          const v = parseFloat(raw);
           if (isNaN(v)) { labData[field.key] = null; continue; }
-          labData[field.key] = v;
+          const printedUnit = group.units?.[field.key] ?? "";
+          const conv = convertByPrintedUnit(
+            field.key as CanonicalLabKey,
+            v,
+            printedUnit && printedUnit.trim() !== "" ? printedUnit : null,
+            { fieldLabel: field.label, patientId },
+          );
+          labData[field.key] = v; // stored AS-IS per existing contract
           filledCount++;
+          provenanceForGroup.push({
+            patient_id: patientId,
+            field_key: field.key,
+            original_text: group.originalText?.[field.key] ?? null,
+            raw_value: v,
+            normalized_value: conv.value,
+            detected_unit: printedUnit || null,
+            unit_source: group.unitSources?.[field.key] ?? conv.unitSource,
+            confidence: group.confidence?.[field.key] ?? null,
+            extraction_source: reportType === "deterministic" ? "deterministic-pdf" : "ai-image",
+            conversion_applied: conv.conversion,
+            verification_status: "unverified",
+          });
         }
 
         if (filledCount > 0) {
@@ -602,6 +633,13 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             throw insertErr;
           }
           totalFilled += filledCount;
+
+          // Persist provenance rows (best-effort, never blocks save).
+          if (savedLab?.id) {
+            void insertProvenanceRows(
+              provenanceForGroup.map((p) => ({ ...p, lab_result_id: savedLab.id })),
+            );
+          }
 
           // --- Compute risk score for each saved lab ---
           if (organType) {

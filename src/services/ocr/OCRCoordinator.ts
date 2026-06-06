@@ -41,6 +41,8 @@ interface OcrEdgeDateGroup {
   data?: Record<string, number | null>;
   confidence?: Record<string, number>;
   originalText?: Record<string, string>;
+  units?: Record<string, string>;
+  unitSources?: Record<string, "detected" | "assumed" | "unknown">;
 }
 
 interface OcrEdgeResponse {
@@ -50,6 +52,7 @@ interface OcrEdgeResponse {
   data?: Record<string, number | null>;
   confidence?: Record<string, number>;
   originalText?: Record<string, string>;
+  units?: Record<string, string>;
   reportType?: string;
 }
 
@@ -211,14 +214,35 @@ export async function processFileOCR(
     let groups: OCRGroupValues[] = [];
     let reportType = "";
 
+    /** Build unitSources from a units map: detected when non-empty, else unknown. */
+    const unitSourcesFromUnits = (
+      units: Record<string, string> | undefined,
+      values: Record<string, string>,
+    ): Record<string, "detected" | "assumed" | "unknown"> => {
+      const out: Record<string, "detected" | "assumed" | "unknown"> = {};
+      for (const k of Object.keys(values)) {
+        const u = units?.[k];
+        out[k] = u && u.trim() !== "" ? "detected" : "unknown";
+      }
+      return out;
+    };
+
     if (hasDeterministic) {
       onStage?.("parse");
-      groups = preprocessed.deterministicGroups!.map((g) => ({
-        date: g.date ?? "unknown",
-        values: valuesFromData(g.data as Record<string, number | null> | undefined),
-        confidence: (g.confidence ?? {}) as Record<string, number>,
-        originalText: (g.originalText ?? {}) as Record<string, string>,
-      }));
+      groups = preprocessed.deterministicGroups!.map((g) => {
+        const values = valuesFromData(g.data as Record<string, number | null> | undefined);
+        const units = (g.units ?? {}) as Record<string, string>;
+        return {
+          date: g.date ?? "unknown",
+          values,
+          confidence: (g.confidence ?? {}) as Record<string, number>,
+          originalText: (g.originalText ?? {}) as Record<string, string>,
+          units,
+          unitSources:
+            (g.unitSources as Record<string, "detected" | "assumed" | "unknown">) ??
+            unitSourcesFromUnits(units, values),
+        };
+      });
       reportType = "deterministic";
       logOCR("parse", {
         file: file.name,
@@ -263,19 +287,29 @@ export async function processFileOCR(
 
       const responseDateGroups = Array.isArray(data.dateGroups) ? data.dateGroups : [];
       if (data.multiDate && responseDateGroups.length > 0) {
-        groups = responseDateGroups.map((g) => ({
-          date: g.date ?? "unknown",
-          values: valuesFromData(g.data),
-          confidence: g.confidence ?? {},
-          originalText: g.originalText ?? {},
-        }));
+        groups = responseDateGroups.map((g) => {
+          const values = valuesFromData(g.data);
+          const units = g.units ?? {};
+          return {
+            date: g.date ?? "unknown",
+            values,
+            confidence: g.confidence ?? {},
+            originalText: g.originalText ?? {},
+            units,
+            unitSources: unitSourcesFromUnits(units, values),
+          };
+        });
       } else {
+        const values = valuesFromData(data.data);
+        const units = data.units ?? {};
         groups = [
           {
             date: "unknown",
-            values: valuesFromData(data.data),
+            values,
             confidence: data.confidence ?? {},
             originalText: data.originalText ?? {},
+            units,
+            unitSources: unitSourcesFromUnits(units, values),
           },
         ];
       }

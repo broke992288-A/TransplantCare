@@ -53,6 +53,11 @@ function buildMarkerProperties() {
         value: { type: ["number", "null"], description: "Extracted numeric value or null if not found" },
         confidence: { type: "number", description: "Confidence score 0-100" },
         original_text: { type: "string", description: "Original text as seen in report" },
+        unit: {
+          type: "string",
+          description:
+            "EXACT printed unit string from the report (e.g. 'mg/dL', 'µmol/L', 'g/L'). Empty string '' if no unit is printed next to the value. NEVER guess or infer.",
+        },
       },
       required: ["value", "confidence"],
       additionalProperties: false,
@@ -129,8 +134,9 @@ Proteinuria / Протеинурия / Protein in urine → proteinuria
 
 STEP 4 — VALUE EXTRACTION:
 - Extract the numeric result value for each detected test
-- If a value has units like µmol/L, mg/dL, etc., note the unit
-- Convert to standard units when possible (e.g. creatinine in µmol/L → divide by 88.4 for mg/dL)
+- ALWAYS capture the EXACT printed unit string (e.g. "mg/dL", "µmol/L", "g/L", "mmol/L", "U/L") into the "unit" field
+- If NO unit is printed next to the value, return "unit": "" (empty string)
+- NEVER guess, infer, or convert units yourself. Unit-driven conversion is done downstream.
 - For text/CSV files: be especially careful with number parsing (commas vs dots as decimal separators)
 
 STEP 5 — CONFIDENCE SCORING:
@@ -288,19 +294,21 @@ serve(async (req) => {
       const data: Record<string, number | null> = {};
       const confidence: Record<string, number> = {};
       const originalText: Record<string, string> = {};
+      const units: Record<string, string> = {};
       for (const key of LAB_MARKERS) {
         const entry = markers[key];
         if (entry && typeof entry === "object") {
           data[key] = typeof entry.value === "number" ? entry.value : null;
           confidence[key] = typeof entry.confidence === "number" ? entry.confidence : 0;
           if (entry.original_text) originalText[key] = entry.original_text;
+          if (typeof entry.unit === "string") units[key] = entry.unit;
         } else if (typeof entry === "number") {
-          data[key] = entry; confidence[key] = 90;
+          data[key] = entry; confidence[key] = 90; units[key] = "";
         } else {
-          data[key] = null; confidence[key] = 0;
+          data[key] = null; confidence[key] = 0; units[key] = "";
         }
       }
-      return { date: group.date ?? "unknown", data, confidence, originalText };
+      return { date: group.date ?? "unknown", data, confidence, originalText, units };
     });
 
     const duration = Date.now() - startTime;
@@ -312,6 +320,7 @@ serve(async (req) => {
       data: processedGroups[0]?.data ?? {},
       confidence: processedGroups[0]?.confidence ?? {},
       originalText: processedGroups[0]?.originalText ?? {},
+      units: processedGroups[0]?.units ?? {},
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     const duration = Date.now() - startTime;
