@@ -667,7 +667,80 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     );
   };
 
+  /**
+   * Verification completeness across all visible groups.
+   * Save button is enabled only when every required-review field is checked off.
+   */
+  const verificationStatus = useMemo(() => {
+    let detected = 0;
+    let reviewed = 0;
+    let requiredOpen = 0;
+    dateGroups.forEach((g, gi) => {
+      LAB_FIELDS.forEach((f) => {
+        const has = g.values[f.key] && g.values[f.key] !== "";
+        if (!has) return;
+        detected++;
+        const conf = g.confidence[f.key] ?? 100;
+        const uSrc = g.unitSources?.[f.key] ?? "unknown";
+        const required = conf < 80 || uSrc === "unknown";
+        const verified = !!verifications[`${gi}:${f.key}`];
+        if (verified) reviewed++;
+        if (required && !verified) requiredOpen++;
+      });
+    });
+    return { detected, reviewed, requiredOpen, ready: requiredOpen === 0 };
+  }, [dateGroups, verifications]);
+
   const handleConfirm = async () => {
+    // ── Patient identity gate ──
+    if (identityCheck?.status === "mismatch" && !identityOverride) {
+      toast({
+        title: "Blocked: identity mismatch",
+        description: "This report may belong to another patient. Please confirm override before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // ── Verification completeness gate ──
+    if (!verificationStatus.ready) {
+      toast({
+        title: "Verification incomplete",
+        description: `${verificationStatus.requiredOpen} field(s) still require review before saving.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    // ── Audit log for identity override ──
+    if (identityCheck?.status === "mismatch" && identityOverride) {
+      void logAudit({
+        action: "patient_identity_override",
+        entityType: "patient",
+        entityId: patientId,
+        metadata: {
+          reason: identityCheck.reason,
+          extracted: identityCheck.extracted,
+          stored_name: patientName ?? null,
+          stored_dob: patientDOB ?? null,
+        },
+      });
+    }
+    // ── Audit log for unknown-unit confirmations ──
+    dateGroups.forEach((g, gi) => {
+      LAB_FIELDS.forEach((f) => {
+        const has = g.values[f.key] && g.values[f.key] !== "";
+        if (!has) return;
+        const uSrc = g.unitSources?.[f.key] ?? "unknown";
+        if (uSrc === "unknown" && verifications[`${gi}:${f.key}`]) {
+          void logAudit({
+            action: "ocr_unknown_unit_confirmed",
+            entityType: "patient",
+            entityId: patientId,
+            metadata: { field: f.key, value: g.values[f.key], date: g.date },
+          });
+        }
+      });
+    });
+
     setSaving(true);
     try {
       // --- Date unification: merge groups with the same date ---
