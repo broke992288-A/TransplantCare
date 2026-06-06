@@ -134,8 +134,9 @@ Proteinuria / Протеинурия / Protein in urine → proteinuria
 
 STEP 4 — VALUE EXTRACTION:
 - Extract the numeric result value for each detected test
-- If a value has units like µmol/L, mg/dL, etc., note the unit
-- Convert to standard units when possible (e.g. creatinine in µmol/L → divide by 88.4 for mg/dL)
+- ALWAYS capture the EXACT printed unit string (e.g. "mg/dL", "µmol/L", "g/L", "mmol/L", "U/L") into the "unit" field
+- If NO unit is printed next to the value, return "unit": "" (empty string)
+- NEVER guess, infer, or convert units yourself. Unit-driven conversion is done downstream.
 - For text/CSV files: be especially careful with number parsing (commas vs dots as decimal separators)
 
 STEP 5 — CONFIDENCE SCORING:
