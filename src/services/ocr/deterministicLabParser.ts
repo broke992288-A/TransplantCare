@@ -152,7 +152,7 @@ export function parseLabText(rawText: string): DeterministicParseResult {
   ): ParsedDateGroup => {
     let g = map.get(date);
     if (!g) {
-      g = { date, data: {}, confidence: {}, originalText: {} };
+      g = { date, data: {}, confidence: {}, originalText: {}, units: {}, unitSources: {} };
       map.set(date, g);
     }
     return g;
