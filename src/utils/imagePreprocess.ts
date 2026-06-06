@@ -8,7 +8,7 @@
  */
 
 import { extractPdfText, readTextFileAsString } from "@/services/ocr/pdfTextExtractor";
-import { parseLabText, type ParsedDateGroup } from "@/services/ocr/deterministicLabParser";
+import { parseLabText, type ParsedDateGroup, type ParsedPatientIdentity } from "@/services/ocr/deterministicLabParser";
 
 export interface PreprocessOptions {
   signal?: AbortSignal;
