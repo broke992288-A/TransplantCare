@@ -990,6 +990,10 @@ export type Database = {
         Returns: Json
       }
       can_access_patient: { Args: { _patient_id: string }; Returns: boolean }
+      coalesce_recent_lab_values: {
+        Args: { _patient_id: string; _window_days?: number }
+        Returns: Json
+      }
       generate_lab_schedule: {
         Args: { _patient_id: string; _transplant_date: string }
         Returns: undefined
