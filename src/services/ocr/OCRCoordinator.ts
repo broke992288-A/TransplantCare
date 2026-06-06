@@ -41,6 +41,7 @@ interface OcrEdgeDateGroup {
   data?: Record<string, number | null>;
   confidence?: Record<string, number>;
   originalText?: Record<string, string>;
+  units?: Record<string, string>;
 }
 
 interface OcrEdgeResponse {
@@ -50,6 +51,7 @@ interface OcrEdgeResponse {
   data?: Record<string, number | null>;
   confidence?: Record<string, number>;
   originalText?: Record<string, string>;
+  units?: Record<string, string>;
   reportType?: string;
 }
 
