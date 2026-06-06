@@ -142,12 +142,6 @@ function aliasMatchIndex(line: string, key: CanonicalLabKey): number {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// Main parser
-// ────────────────────────────────────────────────────────────────────
-
-export function parseLabText(rawText: string): DeterministicParseResult {
-  const t0 = performance.now();
-// ────────────────────────────────────────────────────────────────────
 // Patient identity extraction (deterministic, header-scan only)
 // ────────────────────────────────────────────────────────────────────
 
