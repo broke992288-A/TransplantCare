@@ -582,6 +582,25 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setDateGroups(allGroups);
       setReportType(lastReportType);
       setReportUrl(lastReportUrl);
+      setVerifications({});
+      setIdentityOverride(false);
+
+      // ── Patient identity safety check (uses first group's identity) ──
+      const firstWithIdentity = allGroups.find((g) => g.patientIdentity);
+      const idCheck = checkIdentity(
+        firstWithIdentity?.patientIdentity,
+        patientName,
+        patientDOB,
+        patientMRN,
+      );
+      setIdentityCheck(idCheck);
+      if (idCheck.status === "mismatch") {
+        toast({
+          title: "⚠ Patient identity mismatch",
+          description: "This report may belong to another patient. Please verify before continuing.",
+          variant: "destructive",
+        });
+      }
 
       for (const g of allGroups) {
         const detected = detectCountryFromUnits(g);
