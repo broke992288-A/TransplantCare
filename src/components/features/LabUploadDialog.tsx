@@ -414,7 +414,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setReportUrl(lastReportUrl);
 
       for (const g of allGroups) {
-        const detected = detectCountryFromValues(g.values);
+        const detected = detectCountryFromUnits(g);
         if (detected) {
           setCountry(detected.country);
           toast({ title: "🌍 " + t("common.info"), description: detected.reason });
