@@ -33,6 +33,10 @@ export interface OCRGroupValues {
   confidence: Record<string, number>;
   /** Lab key → original raw line/snippet (best-effort). */
   originalText: Record<string, string>;
+  /** Lab key → printed unit captured from the report (empty when not found). */
+  units: Record<string, string>;
+  /** Lab key → unit_source: "detected" | "assumed" | "unknown". */
+  unitSources: Record<string, "detected" | "assumed" | "unknown">;
 }
 
 export interface OCRResult {
