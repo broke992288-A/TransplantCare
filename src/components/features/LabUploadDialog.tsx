@@ -446,6 +446,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("0");
   const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
+  /** Per-field verification flags keyed `${groupIndex}:${fieldKey}`. */
+  const [verifications, setVerifications] = useState<Record<string, boolean>>({});
+  /** Identity check + manual override state. */
+  const [identityCheck, setIdentityCheck] = useState<IdentityCheck | null>(null);
+  const [identityOverride, setIdentityOverride] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const processAbortRef = useRef<AbortController | null>(null);
