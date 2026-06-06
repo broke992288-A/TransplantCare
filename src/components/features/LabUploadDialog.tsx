@@ -171,49 +171,168 @@ function isSuspicious(key: string, value: number): boolean {
 // the risk engine compares against those profiles — no conversion is applied.
 
 
+/** Normalize a name for fuzzy comparison: lowercased, trimmed, alpha only. */
+function normalizeName(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .replace(/[\u0400-\u04FF]/g, (c) => c) // keep cyrillic
+    .replace(/[^a-zа-яё\s]/giu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Light fuzzy match: shared token count / max token count. */
+function nameSimilarity(a: string, b: string): number {
+  const at = normalizeName(a).split(" ").filter(Boolean);
+  const bt = normalizeName(b).split(" ").filter(Boolean);
+  if (at.length === 0 || bt.length === 0) return 0;
+  const setB = new Set(bt);
+  const shared = at.filter((t) => setB.has(t)).length;
+  return shared / Math.max(at.length, bt.length);
+}
+
+/** Compare extracted DOB (any format) with stored DOB (YYYY-MM-DD). */
+function dobMatches(extracted: string | null | undefined, stored: string | null | undefined): boolean {
+  if (!extracted || !stored) return false;
+  const norm = (s: string) => s.replace(/[^0-9]/g, "");
+  const e = norm(extracted);
+  const s = norm(stored);
+  if (!e || !s) return false;
+  // exact 8-digit match (YYYYMMDD vs DDMMYYYY etc.)
+  if (e.length >= 8 && s.length >= 8) {
+    const eYYYYMMDD = e.slice(0, 8);
+    const sYYYYMMDD = s.slice(0, 8);
+    if (eYYYYMMDD === sYYYYMMDD) return true;
+    // try reversing DDMMYYYY → YYYYMMDD
+    const reversed = e.slice(4, 8) + e.slice(2, 4) + e.slice(0, 2);
+    if (reversed === sYYYYMMDD) return true;
+  }
+  return false;
+}
+
+interface IdentityCheck {
+  status: "match" | "mismatch" | "unknown";
+  reason: string;
+  extracted: PatientIdentity;
+}
+
+/** Compare OCR-extracted identity with currently-opened patient. */
+function checkIdentity(
+  extracted: PatientIdentity | undefined,
+  currentName?: string | null,
+  currentDOB?: string | null,
+  currentMRN?: string | null,
+): IdentityCheck {
+  if (!extracted || (!extracted.name && !extracted.dob && !extracted.mrn)) {
+    return { status: "unknown", reason: "No identity block detected on report", extracted: extracted ?? {} };
+  }
+
+  // MRN is the strongest signal
+  if (extracted.mrn && currentMRN) {
+    const e = extracted.mrn.replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const s = currentMRN.replace(/[^a-z0-9]/gi, "").toLowerCase();
+    if (e && s) {
+      if (e === s) return { status: "match", reason: `MRN match: ${extracted.mrn}`, extracted };
+      return { status: "mismatch", reason: `MRN mismatch: report=${extracted.mrn} vs patient=${currentMRN}`, extracted };
+    }
+  }
+
+  const nameSim = currentName ? nameSimilarity(extracted.name ?? "", currentName) : 0;
+  const dobOk = dobMatches(extracted.dob, currentDOB);
+
+  // Strong mismatch: both name and DOB present on report AND both fail
+  if (extracted.name && currentName && nameSim < 0.34 && extracted.dob && currentDOB && !dobOk) {
+    return {
+      status: "mismatch",
+      reason: `Name "${extracted.name}" and DOB "${extracted.dob}" don't match patient "${currentName}" / ${currentDOB}`,
+      extracted,
+    };
+  }
+
+  // Name strong mismatch alone (no DOB on report to confirm)
+  if (extracted.name && currentName && nameSim < 0.2 && !extracted.dob) {
+    return {
+      status: "mismatch",
+      reason: `Name "${extracted.name}" does not match patient "${currentName}"`,
+      extracted,
+    };
+  }
+
+  if (nameSim >= 0.5 || dobOk) {
+    return { status: "match", reason: "Identity match", extracted };
+  }
+
+  return { status: "unknown", reason: "Identity could not be confirmed", extracted };
+}
+
+// NOTE: Lab values are stored AS-IS in the units of the patient's country.
+// Country-specific reference profiles define the matching normal ranges, and
+// the risk engine compares against those profiles — no conversion is applied.
+
+
 function DateGroupValues({
+  groupIndex,
   group,
   onValueChange,
   t,
   refMap,
+  verifications,
+  onToggleVerify,
 }: {
+  groupIndex: number;
   group: DateGroup;
   onValueChange: (key: string, value: string) => void;
   t: (key: string) => string;
   refMap: Record<string, { min: number | null; max: number | null; unit: string }>;
+  verifications: Record<string, boolean>;
+  onToggleVerify: (groupIndex: number, key: string, verified: boolean) => void;
 }) {
-  const filledCount = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "").length;
-  const lowConfFields = LAB_FIELDS.filter(
-    (f) => group.values[f.key] && group.confidence[f.key] != null && group.confidence[f.key] < 80
+  const filledFields = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "");
+  const missingFields = LAB_FIELDS.filter((f) => !group.values[f.key] || group.values[f.key] === "");
+  const lowConfFields = filledFields.filter(
+    (f) => group.confidence[f.key] != null && group.confidence[f.key] < 80
   );
+  const unknownUnitFields = filledFields.filter(
+    (f) => (group.unitSources?.[f.key] ?? "unknown") === "unknown"
+  );
+
+  const requiresReview = (key: string): boolean => {
+    const hasValue = group.values[key] && group.values[key] !== "";
+    if (!hasValue) return false;
+    const conf = group.confidence[key] ?? 100;
+    const uSrc = group.unitSources?.[key] ?? "unknown";
+    return conf < 80 || uSrc === "unknown";
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 p-3">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">{filledCount} {t("upload.valuesFound")}</span>
+      {/* Detected / Missing summary */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+          <p className="text-[11px] uppercase font-semibold text-primary tracking-wide">Detected</p>
+          <p className="text-lg font-bold text-primary">{filledFields.length}</p>
         </div>
-        {lowConfFields.length > 0 && (
-          <span className="flex items-center gap-1 text-xs font-medium text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {lowConfFields.length} {t("upload.needsVerification")}
-          </span>
-        )}
+        <div className="rounded-lg border border-warning/40 bg-warning/5 p-2.5">
+          <p className="text-[11px] uppercase font-semibold text-warning tracking-wide">Not detected</p>
+          <p className="text-lg font-bold text-warning">{missingFields.length}</p>
+        </div>
       </div>
 
-      {lowConfFields.length > 0 && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-          <p className="text-xs font-medium text-destructive mb-1">
-            ⚠ {t("upload.lowConfidence")}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {lowConfFields.map((f) => (
-              <span key={f.key} className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-                {f.label}: {group.values[f.key]} ({group.confidence[f.key]}%)
-              </span>
-            ))}
-          </div>
+      {(lowConfFields.length > 0 || unknownUnitFields.length > 0) && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1">
+          {lowConfFields.length > 0 && (
+            <p className="text-xs text-destructive font-medium flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {lowConfFields.length} {t("upload.needsVerification")}
+            </p>
+          )}
+          {unknownUnitFields.length > 0 && (
+            <p className="text-xs text-destructive font-medium flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {unknownUnitFields.length} field(s) with unknown unit — please verify before continuing
+            </p>
+          )}
         </div>
       )}
 
@@ -223,6 +342,8 @@ function DateGroupValues({
           const conf = group.confidence[field.key] ?? 100;
           const isLowConf = hasValue && conf < 80;
           const origText = group.originalText[field.key];
+          const uSrc = group.unitSources?.[field.key] ?? "unknown";
+          const unknownUnit = hasValue && uSrc === "unknown";
 
           // Use country-specific unit if available
           const ref = refMap[field.key];
@@ -236,19 +357,25 @@ function DateGroupValues({
           );
           const isSusp = !isNaN(numVal) && isSuspicious(field.key, numVal);
 
+          const vKey = `${groupIndex}:${field.key}`;
+          const isVerified = !!verifications[vKey];
+          const reviewRequired = requiresReview(field.key);
+
           return (
             <div
               key={field.key}
               className={`space-y-1 rounded-lg border p-2.5 ${
-                isSusp
+                unknownUnit && !isVerified
+                  ? "border-destructive bg-destructive/10 ring-2 ring-destructive/30"
+                  : isSusp
                   ? "border-destructive bg-destructive/10 ring-2 ring-destructive/40"
-                  : isLowConf
+                  : isLowConf && !isVerified
                   ? "border-destructive/40 bg-destructive/5 ring-1 ring-destructive/20"
                   : isOutOfRange
                   ? "border-warning/40 bg-warning/5"
                   : hasValue
                   ? "border-primary/30 bg-primary/5"
-                  : ""
+                  : "border-muted bg-muted/30"
               }`}
             >
               <Label className="text-xs flex items-center justify-between">
@@ -268,9 +395,17 @@ function DateGroupValues({
                 step="any"
                 value={group.values[field.key] ?? ""}
                 onChange={(e) => onValueChange(field.key, e.target.value)}
-                className={`h-8 text-sm ${isSusp ? "border-destructive ring-1 ring-destructive" : isLowConf ? "border-destructive/40" : isOutOfRange ? "border-warning/40" : ""}`}
-                placeholder="—"
+                className={`h-8 text-sm ${unknownUnit ? "border-destructive" : isSusp ? "border-destructive ring-1 ring-destructive" : isLowConf ? "border-destructive/40" : isOutOfRange ? "border-warning/40" : ""}`}
+                placeholder={hasValue ? "—" : "Not detected — enter manually"}
               />
+              {!hasValue && (
+                <p className="text-[10px] text-warning font-medium">Not detected</p>
+              )}
+              {unknownUnit && (
+                <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
+                  <AlertTriangle className="h-3 w-3" /> Unit could not be determined. Please verify before continuing.
+                </p>
+              )}
               {isSusp && (
                 <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
                   <AlertTriangle className="h-3 w-3" /> Suspicious value — please verify!
@@ -280,6 +415,19 @@ function DateGroupValues({
                 <p className={`text-[10px] ${isOutOfRange ? "text-warning font-medium" : "text-muted-foreground"}`}>
                   {isOutOfRange ? "⚠️ " : ""}Norma: {refRange} {displayUnit}
                 </p>
+              )}
+              {hasValue && (
+                <label className="flex items-center gap-1.5 text-[11px] cursor-pointer select-none pt-1">
+                  <input
+                    type="checkbox"
+                    checked={isVerified}
+                    onChange={(e) => onToggleVerify(groupIndex, field.key, e.target.checked)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className={reviewRequired && !isVerified ? "text-destructive font-medium" : "text-muted-foreground"}>
+                    {isVerified ? "✓ Reviewed" : reviewRequired ? "Review required" : "Reviewed"}
+                  </span>
+                </label>
               )}
             </div>
           );
