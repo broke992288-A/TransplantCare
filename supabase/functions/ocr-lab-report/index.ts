@@ -246,6 +246,17 @@ serve(async (req) => {
                 type: "object",
                 properties: {
                   report_type: { type: "string", enum: ["table", "freeform", "mixed", "text", "spreadsheet"] },
+                  patient_identity: {
+                    type: "object",
+                    description: "Patient identity block. Use null for any field not clearly printed.",
+                    properties: {
+                      name: { type: ["string", "null"] },
+                      dob: { type: ["string", "null"], description: "YYYY-MM-DD if parseable, else raw printed string" },
+                      mrn: { type: ["string", "null"] },
+                    },
+                    required: ["name", "dob", "mrn"],
+                    additionalProperties: false,
+                  },
                   date_groups: {
                     type: "array",
                     items: {
@@ -259,7 +270,7 @@ serve(async (req) => {
                     },
                   },
                 },
-                required: ["report_type", "date_groups"],
+                required: ["report_type", "patient_identity", "date_groups"],
                 additionalProperties: false,
               },
             },
