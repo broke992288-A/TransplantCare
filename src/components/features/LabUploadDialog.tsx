@@ -1049,6 +1049,56 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
 
         {step === "confirm" && (
           <div className="space-y-4">
+            {/* ── Patient identity safety banner ── */}
+            {identityCheck && identityCheck.status === "mismatch" && (
+              <div className="rounded-lg border-2 border-destructive bg-destructive/10 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-destructive">
+                      This report may belong to another patient. Please verify before continuing.
+                    </p>
+                    <p className="text-xs text-destructive/80 mt-1">{identityCheck.reason}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Report: <strong>{identityCheck.extracted.name ?? "—"}</strong>
+                      {identityCheck.extracted.dob ? ` · DOB ${identityCheck.extracted.dob}` : ""}
+                      {identityCheck.extracted.mrn ? ` · MRN ${identityCheck.extracted.mrn}` : ""}
+                      <br />
+                      Patient: <strong>{patientName ?? "—"}</strong>
+                      {patientDOB ? ` · DOB ${patientDOB}` : ""}
+                      {patientMRN ? ` · MRN ${patientMRN}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={identityOverride}
+                    onChange={(e) => setIdentityOverride(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <span className="font-medium text-destructive">
+                    I have verified this report belongs to the current patient (override will be audited).
+                  </span>
+                </label>
+              </div>
+            )}
+            {identityCheck && identityCheck.status === "match" && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 flex items-center gap-2 text-xs text-primary">
+                <CheckCircle2 className="h-4 w-4" /> Identity match: {identityCheck.reason}
+              </div>
+            )}
+
+            {/* ── Verification completeness summary ── */}
+            <div className={`rounded-lg border p-2 text-xs flex items-center justify-between ${verificationStatus.ready ? "border-primary/30 bg-primary/5 text-primary" : "border-warning/40 bg-warning/5 text-warning"}`}>
+              <span>
+                Detected: <strong>{verificationStatus.detected}</strong> · Reviewed: <strong>{verificationStatus.reviewed}</strong>
+              </span>
+              <span className="font-semibold">
+                {verificationStatus.ready ? "Ready" : `Verification incomplete (${verificationStatus.requiredOpen} required)`}
+              </span>
+            </div>
+
             {dateGroups.length > 1 && (
               <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <Calendar className="h-5 w-5 text-primary" />
@@ -1057,6 +1107,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 </span>
               </div>
             )}
+
 
             {dateGroups.length > 1 ? (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
