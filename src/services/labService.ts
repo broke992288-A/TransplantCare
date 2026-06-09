@@ -44,6 +44,7 @@ export async function fetchLabsByPatientId(patientId: string, limit?: number) {
     .from("lab_results")
     .select("*")
     .eq("patient_id", patientId)
+    .is("deleted_at", null)
     .order("recorded_at", { ascending: false });
   if (limit) query = query.limit(limit);
   const { data, error } = await query;
@@ -156,9 +157,42 @@ export async function updateLabResult(labId: string, updates: TablesUpdate<"lab_
   return data;
 }
 
-/** Delete a lab result by ID */
-export async function deleteLabResult(labId: string) {
-  await supabase.from("risk_snapshots").delete().eq("lab_result_id", labId);
-  const { error } = await supabase.from("lab_results").delete().eq("id", labId);
-  if (error) throw error;
+/**
+ * Soft-delete a lab result. Clinical history must remain recoverable, so we
+ * never hard-delete. The reason is required and the event is recorded in the
+ * immutable audit log. Associated risk_snapshots are intentionally retained
+ * for historical traceability.
+ */
+export async function deleteLabResult(labId: string, reason: string) {
+  const trimmed = (reason ?? "").trim();
+  if (trimmed.length < 3) {
+    throw new Error("A deletion reason (min 3 chars) is required");
+  }
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id ?? null;
+
+  const { data: lab, error: updErr } = await supabase
+    .from("lab_results")
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: uid,
+      delete_reason: trimmed,
+    })
+    .eq("id", labId)
+    .is("deleted_at", null)
+    .select("id, patient_id")
+    .single();
+  if (updErr) throw updErr;
+
+  try {
+    await supabase.rpc("log_audit_event", {
+      _action: "lab_result_delete",
+      _entity_type: "lab_result",
+      _entity_id: labId,
+      _metadata: { patient_id: lab?.patient_id, reason: trimmed } as never,
+    });
+  } catch (err) {
+    console.error("[deleteLabResult] audit log failed", err);
+  }
 }
+

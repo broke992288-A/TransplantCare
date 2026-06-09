@@ -207,6 +207,7 @@ export type Database = {
           creatinine: number | null
           crp: number | null
           cyclosporine: number | null
+          delete_reason: string | null
           deleted_at: string | null
           deleted_by: string | null
           direct_bilirubin: number | null
@@ -249,6 +250,7 @@ export type Database = {
           creatinine?: number | null
           crp?: number | null
           cyclosporine?: number | null
+          delete_reason?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           direct_bilirubin?: number | null
@@ -291,6 +293,7 @@ export type Database = {
           creatinine?: number | null
           crp?: number | null
           cyclosporine?: number | null
+          delete_reason?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           direct_bilirubin?: number | null
