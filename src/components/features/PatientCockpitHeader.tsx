@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pill, Trash2, Stethoscope, CalendarClock, AlertTriangle, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
