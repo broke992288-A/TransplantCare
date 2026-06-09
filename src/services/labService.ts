@@ -44,6 +44,7 @@ export async function fetchLabsByPatientId(patientId: string, limit?: number) {
     .from("lab_results")
     .select("*")
     .eq("patient_id", patientId)
+    .is("deleted_at", null)
     .order("recorded_at", { ascending: false });
   if (limit) query = query.limit(limit);
   const { data, error } = await query;
