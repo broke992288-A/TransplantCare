@@ -341,6 +341,9 @@ export type Database = {
         Row: {
           completed_lab_id: string | null
           created_at: string
+          deleted_at: string | null
+          expected_panel: string | null
+          grace_hours: number | null
           id: string
           patient_id: string
           scheduled_date: string
@@ -350,6 +353,9 @@ export type Database = {
         Insert: {
           completed_lab_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          expected_panel?: string | null
+          grace_hours?: number | null
           id?: string
           patient_id: string
           scheduled_date: string
@@ -359,6 +365,9 @@ export type Database = {
         Update: {
           completed_lab_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          expected_panel?: string | null
+          grace_hours?: number | null
           id?: string
           patient_id?: string
           scheduled_date?: string
@@ -621,51 +630,69 @@ export type Database = {
           acknowledged_by: string | null
           alert_type: string
           created_at: string
+          escalation_level: string | null
           id: string
           is_read: boolean
           message: string | null
+          overdue_days: number | null
+          overdue_hours: number | null
           patient_id: string
           resolution_note: string | null
           resolved_at: string | null
           resolved_by: string | null
+          resolved_by_upload: string | null
           risk_snapshot_id: string | null
+          schedule_id: string | null
           severity: string
           status: string
           title: string
+          transplant_phase: string | null
         }
         Insert: {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
           alert_type?: string
           created_at?: string
+          escalation_level?: string | null
           id?: string
           is_read?: boolean
           message?: string | null
+          overdue_days?: number | null
+          overdue_hours?: number | null
           patient_id: string
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_by_upload?: string | null
           risk_snapshot_id?: string | null
+          schedule_id?: string | null
           severity?: string
           status?: string
           title: string
+          transplant_phase?: string | null
         }
         Update: {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
           alert_type?: string
           created_at?: string
+          escalation_level?: string | null
           id?: string
           is_read?: boolean
           message?: string | null
+          overdue_days?: number | null
+          overdue_hours?: number | null
           patient_id?: string
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_by_upload?: string | null
           risk_snapshot_id?: string | null
+          schedule_id?: string | null
           severity?: string
           status?: string
           title?: string
+          transplant_phase?: string | null
         }
         Relationships: [
           {
@@ -683,10 +710,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "patient_alerts_resolved_by_upload_fkey"
+            columns: ["resolved_by_upload"]
+            isOneToOne: false
+            referencedRelation: "lab_results"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "patient_alerts_risk_snapshot_id_fkey"
             columns: ["risk_snapshot_id"]
             isOneToOne: false
             referencedRelation: "risk_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_alerts_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "lab_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -994,6 +1035,7 @@ export type Database = {
         Args: { _patient_id: string; _window_days?: number }
         Returns: Json
       }
+      detect_missing_labs: { Args: never; Returns: Json }
       generate_lab_schedule: {
         Args: { _patient_id: string; _transplant_date: string }
         Returns: undefined
