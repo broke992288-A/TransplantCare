@@ -162,9 +162,16 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
 
   const confirmDelete = async () => {
     if (!deleteId) return;
+    const reason = (typeof window !== "undefined"
+      ? window.prompt(t("detail.deleteReasonPrompt") ?? "Reason for deletion (required, min 3 chars):")
+      : null)?.trim();
+    if (!reason || reason.length < 3) {
+      toast({ title: t("common.error"), description: "Deletion cancelled: reason required", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
-      await deleteLabResult(deleteId);
+      await deleteLabResult(deleteId, reason);
       toast({ title: t("detail.labDeleted") });
       setDeleteId(null);
       onLabChanged?.();
