@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pill, Trash2, Stethoscope, CalendarClock, AlertTriangle, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -90,7 +91,37 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
             </div>
           </div>
 
+          {/* Stale lab data banner — informational only */}
+          {(() => {
+            if (!latestLab?.recorded_at) return null;
+            const hasMarker =
+              latestLab.creatinine != null ||
+              latestLab.tacrolimus_level != null ||
+              latestLab.alt != null ||
+              latestLab.ast != null;
+            if (!hasMarker) return null;
+            const ageDays = Math.floor((Date.now() - new Date(latestLab.recorded_at).getTime()) / 86400000);
+            if (ageDays <= 5) return null;
+            const elevated = ageDays > 10;
+            return (
+              <div className={`rounded-md border px-3 py-2 flex items-center gap-2 text-sm ${
+                elevated ? "border-warning/40 bg-warning/10" : "border-border bg-muted/40"
+              }`}>
+                <Clock className={`h-4 w-4 flex-shrink-0 ${elevated ? "text-warning" : "text-muted-foreground"}`} />
+                <span>
+                  <span className="font-medium">
+                    {elevated ? "Lab data is stale" : "Lab data may be outdated"}:
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    Latest creatinine/tacrolimus/ALT-AST is {ageDays} days old. Risk interpretation requires fresh laboratory data.
+                  </span>
+                </span>
+              </div>
+            );
+          })()}
+
           {/* Tacrolimus target info */}
+
           {tacrolimusTarget && (
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 flex items-center gap-3 text-sm">
               <Info className="h-4 w-4 text-primary flex-shrink-0" />

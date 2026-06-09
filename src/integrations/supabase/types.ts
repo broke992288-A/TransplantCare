@@ -896,6 +896,7 @@ export type Database = {
           creatinine: number | null
           details: Json | null
           id: string
+          is_historical: boolean
           lab_result_id: string | null
           patient_id: string
           risk_level: string
@@ -912,6 +913,7 @@ export type Database = {
           creatinine?: number | null
           details?: Json | null
           id?: string
+          is_historical?: boolean
           lab_result_id?: string | null
           patient_id: string
           risk_level?: string
@@ -928,6 +930,7 @@ export type Database = {
           creatinine?: number | null
           details?: Json | null
           id?: string
+          is_historical?: boolean
           lab_result_id?: string | null
           patient_id?: string
           risk_level?: string
@@ -1039,6 +1042,10 @@ export type Database = {
         Returns: Json
       }
       detect_missing_labs: { Args: never; Returns: Json }
+      ensure_patient_has_active_schedule: {
+        Args: { _patient_id: string }
+        Returns: undefined
+      }
       generate_lab_schedule: {
         Args: { _patient_id: string; _transplant_date: string }
         Returns: undefined
