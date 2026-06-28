@@ -75,34 +75,97 @@ const LAB_NUMERIC_KEYS = [
 
 type LabNumericKey = typeof LAB_NUMERIC_KEYS[number];
 
+/** Default clinical timezone for day bucketing (Afzal pilot — IST). */
+const CLINICAL_TZ = "Asia/Kolkata";
+
+/**
+ * Returns the YYYY-MM-DD calendar day of an ISO timestamp **in the given IANA
+ * timezone**, not UTC. Lab uploaded at 01:00 IST must bucket to today's IST
+ * date, not yesterday's UTC date.
+ */
+function getLocalDayKey(iso: string, tz: string = CLINICAL_TZ): string {
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** Stable content hash over the clinical numeric payload for dedupe. */
+function computeContentHash(labData: TablesInsert<"lab_results">): string {
+  const payload: Record<string, unknown> = {};
+  for (const key of LAB_NUMERIC_KEYS) {
+    const v = labData[key as LabNumericKey];
+    if (v != null) payload[key] = v;
+  }
+  const sorted = Object.keys(payload).sort().reduce<Record<string, unknown>>((acc, k) => {
+    acc[k] = payload[k];
+    return acc;
+  }, {});
+  return JSON.stringify(sorted);
+}
+
 /**
  * Check if a lab result already exists for the same patient and date.
  * If found, merge new values into existing record (fill nulls, don't overwrite existing).
  * If not found, insert a new record.
+ *
+ * Day bucketing uses the clinical timezone (default IST) — never raw UTC
+ * midnight — so labs taken late at night don't bleed into the previous day.
  */
 export async function upsertLabResult(labData: TablesInsert<"lab_results">): Promise<LabResult> {
   const { patient_id, recorded_at } = labData;
 
-  if (!recorded_at || !patient_id) {
+  if (!patient_id) {
     return insertLabResult(labData) as Promise<LabResult>;
   }
 
-  const recordedDate = new Date(recorded_at);
-  const startOfDay = new Date(recordedDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(recordedDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const effectiveRecordedAt = recorded_at ?? new Date().toISOString();
+  const targetDayKey = getLocalDayKey(effectiveRecordedAt);
 
-  const { data: existing } = await supabase
+  // Pull a UTC window that safely brackets the target IST day (±36h superset).
+  const anchor = new Date(effectiveRecordedAt);
+  const windowStart = new Date(anchor.getTime() - 36 * 60 * 60 * 1000).toISOString();
+  const windowEnd = new Date(anchor.getTime() + 36 * 60 * 60 * 1000).toISOString();
+
+  const { data: candidates } = await supabase
     .from("lab_results")
     .select("*")
     .eq("patient_id", patient_id)
-    .gte("recorded_at", startOfDay.toISOString())
-    .lte("recorded_at", endOfDay.toISOString())
-    .limit(1)
-    .single();
+    .is("deleted_at", null)
+    .gte("recorded_at", windowStart)
+    .lte("recorded_at", windowEnd);
+
+  const existing = (candidates ?? []).find(
+    (row) => row.recorded_at && getLocalDayKey(row.recorded_at) === targetDayKey
+  );
 
   if (existing) {
+    // Content-hash dedupe: identical clinical payload on same day → skip.
+    const incomingHash = computeContentHash(labData);
+    const existingHash = computeContentHash(existing as TablesInsert<"lab_results">);
+    if (incomingHash === existingHash && incomingHash !== "{}") {
+      try {
+        await supabase.rpc("log_audit_event", {
+          _action: "duplicate_lab_skipped",
+          _entity_type: "lab_result",
+          _entity_id: existing.id,
+          _metadata: {
+            patient_id,
+            recorded_at: effectiveRecordedAt,
+            day_key: targetDayKey,
+            timezone: CLINICAL_TZ,
+            content_hash: incomingHash,
+          } as never,
+        });
+      } catch (err) {
+        console.error("[upsertLabResult] duplicate audit log failed", err);
+      }
+      return existing as LabResult;
+    }
+
     const updates: TablesUpdate<"lab_results"> = {};
     for (const key of LAB_NUMERIC_KEYS) {
       const newVal = labData[key as LabNumericKey];
@@ -130,8 +193,9 @@ export async function upsertLabResult(labData: TablesInsert<"lab_results">): Pro
     return existing as LabResult;
   }
 
-  return insertLabResult(labData) as Promise<LabResult>;
+  return insertLabResult({ ...labData, recorded_at: effectiveRecordedAt }) as Promise<LabResult>;
 }
+
 
 /** Update a lab result's recorded_at date */
 export async function updateLabDate(labId: string, newDate: string) {
