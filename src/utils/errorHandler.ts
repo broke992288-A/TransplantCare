@@ -15,6 +15,16 @@ const ERROR_KEYS: { pattern: string; key: string }[] = [
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const e = error as Record<string, unknown>;
+    const parts = [e.message, e.error_description, e.details, e.hint, e.code]
+      .filter((v): v is string => typeof v === "string" && v.length > 0);
+    if (parts.length > 0) return parts.join(" — ");
+    try {
+      const json = JSON.stringify(error);
+      if (json && json !== "{}") return json;
+    } catch { /* ignore */ }
+  }
   return String(error ?? "");
 }
 

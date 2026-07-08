@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { getErrorMessage } from "@/utils/errorHandler";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -962,7 +963,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setOpen(false);
       onLabAdded();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       toast({ title: t("common.error"), description: message, variant: "destructive" });
     } finally {
       setSaving(false);
