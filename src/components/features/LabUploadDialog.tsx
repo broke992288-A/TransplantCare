@@ -962,7 +962,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setOpen(false);
       onLabAdded();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       toast({ title: t("common.error"), description: message, variant: "destructive" });
     } finally {
       setSaving(false);
