@@ -8,6 +8,84 @@ function cacheKey(text: string, target: string, source?: string) {
   return `${source || "auto"}:${target}:${text}`;
 }
 
+// ---------------- Batched queue ----------------
+type PendingItem = {
+  text: string;
+  targetLang: string;
+  sourceLang?: string;
+  resolve: (translated: string) => void;
+};
+
+const queue: PendingItem[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleFlush() {
+  if (flushTimer) return;
+  flushTimer = setTimeout(flushQueue, 60);
+}
+
+async function invokeWithRetry(body: Record<string, unknown>, attempts = 3) {
+  let lastErr: unknown = null;
+  for (let i = 0; i < attempts; i++) {
+    const { data, error } = await supabase.functions.invoke("translate-text", { body });
+    if (!error && data?.translations) return data.translations as string[];
+    lastErr = error;
+    // Backoff for boot/503 errors
+    await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+  }
+  throw lastErr ?? new Error("translate-text failed");
+}
+
+async function flushQueue() {
+  flushTimer = null;
+  const batch = queue.splice(0, queue.length);
+  if (batch.length === 0) return;
+
+  // Group by (targetLang, sourceLang)
+  const groups = new Map<string, PendingItem[]>();
+  for (const item of batch) {
+    const k = `${item.sourceLang || "auto"}->${item.targetLang}`;
+    const arr = groups.get(k) ?? [];
+    arr.push(item);
+    groups.set(k, arr);
+  }
+
+  for (const items of groups.values()) {
+    // Deduplicate texts within group
+    const uniqueTexts: string[] = [];
+    const indexMap = new Map<string, number>();
+    for (const it of items) {
+      if (!indexMap.has(it.text)) {
+        indexMap.set(it.text, uniqueTexts.length);
+        uniqueTexts.push(it.text);
+      }
+    }
+    try {
+      const translations = await invokeWithRetry({
+        texts: uniqueTexts,
+        targetLang: items[0].targetLang,
+        sourceLang: items[0].sourceLang,
+      });
+      for (const it of items) {
+        const idx = indexMap.get(it.text)!;
+        const tr = translations[idx] ?? it.text;
+        cache.set(cacheKey(it.text, it.targetLang, it.sourceLang), tr);
+        it.resolve(tr);
+      }
+    } catch {
+      for (const it of items) it.resolve(it.text);
+    }
+  }
+}
+
+function enqueueTranslation(text: string, targetLang: string, sourceLang?: string): Promise<string> {
+  return new Promise((resolve) => {
+    queue.push({ text, targetLang, sourceLang, resolve });
+    scheduleFlush();
+  });
+}
+
+// ---------------- Hooks ----------------
 export function useTranslatedText(
   text: string | null | undefined,
   sourceLang?: string
@@ -15,22 +93,17 @@ export function useTranslatedText(
   const { lang } = useLanguage();
   const [translated, setTranslated] = useState(text ?? "");
   const [loading, setLoading] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const abortRef = useRef({ cancelled: false });
 
   useEffect(() => {
+    abortRef.current.cancelled = false;
+    const localRef = abortRef.current;
+
     if (!text) {
       setTranslated("");
       return;
     }
-
-    // If source matches target, no translation needed
-    if (sourceLang && sourceLang === lang) {
-      setTranslated(text);
-      return;
-    }
-
-    // If no source specified and text looks like target language, skip
-    if (!sourceLang) {
+    if (!sourceLang || sourceLang === lang) {
       setTranslated(text);
       return;
     }
@@ -41,38 +114,21 @@ export function useTranslatedText(
       return;
     }
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
     setLoading(true);
-    supabase.functions
-      .invoke("translate-text", {
-        body: { texts: [text], targetLang: lang, sourceLang },
-      })
-      .then(({ data, error }) => {
-        if (controller.signal.aborted) return;
-        if (!error && data?.translations?.[0]) {
-          cache.set(key, data.translations[0]);
-          setTranslated(data.translations[0]);
-        } else {
-          setTranslated(text);
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setTranslated(text);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
+    enqueueTranslation(text, lang, sourceLang).then((tr) => {
+      if (localRef.cancelled) return;
+      setTranslated(tr);
+      setLoading(false);
+    });
 
-    return () => controller.abort();
+    return () => {
+      localRef.cancelled = true;
+    };
   }, [text, lang, sourceLang]);
 
   return { translated, loading };
 }
 
-/** Batch translate multiple texts */
 export function useTranslatedTexts(
   texts: (string | null | undefined)[],
   sourceLang?: string
@@ -87,41 +143,39 @@ export function useTranslatedTexts(
       return;
     }
 
-    const needsTranslation: { index: number; text: string }[] = [];
-    const result = texts.map((t, i) => {
-      if (!t) return "";
+    let cancelled = false;
+    const result = texts.map((t) => t ?? "");
+    const pending: Promise<void>[] = [];
+
+    texts.forEach((t, i) => {
+      if (!t) return;
       const key = cacheKey(t, lang, sourceLang);
-      if (cache.has(key)) return cache.get(key)!;
-      needsTranslation.push({ index: i, text: t });
-      return t;
+      if (cache.has(key)) {
+        result[i] = cache.get(key)!;
+        return;
+      }
+      pending.push(
+        enqueueTranslation(t, lang, sourceLang).then((tr) => {
+          result[i] = tr;
+        }),
+      );
     });
 
-    if (needsTranslation.length === 0) {
+    if (pending.length === 0) {
       setTranslations(result);
       return;
     }
 
     setLoading(true);
-    supabase.functions
-      .invoke("translate-text", {
-        body: {
-          texts: needsTranslation.map((n) => n.text),
-          targetLang: lang,
-          sourceLang,
-        },
-      })
-      .then(({ data, error }) => {
-        if (!error && data?.translations) {
-          data.translations.forEach((tr: string, i: number) => {
-            const orig = needsTranslation[i];
-            cache.set(cacheKey(orig.text, lang, sourceLang), tr);
-            result[orig.index] = tr;
-          });
-        }
-        setTranslations([...result]);
-      })
-      .catch(() => setTranslations(result))
-      .finally(() => setLoading(false));
+    Promise.all(pending).then(() => {
+      if (cancelled) return;
+      setTranslations([...result]);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [JSON.stringify(texts), lang, sourceLang]);
 
   return { translations, loading };
