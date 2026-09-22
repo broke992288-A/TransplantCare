@@ -1,3 +1,3 @@
 # Roadmap
 
-- [ ] Email infra for notify.transplantcare.uz: scaffold auth email templates, style with TransplantCare branding, deploy auth-email-hook
+- [x] Email infra for notify.transplantcare.uz: scaffolded auth email templates, styled with TransplantCare branding (Uzbek copy, medical cyan), deployed auth-email-hook
