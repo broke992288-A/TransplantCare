@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Globe, ArrowRight } from "lucide-react";
+import { Plus, Loader2, Globe } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -10,9 +10,10 @@ import { insertLabResult, fetchLabsByPatientId } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
 import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
-import { ValidatedInput } from "@/components/ui/form-field";
+import LabField from "@/components/features/LabField";
 import { liverLabSchema, kidneyLabSchema } from "@/lib/validations";
-import { normalizeLabValues, STANDARD_UNITS } from "@/utils/unitConversion";
+import { STANDARD_UNITS } from "@/utils/unitConversion";
+import { normalizeFields, type NormalizedField } from "@/utils/labNormalization";
 import { autoCalculateEgfr } from "@/utils/egfrCalculator";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
 
@@ -230,47 +231,25 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
     } finally { setSaving(false); }
   };
 
-  /** Render a lab input field with unit badge and reference range */
-  const LabField = ({ fieldKey, label, required = true, step, placeholder }: {
-    fieldKey: string; label: string; required?: boolean; step?: string; placeholder?: string;
-  }) => {
-    const unit = getUnit(fieldKey);
-    const range = getRefRange(fieldKey);
-    const status = getFieldStatus(fieldKey, form[fieldKey]);
-
-    return (
-      <div className="space-y-1">
-        <div className="flex items-center gap-1.5">
-          <ValidatedInput
-            label={
-              <span className="flex items-center gap-1.5">
-                {label}
-                {unit && <Badge variant="outline" className="text-[10px] px-1 py-0 font-normal">{unit}</Badge>}
-              </span>
-            }
-            required={required}
-            error={errors[fieldKey]}
-            type="number"
-            step={step ?? "0.1"}
-            value={form[fieldKey]}
-            onChange={(e) => set(fieldKey, e.target.value)}
-            placeholder={placeholder}
-            className={status === "warning" ? "border-warning focus-visible:ring-warning" : ""}
-          />
-        </div>
-        {range && (
-          <p className={`text-[11px] ${status === "warning" ? "text-warning font-medium" : "text-muted-foreground"}`}>
-            {status === "warning" ? "⚠️ " : ""}Norma: {range}
-            {status === "warning" && form[fieldKey] && (
-              <span className="ml-1">
-                <ArrowRight className="inline h-3 w-3" /> {form[fieldKey]} {unit}
-              </span>
-            )}
-          </p>
-        )}
-      </div>
-    );
-  };
+  /**
+   * Build props for the stable top-level LabField component. No component is
+   * created here, so inputs are never remounted while typing.
+   */
+  const fieldProps = (
+    fieldKey: string,
+    label: string,
+    opts: { required?: boolean; step?: string; placeholder?: string } = {},
+  ) => ({
+    fieldKey,
+    label,
+    value: form[fieldKey] ?? "",
+    unit: getUnit(fieldKey),
+    range: getRefRange(fieldKey),
+    status: getFieldStatus(fieldKey, form[fieldKey] ?? ""),
+    error: errors[fieldKey],
+    onValueChange: set,
+    ...opts,
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -305,21 +284,21 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
         <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
           {organType === "liver" ? (
             <>
-              <LabField fieldKey="tacrolimus_level" label={t("add.tacrolimus")} />
-              <LabField fieldKey="alt" label={t("add.alt")} step="1" />
-              <LabField fieldKey="ast" label={t("add.ast")} step="1" />
-              <LabField fieldKey="total_bilirubin" label={t("add.totalBilirubin")} />
-              <LabField fieldKey="direct_bilirubin" label={t("add.directBilirubin")} />
+              <LabField {...fieldProps("tacrolimus_level", t("add.tacrolimus"))} />
+              <LabField {...fieldProps("alt", t("add.alt"), { step: "1" })} />
+              <LabField {...fieldProps("ast", t("add.ast"), { step: "1" })} />
+              <LabField {...fieldProps("total_bilirubin", t("add.totalBilirubin"))} />
+              <LabField {...fieldProps("direct_bilirubin", t("add.directBilirubin"))} />
             </>
           ) : (
             <>
-              <LabField fieldKey="creatinine" label={t("add.creatinine")} />
-              <LabField fieldKey="egfr" label={`${t("add.egfr")} (auto)`} required={false} placeholder="Auto-calculated if empty" />
-              <LabField fieldKey="proteinuria" label={t("add.proteinuria")} />
-              <LabField fieldKey="potassium" label={t("add.potassium")} />
-              <LabField fieldKey="bk_virus_load" label="BK Virus (copies/ml)" required={false} step="1" placeholder="PCR natija" />
-              <LabField fieldKey="cmv_load" label="CMV (copies/ml)" required={false} step="1" placeholder="PCR natija" />
-              <LabField fieldKey="dsa_mfi" label="DSA MFI" required={false} step="1" placeholder="Luminex natija" />
+              <LabField {...fieldProps("creatinine", t("add.creatinine"))} />
+              <LabField {...fieldProps("egfr", `${t("add.egfr")} (auto)`, { required: false, placeholder: "Auto-calculated if empty" })} />
+              <LabField {...fieldProps("proteinuria", t("add.proteinuria"))} />
+              <LabField {...fieldProps("potassium", t("add.potassium"))} />
+              <LabField {...fieldProps("bk_virus_load", "BK Virus (copies/ml)", { required: false, step: "1", placeholder: "PCR natija" })} />
+              <LabField {...fieldProps("cmv_load", "CMV (copies/ml)", { required: false, step: "1", placeholder: "PCR natija" })} />
+              <LabField {...fieldProps("dsa_mfi", "DSA MFI", { required: false, step: "1", placeholder: "Luminex natija" })} />
             </>
           )}
           <div className="sm:col-span-2">
