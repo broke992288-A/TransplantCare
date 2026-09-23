@@ -261,6 +261,37 @@ export default function AdminUsers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={confirmTarget !== null} onOpenChange={(open) => { if (!open) setConfirmTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Emailni tasdiqlash</DialogTitle>
+            <DialogDescription>
+              <span className="block font-medium text-foreground">
+                {confirmTarget?.email ?? confirmTarget?.full_name ?? ""}
+              </span>
+              <span className="mt-2 block">
+                Bu emailni administrator sifatida tasdiqlaysizmi? Foydalanuvchi email tasdiqlashsiz tizimga kira oladi.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmTarget(null)}
+              disabled={confirmMutation.isPending}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              onClick={() => confirmTarget && confirmMutation.mutate(confirmTarget.id)}
+              disabled={confirmMutation.isPending || !confirmTarget}
+            >
+              {confirmMutation.isPending ? "Tasdiqlanmoqda..." : "Tasdiqlash"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
