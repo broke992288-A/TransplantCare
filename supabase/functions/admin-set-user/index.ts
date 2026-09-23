@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     // 4. Validate inputs
     const body = await req.json().catch(() => ({}));
-    const { user_id, password, role } = body ?? {};
+    const { user_id, password, role, confirm_email } = body ?? {};
     if (typeof user_id !== "string" || !/^[0-9a-f-]{36}$/i.test(user_id)) {
       return new Response(JSON.stringify({ error: "Invalid user_id" }), {
         status: 400,
