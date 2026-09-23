@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/errorHandler";
 import type { AppRole } from "@/types/roles";
 import {
-  ADMIN_MANAGED_ROLES, fetchAdminUsers, primaryRole, updateUserRole,
+  ADMIN_MANAGED_ROLES, confirmUserEmail, fetchAdminUsers, primaryRole, updateUserRole,
   type AdminUserRow,
 } from "@/services/adminUserService";
 
@@ -55,6 +55,7 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [target, setTarget] = useState<AdminUserRow | null>(null);
   const [nextRole, setNextRole] = useState<AppRole>("patient");
+  const [confirmTarget, setConfirmTarget] = useState<AdminUserRow | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
