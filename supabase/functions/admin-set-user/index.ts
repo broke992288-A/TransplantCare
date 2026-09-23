@@ -88,6 +88,12 @@ Deno.serve(async (req) => {
       });
       if (error) throw error;
     }
+    if (confirm_email === true && !password) {
+      const { error } = await admin.auth.admin.updateUserById(user_id, {
+        email_confirm: true,
+      });
+      if (error) throw error;
+    }
     if (role) {
       await admin.from("user_roles").delete().eq("user_id", user_id);
       const { error } = await admin.from("user_roles").insert({ user_id, role });
