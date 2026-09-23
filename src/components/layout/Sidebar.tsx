@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Pill, AlertTriangle, FileText, Activity, Sparkles } from "lucide-react";
+import { LayoutDashboard, Users, Pill, AlertTriangle, FileText, Activity, Sparkles, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/logo.png";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -17,6 +17,7 @@ export function Sidebar() {
     { icon: Pill, label: t("nav.medications"), path: "/medications", roles: ["admin", "doctor"] },
     { icon: Pill, label: t("nav.medications"), path: "/patient/home?tab=medications", roles: ["patient"] },
     { icon: AlertTriangle, label: t("nav.alerts"), path: "/alerts", roles: ["admin", "doctor", "support"] },
+    { icon: ShieldCheck, label: "Foydalanuvchilar", path: "/admin/users", roles: ["admin"] },
     // Temporarily hidden from nav (routes/components remain intact):
     // { icon: FileText, label: t("nav.reports"), path: "/reports", roles: ["admin", "doctor"] },
     // { icon: Activity, label: t("nav.analytics"), path: "/analytics", roles: ["admin", "doctor"] },

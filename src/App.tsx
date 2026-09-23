@@ -33,6 +33,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Install = lazy(() => import("./pages/Install"));
 const DocumentationPDF = lazy(() => import("./pages/DocumentationPDF"));
 const AIChat = lazy(() => import("./pages/AIChat"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -90,6 +91,18 @@ function DoctorOrAdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!role) return <Navigate to="/select-role" replace />;
+  if (sessionStorage.getItem("roleConfirmed") !== role) return <Navigate to="/select-role" replace />;
+  if (role !== "admin") {
+    return <Navigate to={role === "patient" ? "/patient/home" : "/doctor-dashboard"} replace />;
+  }
+  return <>{children}</>;
+}
+
 function RealtimeProvider({ children }: { children: React.ReactNode }) {
   useRealtimeInvalidation();
   useSessionTimeout();
@@ -126,6 +139,7 @@ const App = () => (
               <Route path="/medications" element={<DoctorOrAdminRoute><RouteWrap><Medications /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/patient/:id/medications" element={<DoctorOrAdminRoute><RouteWrap><PatientMedications /></RouteWrap></DoctorOrAdminRoute>} />
               <Route path="/demo-setup" element={<DoctorOrAdminRoute><RouteWrap><DemoSetup /></RouteWrap></DoctorOrAdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><RouteWrap><AdminUsers /></RouteWrap></AdminRoute>} />
               <Route path="/patient/home" element={<ProtectedRoute allowedRole="patient"><RouteWrap><PatientProfile /></RouteWrap></ProtectedRoute>} />
               {/* Legacy alias — redirect to canonical /patient/home */}
               <Route path="/patient/profile" element={<Navigate to="/patient/home" replace />} />
