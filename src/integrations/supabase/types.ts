@@ -627,6 +627,39 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          created_at: string
+          dedupe_key: string
+          failed_count: number
+          id: string
+          notification_type: string
+          payload: Json
+          sent_count: number
+          target_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key: string
+          failed_count?: number
+          id?: string
+          notification_type: string
+          payload?: Json
+          sent_count?: number
+          target_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string
+          failed_count?: number
+          id?: string
+          notification_type?: string
+          payload?: Json
+          sent_count?: number
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       patient_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -1049,6 +1082,20 @@ export type Database = {
       generate_lab_schedule: {
         Args: { _patient_id: string; _transplant_date: string }
         Returns: undefined
+      }
+      get_latest_labs_for_patients: {
+        Args: { _patient_ids: string[] }
+        Returns: {
+          alt: number
+          ast: number
+          creatinine: number
+          egfr: number
+          patient_id: string
+          potassium: number
+          recorded_at: string
+          tacrolimus_level: number
+          total_bilirubin: number
+        }[]
       }
       has_role: {
         Args: {

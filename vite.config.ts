@@ -25,6 +25,18 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Low-bandwidth: keep the precached app shell small. Heavy, rarely used
+        // bundles (PDF engine + fonts, screenshot lib, chart engine) are cached
+        // on first real use instead of being downloaded on every install.
+        globIgnores: [
+          "**/pdfmake-*.js",
+          "**/vfs_fonts-*.js",
+          "**/html2canvas*.js",
+          "**/generateCategoricalChart-*.js",
+          "**/Reports-*.js",
+          "**/pdf-*.js",
+        ],
+        maximumFileSizeToCacheInBytes: 1.5 * 1024 * 1024,
         // Inject our push notification handler into the generated service worker.
         importScripts: ["push-handler.js"],
         clientsClaim: true,
@@ -45,6 +57,16 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "storage-cache",
               expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
+            },
+          },
+          {
+            // Heavy lazy chunks excluded from precache: fetch once, then serve
+            // from cache on slow networks.
+            urlPattern: /\/assets\/(pdfmake|vfs_fonts|pdf|html2canvas|generateCategoricalChart|Reports)-[^/]+\.js$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "heavy-chunks",
+              expiration: { maxEntries: 12, maxAgeSeconds: 30 * 86400 },
             },
           },
         ],
