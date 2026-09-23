@@ -59,6 +59,16 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
             },
           },
+          {
+            // Heavy lazy chunks excluded from precache: fetch once, then serve
+            // from cache on slow networks.
+            urlPattern: /\/assets\/(pdfmake|vfs_fonts|pdf|html2canvas|generateCategoricalChart|Reports)-[^/]+\.js$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "heavy-chunks",
+              expiration: { maxEntries: 12, maxAgeSeconds: 30 * 86400 },
+            },
+          },
         ],
       },
       manifest: {
