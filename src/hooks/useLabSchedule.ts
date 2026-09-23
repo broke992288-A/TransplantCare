@@ -13,7 +13,11 @@ export function useOverdueLabSchedules() {
   return useQuery({
     queryKey: ["overdue-lab-schedules"],
     queryFn: fetchAllOverdueSchedules,
-    refetchInterval: 60000, // refresh every minute
+    // Overdue state changes on a daily cadence — minute polling wasted
+    // bandwidth on slow networks without adding clinical value.
+    staleTime: 5 * 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
   });
 }
 

@@ -8,6 +8,10 @@ export function useUnreadAlertCount() {
     queryKey: ["unread-alert-count", user?.id],
     queryFn: fetchAllUnreadAlertCount,
     enabled: !!user && !!role && ["doctor", "admin", "support"].includes(role),
-    refetchInterval: 30000,
+    // Realtime invalidation already pushes new alerts; polling is only a
+    // safety net. 30s polling on a 2G link is pure overhead.
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
   });
 }
