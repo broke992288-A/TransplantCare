@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     // 4. Validate inputs
     const body = await req.json().catch(() => ({}));
-    const { user_id, password, role } = body ?? {};
+    const { user_id, password, role, confirm_email } = body ?? {};
     if (typeof user_id !== "string" || !/^[0-9a-f-]{36}$/i.test(user_id)) {
       return new Response(JSON.stringify({ error: "Invalid user_id" }), {
         status: 400,
@@ -66,6 +66,12 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (confirm_email !== undefined && typeof confirm_email !== "boolean") {
+      return new Response(JSON.stringify({ error: "Invalid confirm_email" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Safety: an admin may not change their own role (prevents self-lockout).
     if (role && user_id === userData.user.id) {
@@ -78,6 +84,12 @@ Deno.serve(async (req) => {
     if (password) {
       const { error } = await admin.auth.admin.updateUserById(user_id, {
         password,
+        email_confirm: true,
+      });
+      if (error) throw error;
+    }
+    if (confirm_email === true && !password) {
+      const { error } = await admin.auth.admin.updateUserById(user_id, {
         email_confirm: true,
       });
       if (error) throw error;

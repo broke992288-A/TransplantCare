@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, ShieldCheck, Users } from "lucide-react";
+import { MailCheck, Search, ShieldCheck, Users } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/errorHandler";
 import type { AppRole } from "@/types/roles";
 import {
-  ADMIN_MANAGED_ROLES, fetchAdminUsers, primaryRole, updateUserRole,
+  ADMIN_MANAGED_ROLES, confirmUserEmail, fetchAdminUsers, primaryRole, updateUserRole,
   type AdminUserRow,
 } from "@/services/adminUserService";
 
@@ -55,6 +55,7 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [target, setTarget] = useState<AdminUserRow | null>(null);
   const [nextRole, setNextRole] = useState<AppRole>("patient");
+  const [confirmTarget, setConfirmTarget] = useState<AdminUserRow | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -75,6 +76,18 @@ export default function AdminUsers() {
         title: "Xatolik",
         description: getErrorMessage(err),
       });
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: (userId: string) => confirmUserEmail(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Email tasdiqlandi", description: "Foydalanuvchi emaili tasdiqlangan deb belgilandi." });
+      setConfirmTarget(null);
+    },
+    onError: (err) => {
+      toast({ variant: "destructive", title: "Xatolik", description: getErrorMessage(err) });
     },
   });
 
@@ -170,7 +183,7 @@ export default function AdminUsers() {
                           {u.full_name ?? "—"}
                           {isSelf && <span className="ml-2 text-xs text-muted-foreground">(siz)</span>}
                         </TableCell>
-                        <TableCell className="break-all text-muted-foreground">{u.email ?? "—"}</TableCell>
+                        <TableCell className="max-w-[260px] break-words text-muted-foreground">{u.email ?? "—"}</TableCell>
                         <TableCell>
                           {role ? (
                             <Badge className={ROLE_BADGE[role]}>{ROLE_LABEL[role]}</Badge>
@@ -186,15 +199,28 @@ export default function AdminUsers() {
                         <TableCell className="text-muted-foreground">{formatDate(u.last_sign_in_at)}</TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(u.created_at)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isSelf}
-                            title={isSelf ? "O'z rolingizni o'zgartirish mumkin emas" : undefined}
-                            onClick={() => openDialog(u)}
-                          >
-                            Rolni o'zgartirish
-                          </Button>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {!u.email_confirmed && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-1"
+                                onClick={() => setConfirmTarget(u)}
+                              >
+                                <MailCheck className="h-4 w-4" />
+                                Emailni tasdiqlash
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isSelf}
+                              title={isSelf ? "O'z rolingizni o'zgartirish mumkin emas" : undefined}
+                              onClick={() => openDialog(u)}
+                            >
+                              Rolni o'zgartirish
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -231,6 +257,37 @@ export default function AdminUsers() {
               disabled={mutation.isPending || !target}
             >
               {mutation.isPending ? "Saqlanmoqda..." : "Saqlash"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmTarget !== null} onOpenChange={(open) => { if (!open) setConfirmTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Emailni tasdiqlash</DialogTitle>
+            <DialogDescription>
+              <span className="block font-medium text-foreground">
+                {confirmTarget?.email ?? confirmTarget?.full_name ?? ""}
+              </span>
+              <span className="mt-2 block">
+                Bu emailni administrator sifatida tasdiqlaysizmi? Foydalanuvchi email tasdiqlashsiz tizimga kira oladi.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmTarget(null)}
+              disabled={confirmMutation.isPending}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              onClick={() => confirmTarget && confirmMutation.mutate(confirmTarget.id)}
+              disabled={confirmMutation.isPending || !confirmTarget}
+            >
+              {confirmMutation.isPending ? "Tasdiqlanmoqda..." : "Tasdiqlash"}
             </Button>
           </DialogFooter>
         </DialogContent>

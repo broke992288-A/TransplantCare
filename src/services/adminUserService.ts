@@ -31,6 +31,14 @@ export async function updateUserRole(userId: string, role: AppRole): Promise<voi
   if (error) throw error;
 }
 
+/** Mark a user's email as confirmed through admin-set-user (server-side only). */
+export async function confirmUserEmail(userId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke("admin-set-user", {
+    body: { user_id: userId, confirm_email: true },
+  });
+  if (error) throw error;
+}
+
 /** Primary (highest-privilege) role for display. */
 const PRIORITY: AppRole[] = ["admin", "doctor", "support", "patient"];
 export function primaryRole(roles: string[]): AppRole | null {
