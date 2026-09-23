@@ -83,13 +83,38 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
     if (errors[key]) setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
   };
 
-  const validate = (): boolean => {
-    const schema = organType === "liver" ? liverLabSchema : kidneyLabSchema;
-    const fields = organType === "liver"
-      ? { tacrolimus_level: form.tacrolimus_level, alt: form.alt, ast: form.ast, total_bilirubin: form.total_bilirubin, direct_bilirubin: form.direct_bilirubin }
-      : { creatinine: form.creatinine, egfr: form.egfr, proteinuria: form.proteinuria, potassium: form.potassium };
+  /** Field list for the current organ type. */
+  const fieldKeys = useMemo(
+    () =>
+      organType === "liver"
+        ? ["tacrolimus_level", "alt", "ast", "total_bilirubin", "direct_bilirubin"]
+        : ["creatinine", "egfr", "proteinuria", "potassium", "bk_virus_load", "cmv_load", "dsa_mfi"],
+    [organType],
+  );
 
-    const result = schema.safeParse(fields);
+  /**
+   * Pipeline: raw form values (source units) → normalize to canonical units →
+   * physiologic hard validation on canonical values → save.
+   * Validating raw µmol/L values would wrongly reject e.g. creatinine 90 µmol/L.
+   */
+  const normalizeForm = useCallback(() => {
+    const values: Record<string, string> = {};
+    fieldKeys.forEach((k) => { values[k] = form[k] ?? ""; });
+    return normalizeFields(values, (k) => refMap[k]?.unit ?? STANDARD_UNITS[k] ?? null);
+  }, [fieldKeys, form, refMap]);
+
+  const validateCanonical = (fields: Record<string, NormalizedField>): boolean => {
+    const schema = organType === "liver" ? liverLabSchema : kidneyLabSchema;
+    const required = organType === "liver"
+      ? ["tacrolimus_level", "alt", "ast", "total_bilirubin", "direct_bilirubin"]
+      : ["creatinine", "egfr", "proteinuria", "potassium"];
+
+    const payload: Record<string, number | ""> = {};
+    required.forEach((k) => {
+      payload[k] = fields[k] ? fields[k].value : "";
+    });
+
+    const result = schema.safeParse(payload);
     if (result.success) { setErrors({}); return true; }
 
     const newErrors: Record<string, string> = {};
@@ -101,64 +126,39 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
     return false;
   };
 
-  /** Convert country-specific units to standard units for storage */
-  const convertToStandard = (key: string, value: number): { converted: number; wasConverted: boolean; fromUnit: string; toUnit: string } => {
-    const countryUnit = getUnit(key);
-    const standardUnit = STANDARD_UNITS[key] ?? "";
-
-    if (!countryUnit || !standardUnit || countryUnit === standardUnit) {
-      return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
-    }
-
-    // µmol/L → mg/dL conversions
-    if (countryUnit === "µmol/L" && standardUnit === "mg/dL") {
-      if (key === "creatinine") return { converted: Math.round((value / 88.4) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
-      if (key === "total_bilirubin" || key === "direct_bilirubin") return { converted: Math.round((value / 17.1) * 100) / 100, wasConverted: true, fromUnit: "µmol/L", toUnit: "mg/dL" };
-    }
-    // mmol/L → mg/dL for urea
-    if (key === "urea" && countryUnit === "mmol/L" && standardUnit === "mg/dL") {
-      return { converted: Math.round(value * 6 * 100) / 100, wasConverted: true, fromUnit: "mmol/L", toUnit: "mg/dL" };
-    }
-
-    return { converted: value, wasConverted: false, fromUnit: countryUnit, toUnit: standardUnit };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
 
     setSaving(true);
     try {
-      const labData: Record<string, string | number | null> = { patient_id: patientId };
-      const conversionMessages: string[] = [];
+      // 1. Normalize using explicitly known source units (no magnitude guessing)
+      const { fields, ambiguous } = normalizeForm();
 
-      const processField = (key: string) => {
-        const raw = parseFloat(form[key]);
-        if (isNaN(raw)) { labData[key] = null; return; }
-        const { converted, wasConverted, fromUnit, toUnit } = convertToStandard(key, raw);
-        labData[key] = converted;
-        if (wasConverted) {
-          conversionMessages.push(`${key}: ${raw} ${fromUnit} → ${converted} ${toUnit}`);
-        }
-      };
-
-      if (organType === "liver") {
-        ["tacrolimus_level", "alt", "ast", "total_bilirubin", "direct_bilirubin"].forEach(processField);
-      } else {
-        ["creatinine", "egfr", "proteinuria", "potassium", "bk_virus_load", "cmv_load", "dsa_mfi"].forEach(processField);
+      if (ambiguous.length > 0) {
+        toast({
+          title: t("common.error"),
+          description: `Birlik aniq emas: ${ambiguous.join(", ")}. Iltimos, mamlakat/birlikni tanlang.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
       }
 
-      // Show conversion toast if any conversions happened
+      // 2. Physiologic hard validation on canonical values
+      if (!validateCanonical(fields)) { setSaving(false); return; }
+
+      const labData: Record<string, string | number | null> = { patient_id: patientId };
+      const conversionMessages: string[] = [];
+      fieldKeys.forEach((key) => {
+        const nf = fields[key];
+        labData[key] = nf ? nf.value : null;
+        if (nf?.converted) {
+          conversionMessages.push(`${key}: ${nf.rawValue} ${nf.sourceUnit} → ${nf.value} ${nf.canonicalUnit}`);
+        }
+      });
+
       if (conversionMessages.length > 0) {
         toast({ title: "🔄 " + t("common.info"), description: conversionMessages.join(", ") });
-      } else {
-        // Fallback: run heuristic auto-detection for non-country-aware values
-        const { normalized, conversions } = normalizeLabValues(labData);
-        if (conversions.length > 0) {
-          Object.assign(labData, normalized);
-          const convMsg = conversions.map((c) => `${c.parameter}: ${c.original} ${c.fromUnit} → ${c.converted} ${c.toUnit}`).join(", ");
-          toast({ title: t("common.info"), description: `Auto-converted: ${convMsg}` });
-        }
       }
 
       // Auto-calculate eGFR if not provided (kidney)
