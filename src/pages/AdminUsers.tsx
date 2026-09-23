@@ -79,6 +79,18 @@ export default function AdminUsers() {
     },
   });
 
+  const confirmMutation = useMutation({
+    mutationFn: (userId: string) => confirmUserEmail(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Email tasdiqlandi", description: "Foydalanuvchi emaili tasdiqlangan deb belgilandi." });
+      setConfirmTarget(null);
+    },
+    onError: (err) => {
+      toast({ variant: "destructive", title: "Xatolik", description: getErrorMessage(err) });
+    },
+  });
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return users.filter((u) => {
