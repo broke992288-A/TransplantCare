@@ -51,7 +51,9 @@ describe("auto-notify — idempotency and cleanup", () => {
   });
 
   it("retries at most once for transient failures", () => {
-    const retries = source.match(/Bounded retry/g) ?? [];
-    expect(retries.length).toBe(1);
+    // Exactly one backoff sleep + one extra postOnce inside sendPush.
+    expect((source.match(/setTimeout\(r, 500\)/g) ?? []).length).toBe(1);
+    expect((source.match(/await postOnce\(/g) ?? []).length).toBe(1);
+    expect((source.match(/postOnce\(endpoint, payload\)/g) ?? []).length).toBe(2);
   });
 });
