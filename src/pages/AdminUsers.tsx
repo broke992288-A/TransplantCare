@@ -199,15 +199,28 @@ export default function AdminUsers() {
                         <TableCell className="text-muted-foreground">{formatDate(u.last_sign_in_at)}</TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(u.created_at)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isSelf}
-                            title={isSelf ? "O'z rolingizni o'zgartirish mumkin emas" : undefined}
-                            onClick={() => openDialog(u)}
-                          >
-                            Rolni o'zgartirish
-                          </Button>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {!u.email_confirmed && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-1"
+                                onClick={() => setConfirmTarget(u)}
+                              >
+                                <MailCheck className="h-4 w-4" />
+                                Emailni tasdiqlash
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isSelf}
+                              title={isSelf ? "O'z rolingizni o'zgartirish mumkin emas" : undefined}
+                              onClick={() => openDialog(u)}
+                            >
+                              Rolni o'zgartirish
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
