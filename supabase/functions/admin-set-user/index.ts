@@ -66,6 +66,12 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (confirm_email !== undefined && typeof confirm_email !== "boolean") {
+      return new Response(JSON.stringify({ error: "Invalid confirm_email" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Safety: an admin may not change their own role (prevents self-lockout).
     if (role && user_id === userData.user.id) {
