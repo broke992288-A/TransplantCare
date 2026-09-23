@@ -15,27 +15,28 @@ export interface LatestLabSummary {
   recorded_at: string;
 }
 
+/**
+ * Latest (non-deleted) lab row per patient.
+ *
+ * Uses a DISTINCT ON RPC so the result is deterministic regardless of how much
+ * history a patient has. The previous implementation applied a single global
+ * LIMIT (patient_count * 2) and silently dropped patients whose history was
+ * longer than that budget.
+ */
 export async function fetchLatestLabsByPatientIds(
   patientIds: string[]
 ): Promise<Record<string, LatestLabSummary>> {
   if (patientIds.length === 0) return {};
 
-  // Single batch query bounded to current dashboard needs (latest per patient).
-  const { data, error } = await supabase
-    .from("lab_results")
-    .select("patient_id, tacrolimus_level, creatinine, alt, ast, total_bilirubin, egfr, potassium, recorded_at")
-    .in("patient_id", patientIds)
-    .order("recorded_at", { ascending: false })
-    .limit(Math.max(10, patientIds.length * 2));
+  const { data, error } = await supabase.rpc("get_latest_labs_for_patients", {
+    _patient_ids: patientIds,
+  });
   if (error) throw error;
 
-  // Map-based grouping (O(n)) — first occurrence per patient is latest by DESC order.
-  const seen = new Map<string, LatestLabSummary>();
-  (data ?? []).forEach((l) => {
-    if (!seen.has(l.patient_id)) seen.set(l.patient_id, l as LatestLabSummary);
-  });
   const labMap: Record<string, LatestLabSummary> = {};
-  seen.forEach((v, k) => { labMap[k] = v; });
+  ((data ?? []) as LatestLabSummary[]).forEach((row) => {
+    if (row.patient_id) labMap[row.patient_id] = row;
+  });
   return labMap;
 }
 
