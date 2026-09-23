@@ -183,7 +183,7 @@ export default function AdminUsers() {
                           {u.full_name ?? "—"}
                           {isSelf && <span className="ml-2 text-xs text-muted-foreground">(siz)</span>}
                         </TableCell>
-                        <TableCell className="break-all text-muted-foreground">{u.email ?? "—"}</TableCell>
+                        <TableCell className="max-w-[260px] break-words text-muted-foreground">{u.email ?? "—"}</TableCell>
                         <TableCell>
                           {role ? (
                             <Badge className={ROLE_BADGE[role]}>{ROLE_LABEL[role]}</Badge>
