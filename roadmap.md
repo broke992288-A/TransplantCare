@@ -22,4 +22,4 @@
 - [ ] Remove remaining `any` casts in supabase/functions/recalculate-risk (pre-existing lint errors)
 - [ ] clinical_thresholds seed file for reproducibility (production config not version controlled)
 
-- [ ] Admin password reset action on /admin/users (admin-set-user password branch, self-change blocked)
+- [x] Admin password reset action on /admin/users (admin-set-user password branch, self-change blocked)
