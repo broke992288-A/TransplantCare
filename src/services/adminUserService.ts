@@ -39,6 +39,14 @@ export async function confirmUserEmail(userId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Reset another user's password through admin-set-user (server-side only; never logged). */
+export async function resetUserPassword(userId: string, password: string): Promise<void> {
+  const { error } = await supabase.functions.invoke("admin-set-user", {
+    body: { user_id: userId, password },
+  });
+  if (error) throw error;
+}
+
 /** Primary (highest-privilege) role for display. */
 const PRIORITY: AppRole[] = ["admin", "doctor", "support", "patient"];
 export function primaryRole(roles: string[]): AppRole | null {

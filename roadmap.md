@@ -21,3 +21,5 @@
 - [ ] recalculate-risk edge function: add patient-ownership check at the edge layer
 - [ ] Remove remaining `any` casts in supabase/functions/recalculate-risk (pre-existing lint errors)
 - [ ] clinical_thresholds seed file for reproducibility (production config not version controlled)
+
+- [x] Admin password reset action on /admin/users (admin-set-user password branch, self-change blocked)

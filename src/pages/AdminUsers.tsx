@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MailCheck, Search, ShieldCheck, Users } from "lucide-react";
+import { KeyRound, MailCheck, Search, ShieldCheck, Users } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/errorHandler";
 import type { AppRole } from "@/types/roles";
 import {
-  ADMIN_MANAGED_ROLES, confirmUserEmail, fetchAdminUsers, primaryRole, updateUserRole,
+  ADMIN_MANAGED_ROLES, confirmUserEmail, fetchAdminUsers, primaryRole, resetUserPassword, updateUserRole,
   type AdminUserRow,
 } from "@/services/adminUserService";
 
@@ -85,6 +86,30 @@ export default function AdminUsers() {
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Email tasdiqlandi", description: "Foydalanuvchi emaili tasdiqlangan deb belgilandi." });
       setConfirmTarget(null);
+    },
+    onError: (err) => {
+      toast({ variant: "destructive", title: "Xatolik", description: getErrorMessage(err) });
+    },
+  });
+
+  const [pwTarget, setPwTarget] = useState<AdminUserRow | null>(null);
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const pwError =
+    pw.length === 0 ? null
+    : pw.length < 8 ? "Parol kamida 8 belgidan iborat bo'lishi kerak."
+    : pw.length > 200 ? "Parol juda uzun."
+    : pw2.length > 0 && pw !== pw2 ? "Parollar mos kelmadi."
+    : null;
+  const pwValid = pw.length >= 8 && pw.length <= 200 && pw === pw2;
+  const closePw = () => { setPwTarget(null); setPw(""); setPw2(""); };
+
+  const pwMutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) => resetUserPassword(userId, password),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Parol yangilandi", description: "Foydalanuvchi yangi parol bilan kira oladi." });
+      closePw();
     },
     onError: (err) => {
       toast({ variant: "destructive", title: "Xatolik", description: getErrorMessage(err) });
@@ -211,6 +236,12 @@ export default function AdminUsers() {
                                 Emailni tasdiqlash
                               </Button>
                             )}
+                            {!isSelf && (
+                              <Button size="sm" variant="outline" className="gap-1" onClick={() => setPwTarget(u)}>
+                                <KeyRound className="h-4 w-4" />
+                                Parolni tiklash
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
@@ -290,6 +321,42 @@ export default function AdminUsers() {
               {confirmMutation.isPending ? "Tasdiqlanmoqda..." : "Tasdiqlash"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={pwTarget !== null} onOpenChange={(open) => { if (!open) closePw(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Parolni tiklash</DialogTitle>
+            <DialogDescription>
+              {pwTarget?.email ?? pwTarget?.full_name ?? ""} uchun yangi parol kiriting.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            autoComplete="off"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (pwTarget && pwValid) pwMutation.mutate({ userId: pwTarget.id, password: pw });
+            }}
+          >
+            <div className="space-y-1">
+              <Label htmlFor="new-pw">Yangi parol</Label>
+              <Input id="new-pw" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-pw2">Parolni tasdiqlang</Label>
+              <Input id="new-pw2" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            </div>
+            {pwError && <p className="text-sm text-destructive">{pwError}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closePw} disabled={pwMutation.isPending}>
+                Bekor qilish
+              </Button>
+              <Button type="submit" disabled={!pwValid || pwMutation.isPending}>
+                {pwMutation.isPending ? "Saqlanmoqda..." : "Saqlash"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

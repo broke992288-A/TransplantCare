@@ -81,6 +81,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Safety: an admin may not reset their own password here.
+    if (password && user_id === userData.user.id) {
+      return new Response(JSON.stringify({ error: "Cannot reset your own password" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (password) {
       const { error } = await admin.auth.admin.updateUserById(user_id, {
         password,
