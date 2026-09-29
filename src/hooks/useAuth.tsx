@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // because the role does not change when the access token refreshes.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("[authDebug] event:", event);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
