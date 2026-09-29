@@ -25,7 +25,7 @@ describe("auto-notify — configuration and auth", () => {
   });
 
   it("rejects unauthorized callers with 401", () => {
-    expect(source).toMatch(/incoming !== expectedSecret/);
+    expect(source).toMatch(/timingSafeEqualStr\(incoming, expectedSecret\)/);
     expect(source).toMatch(/status:\s*401/);
   });
 

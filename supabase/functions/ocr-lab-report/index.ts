@@ -175,7 +175,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { imageBase64, fileType, textContent } = await req.json();
+    // Memory guard: reject bodies over 15 MB before parsing.
+    const MAX_BODY = 15 * 1024 * 1024;
+    const declared = Number(req.headers.get("content-length") ?? "0");
+    if (declared > MAX_BODY) {
+      return new Response(JSON.stringify({ error: "File too large (max 15 MB)" }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const rawBody = await req.text();
+    if (rawBody.length > MAX_BODY) {
+      return new Response(JSON.stringify({ error: "File too large (max 15 MB)" }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { imageBase64, fileType, textContent } = JSON.parse(rawBody);
     if (!imageBase64 && !textContent) throw new Error("No file data provided");
 
     log("info", FN_NAME, "OCR request received", { requestId, userId, fileType });
