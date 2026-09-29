@@ -23,3 +23,5 @@
 - [ ] clinical_thresholds seed file for reproducibility (production config not version controlled)
 
 - [x] Admin password reset action on /admin/users (admin-set-user password branch, self-change blocked)
+- [ ] Answer: sandbox_exec_uszimflqyqmhlxbizcre role privileges (user question, read-only)
+- [ ] Deliver patient insert_lab_and_recalculate exposure answer + await (a)/(b) choice
