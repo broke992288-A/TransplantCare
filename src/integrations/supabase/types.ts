@@ -988,6 +988,7 @@ export type Database = {
           tacrolimus_level: number | null
           total_bilirubin: number | null
           trend_flags: Json | null
+          verified_by_clinician: boolean
         }
         Insert: {
           algorithm_version?: string | null
@@ -1005,6 +1006,7 @@ export type Database = {
           tacrolimus_level?: number | null
           total_bilirubin?: number | null
           trend_flags?: Json | null
+          verified_by_clinician?: boolean
         }
         Update: {
           algorithm_version?: string | null
@@ -1022,6 +1024,7 @@ export type Database = {
           tacrolimus_level?: number | null
           total_bilirubin?: number | null
           trend_flags?: Json | null
+          verified_by_clinician?: boolean
         }
         Relationships: [
           {
@@ -1180,6 +1183,10 @@ export type Database = {
         Returns: number
       }
       normalize_phone: { Args: { _phone: string }; Returns: string }
+      record_lab_risk_snapshot: {
+        Args: { _lab_result_id: string }
+        Returns: Json
+      }
       register_patient_self: {
         Args: {
           _date_of_birth?: string

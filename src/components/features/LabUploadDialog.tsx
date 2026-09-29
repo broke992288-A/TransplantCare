@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { upsertLabResult, fetchLabsByPatientId } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
-import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
+import { recordLabRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
 import { processFileOCR } from "@/services/ocr/OCRCoordinator";
 import { Badge } from "@/components/ui/badge";
@@ -820,14 +820,6 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
-      // Track up to 4 previous labs so each new result is scored against a 5-test rolling window
-      let historicalWindow: any[] = [];
-
-      try {
-        const existingLabs = await fetchLabsByPatientId(patientId, 4);
-        historicalWindow = existingLabs.slice(0, 4);
-      } catch { /* ignore */ }
-
       for (const group of sortedGroups) {
         const labData: Record<string, any> = { patient_id: patientId };
         if (reportUrl) labData.report_file_url = reportUrl;
@@ -901,51 +893,26 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             );
           }
 
-          // --- Compute risk score for each saved lab ---
-          if (organType) {
+          // --- Risk: computed ONLY on the server (calculate_risk_score_sql) ---
+          if (savedLab?.id) {
             try {
-               const { score, level, flags, explanations } = await computeRiskScoreAsync(
-                 organType, savedLab as any, { ...patientData, transplant_date: undefined }, historicalWindow
-               );
-
-              const snapshot = await insertRiskSnapshot({
-                patient_id: patientId,
-                lab_result_id: savedLab.id,
-                score,
-                risk_level: level,
-                creatinine: labData.creatinine ?? null,
-                alt: labData.alt ?? null,
-                ast: labData.ast ?? null,
-                total_bilirubin: labData.total_bilirubin ?? null,
-                tacrolimus_level: labData.tacrolimus_level ?? null,
-                details: { flags, explanations },
-              });
-
-              // Create alert if risk is high or medium
-              if (level === "high") {
+              const risk = await recordLabRiskSnapshot(savedLab.id);
+              if (risk.level === "high") {
+                // Best-effort: DB triggers also raise alerts; patient role may lack insert rights.
                 await insertPatientAlert({
                   patient_id: patientId,
-                  risk_snapshot_id: snapshot?.id ?? null,
+                  risk_snapshot_id: risk.snapshot_id || null,
                   severity: "critical",
-                  title: `${t("risk.highDetected")} (${score})`,
-                  message: flags.join("; "),
-                });
-              } else if (level === "medium") {
-                await insertPatientAlert({
-                  patient_id: patientId,
-                  risk_snapshot_id: snapshot?.id ?? null,
-                  severity: "warning",
-                  title: `${t("risk.mediumDetected")} (${score})`,
-                  message: flags.join("; "),
-                });
+                  title: `${t("risk.highDetected")} (${risk.score})` +
+                    (risk.verified_by_clinician ? "" : ` — ${t("risk.pendingVerification")}`),
+                  message: risk.flags.join("; "),
+                }).catch((alertErr: unknown) => console.warn("[LabUpload] alert insert skipped", alertErr));
               }
             } catch (riskErr) {
-              console.error("Risk calculation error:", riskErr);
+              console.error("[LabUpload] risk snapshot failed", riskErr);
+              toast({ title: t("common.error"), description: getErrorMessage(riskErr), variant: "destructive" });
             }
           }
-
-          // Update rolling history for next iteration
-          historicalWindow = [savedLab, ...historicalWindow.filter((lab) => lab.id !== savedLab.id)].slice(0, 4);
         }
       }
 

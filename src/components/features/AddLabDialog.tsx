@@ -6,9 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { insertLabResult, fetchLabsByPatientId } from "@/services/labService";
+import { insertLabResult } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
-import { computeRiskScoreAsync, insertRiskSnapshot } from "@/services/riskSnapshotService";
+import { recordLabRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
 import LabField from "@/components/features/LabField";
 import { liverLabSchema, kidneyLabSchema } from "@/lib/validations";
@@ -173,46 +173,16 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
 
       const savedLab = await insertLabResult(labData as Parameters<typeof insertLabResult>[0]);
 
-      // Fetch recent labs for rolling 5-test trend analysis
-      let historicalLabs: Awaited<ReturnType<typeof fetchLabsByPatientId>> = [];
+      // Risk: computed ONLY on the server (calculate_risk_score_sql)
       try {
-        const recentLabs = await fetchLabsByPatientId(patientId, 5);
-        historicalLabs = recentLabs.filter((lab) => lab.id !== savedLab.id).slice(0, 4);
-      } catch { /* ignore */ }
-
-      // Compute risk score using DB thresholds
-      try {
-        const { score, level, flags, explanations } = await computeRiskScoreAsync(
-          organType, savedLab, patientData ?? {}, historicalLabs
-        );
-        const snapshot = await insertRiskSnapshot({
-          patient_id: patientId,
-          lab_result_id: savedLab.id,
-          score,
-          risk_level: level,
-          creatinine: (labData.creatinine as number) ?? null,
-          alt: (labData.alt as number) ?? null,
-          ast: (labData.ast as number) ?? null,
-          total_bilirubin: (labData.total_bilirubin as number) ?? null,
-          tacrolimus_level: (labData.tacrolimus_level as number) ?? null,
-          details: { flags, explanations },
-        });
-
-        if (level === "high") {
+        const risk = await recordLabRiskSnapshot(savedLab.id);
+        if (risk.level === "high" || risk.level === "medium") {
           await insertPatientAlert({
             patient_id: patientId,
-            risk_snapshot_id: snapshot?.id ?? null,
-            severity: "critical",
-            title: `${t("risk.highDetected")} (${score})`,
-            message: flags.join("; "),
-          });
-        } else if (level === "medium") {
-          await insertPatientAlert({
-            patient_id: patientId,
-            risk_snapshot_id: snapshot?.id ?? null,
-            severity: "warning",
-            title: `${t("risk.mediumDetected")} (${score})`,
-            message: flags.join("; "),
+            risk_snapshot_id: risk.snapshot_id || null,
+            severity: risk.level === "high" ? "critical" : "warning",
+            title: `${t(risk.level === "high" ? "risk.highDetected" : "risk.mediumDetected")} (${risk.score})`,
+            message: risk.flags.join("; "),
           });
         }
       } catch (riskErr) {
