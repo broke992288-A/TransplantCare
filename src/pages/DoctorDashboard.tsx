@@ -41,7 +41,7 @@ export default function DoctorDashboard() {
   const { data, isLoading: loading } = useDoctorPatientsWithLabs();
   const { data: overdue } = useOverdueLabSchedules();
 
-  const patients = data?.patients ?? [];
+  const patients = useMemo(() => data?.patients ?? [], [data]);
   const labs = data?.labs ?? {};
 
   const patientIds = useMemo(() => patients.map((p) => p.id), [patients]);
