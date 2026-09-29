@@ -219,7 +219,7 @@ Deno.serve(async (req: Request) => {
         const rawBody = (err as { body?: string }).body ?? "";
         const host = (() => { try { return new URL(row.subscription.endpoint).host; } catch { return "invalid"; } })();
         const message = `${err instanceof Error ? err.message : String(err)} | host=${host} | body=${String(rawBody).slice(0, 500)}`;
-        if (status === 403 || status === 404 || status === 410) {
+        if (status === 404 || status === 410) {
           await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
         }
         console.warn("[send-push] delivery failed", { id: row.id, status, message });
