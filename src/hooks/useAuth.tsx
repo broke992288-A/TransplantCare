@@ -40,12 +40,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // IMPORTANT: the callback must stay synchronous. Awaiting Supabase calls
     // inside onAuthStateChange holds the auth lock and deadlocks signIn.
+    // Role fetches are deduped by relying ONLY on auth-state events:
+    // INITIAL_SESSION covers the initial load (getSession() removed — it
+    // duplicated the same role query), and TOKEN_REFRESHED is skipped
+    // because the role does not change when the access token refreshes.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           const userId = session.user.id;
+          if (event === "TOKEN_REFRESHED") {
+            setLoading(false);
+            return;
+          }
           setTimeout(() => {
             void fetchRole(userId).finally(() => setLoading(false));
           }, 0);
@@ -55,17 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const userId = session.user.id;
-        void fetchRole(userId).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
 
     return () => subscription.unsubscribe();
   }, [fetchRole]);
