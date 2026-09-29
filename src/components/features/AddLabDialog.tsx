@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
-import { insertLabResult, fetchLabsByPatientId } from "@/services/labService";
+import { insertLabResult } from "@/services/labService";
 import { insertEvent } from "@/services/eventService";
 import { recordLabRiskSnapshot } from "@/services/riskSnapshotService";
 import { insertPatientAlert } from "@/services/patientAlertService";
