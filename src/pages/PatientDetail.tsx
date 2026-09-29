@@ -14,7 +14,6 @@ import { useRiskSnapshots } from "@/hooks/useRiskSnapshots";
 import { updatePatient } from "@/services/patientService";
 import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
-import { computeRiskScore } from "@/services/riskSnapshotService";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
 import { triggerRiskRecalculation } from "@/services/riskRecalculationService";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -49,28 +48,7 @@ export default function PatientDetail() {
     if (latestLab) {
       const matchingSnapshot = riskSnapshots.find(s => s.lab_result_id === latestLab.id);
       if (matchingSnapshot) return matchingSnapshot;
-      const historicalLabs = allLabs.slice(1, 5);
-      const computed = computeRiskScore(patient?.organ_type ?? "kidney", latestLab, {
-        transplant_number: patient?.transplant_number,
-        dialysis_history: patient?.dialysis_history,
-        transplant_date: patient?.transplant_date,
-      }, historicalLabs);
-      return {
-        id: "computed",
-        patient_id: latestLab.patient_id,
-        lab_result_id: latestLab.id,
-        score: computed.score,
-        risk_level: computed.level,
-        creatinine: latestLab.creatinine,
-        alt: latestLab.alt,
-        ast: latestLab.ast,
-        total_bilirubin: latestLab.total_bilirubin,
-        tacrolimus_level: latestLab.tacrolimus_level,
-        details: { flags: computed.flags, explanations: computed.explanations },
-        trend_flags: computed.flags.filter((f: string) => f.includes("increase") || f.includes("drop") || f.includes("declined")),
-        algorithm_version: "v2.0-kdigo2024",
-        created_at: latestLab.recorded_at ?? latestLab.created_at,
-      } as RiskSnapshot;
+      // No client-side scoring: without a server snapshot, show the latest server snapshot (or none).
     }
     return riskSnapshots[0] ?? null;
   })();

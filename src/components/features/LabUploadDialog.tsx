@@ -898,6 +898,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             try {
               const risk = await recordLabRiskSnapshot(savedLab.id);
               if (risk.level === "high") {
+                // Best-effort: DB triggers also raise alerts; patient role may lack insert rights.
                 await insertPatientAlert({
                   patient_id: patientId,
                   risk_snapshot_id: risk.snapshot_id || null,
@@ -905,14 +906,13 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                   title: `${t("risk.highDetected")} (${risk.score})` +
                     (risk.verified_by_clinician ? "" : ` — ${t("risk.pendingVerification")}`),
                   message: risk.flags.join("; "),
-                });
+                }).catch((alertErr: unknown) => console.warn("[LabUpload] alert insert skipped", alertErr));
               }
             } catch (riskErr) {
               console.error("[LabUpload] risk snapshot failed", riskErr);
               toast({ title: t("common.error"), description: getErrorMessage(riskErr), variant: "destructive" });
             }
           }
-        }
         }
       }
 
