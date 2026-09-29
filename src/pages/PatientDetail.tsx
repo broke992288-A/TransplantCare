@@ -81,7 +81,8 @@ export default function PatientDetail() {
       toast({ title: t("detail.snapshotVerified") });
       invalidateAll();
       queryClient.invalidateQueries({ queryKey: ["pending-verification-snapshots"] });
-      queryClient.invalidateQueries({ queryKey: ["risk-snapshots"] });
+      queryClient.invalidateQueries({ queryKey: ["risk-snapshots", id] });
+      queryClient.invalidateQueries({ queryKey: ["risk-snapshot-latest", id] });
     } catch (err: unknown) {
       toast({ title: t("common.error"), description: getErrorMessage(err), variant: "destructive" });
     } finally {
