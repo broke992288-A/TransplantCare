@@ -47,6 +47,57 @@ export type Database = {
         }
         Relationships: []
       }
+      client_diagnostics: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          duration_ms: number | null
+          event_type: string
+          extra: Json | null
+          host: string | null
+          id: string
+          message: string | null
+          route: string | null
+          session_id: string | null
+          source: string | null
+          stack: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          event_type: string
+          extra?: Json | null
+          host?: string | null
+          id?: string
+          message?: string | null
+          route?: string | null
+          session_id?: string | null
+          source?: string | null
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          event_type?: string
+          extra?: Json | null
+          host?: string | null
+          id?: string
+          message?: string | null
+          route?: string | null
+          session_id?: string | null
+          source?: string | null
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       clinical_thresholds: {
         Row: {
           created_at: string
