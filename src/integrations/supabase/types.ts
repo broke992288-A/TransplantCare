@@ -1196,6 +1196,7 @@ export type Database = {
         }
         Returns: string
       }
+      verify_risk_snapshot: { Args: { _snapshot_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "doctor" | "patient" | "support"
