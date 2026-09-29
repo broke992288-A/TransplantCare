@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { emptyCounts, sendWebPush, vapidConfigured, type StoredSubscription } from "../_shared/webpush.ts";
 
 /**
  * Auto-notify edge function — called by pg_cron or a trusted caller.
@@ -73,23 +74,15 @@ async function recordResult(
   if (error) console.error("notification_log update failed", error.message);
 }
 
-async function postOnce(endpoint: string, payload: string): Promise<number> {
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", TTL: "86400" },
-    body: payload,
-  });
-  return res.status;
-}
-
-/** Send push to a list of user IDs with bounded (single) retry. */
+/** Send push to a list of user IDs via signed + encrypted Web Push, bounded (single) retry. */
 async function sendPush(
   supabase: SC,
   userIds: string[],
   title: string,
   body: string,
 ) {
-  if (userIds.length === 0) return { sent: 0, failed: 0, endpoints: 0 };
+  if (userIds.length === 0) return { sent: 0, failed: 0, endpoints: 0, byBrowser: emptyCounts() };
+  const byBrowser = emptyCounts();
 
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
@@ -98,9 +91,13 @@ async function sendPush(
 
   if (error) {
     console.error("push_subscriptions read failed", error.message);
-    return { sent: 0, failed: 0, endpoints: 0 };
+    return { sent: 0, failed: 0, endpoints: 0, byBrowser };
   }
-  if (!subs || subs.length === 0) return { sent: 0, failed: 0, endpoints: 0 };
+  if (!subs || subs.length === 0) return { sent: 0, failed: 0, endpoints: 0, byBrowser };
+  if (!vapidConfigured) {
+    console.error("VAPID keys not configured");
+    return { sent: 0, failed: subs.length, endpoints: subs.length, byBrowser };
+  }
 
   const payload = JSON.stringify({
     title,
@@ -113,39 +110,21 @@ async function sendPush(
   let failed = 0;
 
   for (const sub of subs) {
-    const subscription = sub.subscription as { endpoint?: string } | null;
-    const endpoint = subscription?.endpoint;
-    if (!endpoint) { failed++; continue; }
-
-    let status = 0;
-    try {
-      status = await postOnce(endpoint, payload);
-    } catch (e) {
-      console.error("push transport error", String(e));
-      status = 0;
+    const subscription = sub.subscription as StoredSubscription | null;
+    if (!subscription?.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
+      failed++; byBrowser.other.failed++; continue;
     }
-
-    // Bounded retry: exactly one retry for transient failures.
-    if (status === 0 || status >= 500) {
-      await new Promise((r) => setTimeout(r, 500));
-      try {
-        status = await postOnce(endpoint, payload);
-      } catch {
-        status = 0;
-      }
-    }
-
-    if (status === 200 || status === 201 || status === 202 || status === 204) {
-      sent++;
-    } else if (status === 404 || status === 410) {
-      await supabase.from("push_subscriptions").delete().eq("id", sub.id as string);
-      failed++;
+    const res = await sendWebPush(subscription, payload, true);
+    if (res.ok) {
+      sent++; byBrowser[res.browser].sent++;
     } else {
-      failed++;
+      failed++; byBrowser[res.browser].failed++;
+      console.warn("push failed", { browser: res.browser, status: res.status, message: res.message });
+      if (res.gone) await supabase.from("push_subscriptions").delete().eq("id", sub.id as string);
     }
   }
 
-  return { sent, failed, endpoints: subs.length };
+  return { sent, failed, endpoints: subs.length, byBrowser };
 }
 
 // ── Handler: Critical alerts → notify assigned doctor ──
