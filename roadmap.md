@@ -17,11 +17,14 @@
 - [ ] Local draft/queue for lab submission on unstable networks
 - [ ] Pagination/infinite loading for large patient and lab lists
 - [ ] AbortController-based cancellation for stale list/search requests
-- [ ] Unify dual risk engines (TypeScript v4/v5 vs SQL v5.1) — UI/DB score divergence risk
-- [ ] recalculate-risk edge function: add patient-ownership check at the edge layer
-- [ ] Remove remaining `any` casts in supabase/functions/recalculate-risk (pre-existing lint errors)
+- [x] Unify dual risk engines (TypeScript v4/v5 vs SQL v5.1) — UI/DB score divergence risk
+- [x] recalculate-risk edge function: add patient-ownership check at the edge layer
+- [x] Remove remaining `any` casts in supabase/functions/recalculate-risk (pre-existing lint errors)
 - [ ] clinical_thresholds seed file for reproducibility (production config not version controlled)
 
 - [x] Admin password reset action on /admin/users (admin-set-user password branch, self-change blocked)
 - [ ] Answer: sandbox_exec_uszimflqyqmhlxbizcre role privileges (user question, read-only)
-- [ ] Deliver patient insert_lab_and_recalculate exposure answer + await (a)/(b) choice
+- [x] Deliver patient insert_lab_and_recalculate exposure answer + await (a)/(b) choice
+
+- [x] coalesce_recent_lab_values access check; trigger fn EXECUTE revoked; log_audit_event anon revoked
+- [x] Doctor "confirm risk assessment" button (verify_risk_snapshot)
