@@ -1,6 +1,6 @@
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { VAPID_PUBLIC_KEY as SHARED_PUB, VAPID_SUBJECT as SHARED_SUB, browserFromEndpoint, emptyCounts, sendWebPush } from "../_shared/webpush.ts";
+import { VAPID_PUBLIC_KEY as SHARED_PUB, VAPID_SUBJECT as SHARED_SUB, emptyCounts, sendWebPush } from "../_shared/webpush.ts";
 
 const corsHeaders = (req: Request) => getCorsHeaders(req, "GET, POST, OPTIONS");
 
@@ -212,7 +212,7 @@ Deno.serve(async (req: Request) => {
       console.warn("[send-push] delivery failed", { id: row.id, status: res.status, message });
       return { ok: false as const, id: row.id, status: res.status, message, browser: res.browser };
     };
-    void browserFromEndpoint;
+
 
     // ---- Streaming (SSE) branch ----------------------------------------
     if (wantsStream) {
@@ -278,7 +278,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ sent, failed, total, errors }),
+      JSON.stringify({ sent, failed, total, errors, byBrowser }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
     );
   } catch (err: unknown) {
