@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshRole = useCallback(async () => {
     if (!user) return;
-    await fetchRole(user.id);
+    await fetchRole(user.id, true);
   }, [user, fetchRole]);
 
   const value = useMemo(
