@@ -1,14 +1,16 @@
 import { useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, AlertTriangle, Clock, ChevronRight } from "lucide-react";
+import { Plus, AlertTriangle, Clock, ChevronRight, ShieldQuestion } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
 import { useOverdueLabSchedules } from "@/hooks/useLabSchedule";
+import { fetchPendingVerificationSnapshots } from "@/services/riskSnapshotService";
 import { riskColorClass } from "@/utils/risk";
 import { SkeletonTable } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -42,8 +44,32 @@ export default function DoctorDashboard() {
   const patients = data?.patients ?? [];
   const labs = data?.labs ?? {};
 
+  const patientIds = useMemo(() => patients.map((p) => p.id), [patients]);
+  const { data: pendingSnapshots } = useQuery({
+    queryKey: ["pending-verification-snapshots", patientIds],
+    queryFn: () => fetchPendingVerificationSnapshots(patientIds),
+    enabled: patientIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  const pendingSorted = useMemo(() => {
+    const rank = (lvl: string) => (lvl === "high" ? 0 : lvl === "medium" ? 1 : 2);
+    return [...(pendingSnapshots ?? [])].sort((a, b) => {
+      const r = rank(a.risk_level) - rank(b.risk_level);
+      if (r !== 0) return r;
+      return b.score - a.score;
+    });
+  }, [pendingSnapshots]);
+
+  const patientNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of patients) map[p.id] = p.full_name;
+    return map;
+  }, [patients]);
+
   const highRiskCount = patients.filter((p) => p.risk_level === "high").length;
   const overdueCount = Array.isArray(overdue) ? overdue.length : 0;
+  const pendingCount = pendingSorted.length;
 
   const sorted = useMemo(() => {
     const rank = (lvl: string) => (lvl === "high" ? 0 : lvl === "medium" ? 1 : 2);
@@ -69,10 +95,57 @@ export default function DoctorDashboard() {
               {t("dashboard.overdueLabs")}: {overdueCount}
             </Badge>
           )}
+          {pendingCount > 0 && (
+            <Badge variant="outline" className="gap-1 border-amber-400 text-amber-600 bg-amber-50">
+              <ShieldQuestion className="h-3 w-3" />
+              {t("dashboard.pendingVerification")}: {pendingCount}
+            </Badge>
+          )}
           <Badge variant="outline">
             {t("dashboard.totalPatients")}: {patients.length}
           </Badge>
         </div>
+
+        {/* PENDING VERIFICATION: patient-submitted labs awaiting clinician review */}
+        {pendingCount > 0 && (
+          <Card>
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 border-b px-4 py-3">
+                <ShieldQuestion className="h-4 w-4 text-amber-600" />
+                <span className="font-medium">{t("dashboard.pendingVerification")}</span>
+                <span className="text-sm text-muted-foreground">{t("dashboard.pendingVerificationDesc")}</span>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("dashboard.patient")}</TableHead>
+                    <TableHead>{t("dashboard.risk")}</TableHead>
+                    <TableHead>{t("dashboard.score")}</TableHead>
+                    <TableHead>{t("dashboard.lastLab")}</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingSorted.map((s) => (
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/patient/${s.patient_id}`)}
+                    >
+                      <TableCell className="font-medium py-2">{patientNameById[s.patient_id] ?? "—"}</TableCell>
+                      <TableCell className="py-2">
+                        <Badge className={riskColorClass(s.risk_level)}>{t(`risk.${s.risk_level}`)}</Badge>
+                      </TableCell>
+                      <TableCell className="py-2 text-sm">{Math.round(s.score)}</TableCell>
+                      <TableCell className="py-2 text-sm text-muted-foreground">{relativeLabText(s.created_at, t)}</TableCell>
+                      <TableCell className="py-2 text-muted-foreground"><ChevronRight className="h-4 w-4" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
         {/* CENTER: patient table */}
         <Card>
