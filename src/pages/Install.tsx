@@ -140,6 +140,12 @@ export default function Install() {
                     {t("install.loginBtn")}
                   </Button>
                 </div>
+              ) : support === "ios-too-old" || support === "ios-not-installed" ? (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+                  <p className="text-xs text-destructive font-medium">
+                    {t(support === "ios-too-old" ? "install.iosTooOld" : "install.iosNotInstalled")}
+                  </p>
+                </div>
               ) : support !== "ok" ? (
                 <p className="text-xs text-muted-foreground">{t("install.unsupported")}</p>
               ) : permission === "denied" ? (
