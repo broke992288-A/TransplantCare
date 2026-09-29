@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
           setTimeout(() => {
-            void fetchRole(userId).finally(() => setLoading(false));
+            void fetchRole(userId);
           }, 0);
         } else {
           setRole(null);
