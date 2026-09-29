@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const promise = (async () => {
       try {
+        console.log("[authDebug] fetchRole", userId, new Error().stack?.split("\n").slice(1,6).join(" | "));
         const data = await fetchUserRoles(userId);
         if (data.length > 0) {
           const roles = data.map((d) => d.role as AppRole);
