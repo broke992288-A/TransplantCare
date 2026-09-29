@@ -107,6 +107,21 @@ Deno.serve(async (req) => {
       const { error } = await admin.from("user_roles").insert({ user_id, role });
       if (error) throw error;
     }
+    // Audit trail: who changed what for whom (never stores the password).
+    const actions: string[] = [];
+    if (password) actions.push("password_reset");
+    if (confirm_email === true && !password) actions.push("email_confirmed");
+    if (role) actions.push("role_changed");
+    if (actions.length > 0) {
+      const { error: auditErr } = await admin.from("audit_logs").insert({
+        user_id: userData.user.id,
+        action: "admin_user_update",
+        entity_type: "auth_user",
+        entity_id: user_id,
+        metadata: { actions, new_role: role ?? null },
+      });
+      if (auditErr) console.error("[admin-set-user] audit failed:", auditErr.message);
+    }
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -351,7 +351,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const incoming = req.headers.get("Authorization")?.replace("Bearer ", "").trim();
-  if (!incoming || incoming !== expectedSecret) {
+  if (!incoming || !(await timingSafeEqualStr(incoming, expectedSecret))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: jsonHeaders,

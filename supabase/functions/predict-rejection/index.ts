@@ -45,6 +45,19 @@ serve(async (req) => {
 
     log("info", FN_NAME, "Prediction requested", { requestId, userId, patient_id, organ_type });
 
+    // Ownership gate: caller must be the patient, the assigned doctor, or an admin.
+    if (patient_id) {
+      const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+      });
+      const { data: allowed, error: accessErr } = await userClient.rpc("can_access_patient", { _patient_id: patient_id });
+      if (accessErr || allowed !== true) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (!patient_id || !organ_type || !labs || labs.length < 2) {
       return new Response(JSON.stringify({
         prediction_risk: "low", score: 0,
