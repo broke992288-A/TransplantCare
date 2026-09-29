@@ -26,15 +26,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchRole = useCallback(async (userId: string) => {
-    const data = await fetchUserRoles(userId);
-    if (data.length > 0) {
-      const roles = data.map((d) => d.role as AppRole);
-      const best = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? roles[0];
-      setRole(best);
-    } else {
-      setRole(null);
+  // In-flight role query dedup: Supabase may emit several auth events on boot
+  // (INITIAL_SESSION, SIGNED_IN); all of them collapse into ONE user_roles
+  // query per user per mount. refreshRole(force=true) bypasses the cache.
+  const roleRequestRef = useRef<{ userId: string; promise: Promise<void> } | null>(null);
+
+  const fetchRole = useCallback(async (userId: string, force = false) => {
+    const inFlight = roleRequestRef.current;
+    if (!force && inFlight && inFlight.userId === userId) {
+      await inFlight.promise;
+      return;
     }
+    const promise = (async () => {
+      try {
+        const data = await fetchUserRoles(userId);
+        if (data.length > 0) {
+          const roles = data.map((d) => d.role as AppRole);
+          const best = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? roles[0];
+          setRole(best);
+        } else {
+          setRole(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+    roleRequestRef.current = { userId, promise };
+    await promise;
   }, []);
 
   useEffect(() => {
