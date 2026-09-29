@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, FlaskConical, Shield, RefreshCw, Loader2 } from "lucide-react";
+import { Clock, FlaskConical, Shield, ShieldCheck, RefreshCw, Loader2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getErrorMessage } from "@/utils/errorHandler";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -14,7 +16,7 @@ import { useRiskSnapshots } from "@/hooks/useRiskSnapshots";
 import { updatePatient } from "@/services/patientService";
 import { insertEvent } from "@/services/eventService";
 import { logAudit } from "@/services/auditService";
-import type { RiskSnapshot } from "@/services/riskSnapshotService";
+import { verifyRiskSnapshot, type RiskSnapshot } from "@/services/riskSnapshotService";
 import { triggerRiskRecalculation } from "@/services/riskRecalculationService";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -68,6 +70,26 @@ export default function PatientDetail() {
   const [overrideReason, setOverrideReason] = useState("");
   const [overriding, setOverriding] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleVerify = async () => {
+    if (!latestRisk?.id) return;
+    setVerifying(true);
+    try {
+      await verifyRiskSnapshot(latestRisk.id);
+      toast({ title: t("detail.snapshotVerified") });
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["pending-verification-snapshots"] });
+      queryClient.invalidateQueries({ queryKey: ["risk-snapshots", id] });
+      queryClient.invalidateQueries({ queryKey: ["risk-snapshot-latest", id] });
+    } catch (err: unknown) {
+      toast({ title: t("common.error"), description: getErrorMessage(err), variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
 
   const handleRecalculate = async () => {
     if (!id) return;
@@ -177,6 +199,12 @@ export default function PatientDetail() {
           <ResizablePanel defaultSize={50} minSize={25}>
             <div className="p-3 space-y-2 h-full overflow-auto">
               <RiskScoreCard snapshot={latestRisk} prevSnapshot={prevRisk} lastEvaluation={patient.last_risk_evaluation} />
+              {latestRisk?.id && latestRisk.verified_by_clinician === false && (
+                <Button size="sm" onClick={handleVerify} disabled={verifying} className="w-full">
+                  {verifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-1" />}
+                  {t("detail.verifySnapshot")}
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleRecalculate} disabled={recalculating} className="w-full">
                 {recalculating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
                 {t("detail.recalculateRisk")}
