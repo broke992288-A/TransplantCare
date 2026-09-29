@@ -84,6 +84,44 @@ export async function recordLabRiskSnapshot(labResultId: string): Promise<Record
   };
 }
 
+/**
+ * Snapshots awaiting clinician verification (patient-submitted labs).
+ * RLS scopes this to patients the caller may access; we still pass the
+ * doctor's patient ids explicitly to keep the query tight.
+ */
+export async function fetchPendingVerificationSnapshots(patientIds: string[]): Promise<RiskSnapshot[]> {
+  if (patientIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("risk_snapshots")
+    .select("*")
+    .in("patient_id", patientIds)
+    .eq("verified_by_clinician", false)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch pending verification snapshots:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    patient_id: row.patient_id,
+    lab_result_id: row.lab_result_id,
+    score: Number(row.score),
+    risk_level: row.risk_level,
+    creatinine: row.creatinine != null ? Number(row.creatinine) : null,
+    alt: row.alt != null ? Number(row.alt) : null,
+    ast: row.ast != null ? Number(row.ast) : null,
+    total_bilirubin: row.total_bilirubin != null ? Number(row.total_bilirubin) : null,
+    tacrolimus_level: row.tacrolimus_level != null ? Number(row.tacrolimus_level) : null,
+    details: (row.details ?? {}) as RiskDetails,
+    trend_flags: Array.isArray(row.trend_flags) ? row.trend_flags as string[] : [],
+    algorithm_version: row.algorithm_version ?? "unknown",
+    created_at: row.created_at,
+    verified_by_clinician: row.verified_by_clinician,
+  }));
+}
+
 export async function fetchRiskSnapshots(patientId: string): Promise<RiskSnapshot[]> {
   const { data, error } = await supabase
     .from("risk_snapshots")
