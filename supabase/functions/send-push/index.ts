@@ -107,6 +107,9 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         publicKey: VAPID_PUBLIC_KEY,
         keyPairValid: await validateVapidKeyPair(),
+        // The VAPID "sub" claim is sent in every push JWT, so it is not secret.
+        vapidSubject: VAPID_SUBJECT,
+        vapidSubjectFromSecret: Boolean(Deno.env.get("VAPID_SUBJECT")),
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
     );
@@ -210,10 +213,12 @@ Deno.serve(async (req: Request) => {
           TTL: 60 * 60 * 24,
           urgency: "high",
         });
-        return { ok: true as const, id: row.id };
+        return { ok: true as const, id: row.id, host: (() => { try { return new URL(row.subscription.endpoint).host; } catch { return "invalid"; } })() };
       } catch (err: unknown) {
         const status = (err as { statusCode?: number }).statusCode;
-        const message = err instanceof Error ? err.message : String(err);
+        const rawBody = (err as { body?: string }).body ?? "";
+        const host = (() => { try { return new URL(row.subscription.endpoint).host; } catch { return "invalid"; } })();
+        const message = `${err instanceof Error ? err.message : String(err)} | host=${host} | body=${String(rawBody).slice(0, 500)}`;
         if (status === 403 || status === 404 || status === 410) {
           await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
         }
