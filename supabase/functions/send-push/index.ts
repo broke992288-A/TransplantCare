@@ -1,6 +1,6 @@
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import webpush from "npm:web-push@3.6.7";
+import { VAPID_PUBLIC_KEY as SHARED_PUB, VAPID_SUBJECT as SHARED_SUB, emptyCounts, sendWebPush } from "../_shared/webpush.ts";
 
 const corsHeaders = (req: Request) => getCorsHeaders(req, "GET, POST, OPTIONS");
 
@@ -20,9 +20,9 @@ const corsHeaders = (req: Request) => getCorsHeaders(req, "GET, POST, OPTIONS");
  *   - VAPID_SUBJECT       (e.g. mailto:admin@transplantcare.uz)
  */
 
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@transplantcare.uz";
+const VAPID_PUBLIC_KEY = SHARED_PUB;
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY_V2") ?? Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
+const VAPID_SUBJECT = SHARED_SUB;
 
 function base64UrlToBytes(value: string) {
   const padded = value + "=".repeat((4 - (value.length % 4)) % 4);
@@ -75,14 +75,6 @@ async function validateVapidKeyPair() {
     );
   } catch {
     return false;
-  }
-}
-
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  try {
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-  } catch (e) {
-    console.error("[send-push] Failed to configure VAPID:", e);
   }
 }
 
@@ -207,25 +199,20 @@ Deno.serve(async (req: Request) => {
     const wantsStream = req.headers.get("accept")?.includes("text/event-stream");
 
     // Helper that performs one delivery and returns its result.
+    const byBrowser = emptyCounts();
     const deliverOne = async (row: PushSubscriptionRecord) => {
-      try {
-        await webpush.sendNotification(row.subscription, payload, {
-          TTL: 60 * 60 * 24,
-          urgency: "high",
-        });
-        return { ok: true as const, id: row.id, host: (() => { try { return new URL(row.subscription.endpoint).host; } catch { return "invalid"; } })() };
-      } catch (err: unknown) {
-        const status = (err as { statusCode?: number }).statusCode;
-        const rawBody = (err as { body?: string }).body ?? "";
-        const host = (() => { try { return new URL(row.subscription.endpoint).host; } catch { return "invalid"; } })();
-        const message = `${err instanceof Error ? err.message : String(err)} | host=${host} | body=${String(rawBody).slice(0, 500)}`;
-        if (status === 404 || status === 410) {
-          await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
-        }
-        console.warn("[send-push] delivery failed", { id: row.id, status, message });
-        return { ok: false as const, id: row.id, status, message };
+      const res = await sendWebPush(row.subscription, payload);
+      if (res.ok) {
+        byBrowser[res.browser].sent++;
+        return { ok: true as const, id: row.id, host: res.host, browser: res.browser };
       }
+      byBrowser[res.browser].failed++;
+      if (res.gone) await serviceClient.from("push_subscriptions").delete().eq("id", row.id);
+      const message = `${res.message ?? "unknown"} | host=${res.host}`;
+      console.warn("[send-push] delivery failed", { id: row.id, status: res.status, message });
+      return { ok: false as const, id: row.id, status: res.status, message, browser: res.browser };
     };
+
 
     // ---- Streaming (SSE) branch ----------------------------------------
     if (wantsStream) {
@@ -260,7 +247,7 @@ Deno.serve(async (req: Request) => {
             });
           }
 
-          send("done", { total, sent, failed, errors });
+          send("done", { total, sent, failed, errors, byBrowser });
           controller.close();
         },
       });
@@ -291,7 +278,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ sent, failed, total, errors }),
+      JSON.stringify({ sent, failed, total, errors, byBrowser }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } },
     );
   } catch (err: unknown) {

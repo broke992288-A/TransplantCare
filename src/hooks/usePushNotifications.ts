@@ -21,12 +21,36 @@ import { toast } from "sonner";
 
 export type PushSupport =
   | "ok"
+  | "ios-too-old"
+  | "ios-not-installed"
   | "no-notification-api"
   | "no-service-worker"
   | "no-push-manager";
 
+/** iOS/iPadOS version from UA, or null when not iOS. iPadOS desktop UA reports as Mac + touch. */
+export function getIOSVersion(): { major: number; minor: number } | null {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent;
+  const isIPadDesktop = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  if (!/iPad|iPhone|iPod/.test(ua) && !isIPadDesktop) return null;
+  const m = ua.match(/OS (\d+)_(\d+)/) ?? ua.match(/Version\/(\d+)\.(\d+)/);
+  if (!m) return { major: 0, minor: 0 };
+  return { major: Number(m[1]), minor: Number(m[2]) };
+}
+
+function isStandalone(): boolean {
+  const nav = navigator as Navigator & { standalone?: boolean };
+  return nav.standalone === true || (window.matchMedia?.("(display-mode: standalone)").matches ?? false);
+}
+
 function detectSupport(): PushSupport {
   if (typeof window === "undefined") return "no-notification-api";
+  const ios = getIOSVersion();
+  if (ios) {
+    // Web Push on iOS exists only from 16.4, and only for Home Screen apps.
+    if (ios.major < 16 || (ios.major === 16 && ios.minor < 4)) return "ios-too-old";
+    if (!isStandalone()) return "ios-not-installed";
+  }
   if (typeof Notification === "undefined") return "no-notification-api";
   if (!("serviceWorker" in navigator)) return "no-service-worker";
   if (!("PushManager" in window)) return "no-push-manager";
