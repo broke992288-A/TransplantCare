@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/types/roles";
@@ -20,52 +20,61 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ROLE_PRIORITY: AppRole[] = ["admin", "doctor", "support", "patient"];
 
+// Module-level in-flight role query cache: Supabase may emit several auth
+// events on boot (INITIAL_SESSION, SIGNED_IN) and the AuthProvider can remount
+// (HMR, route remounts) — a ref-based dedup loses the in-flight promise in
+// both cases. This collapses ALL of them into ONE user_roles query per user
+// per page load (with a short TTL). refreshRole(force=true) bypasses the cache.
+interface RoleQueryCache {
+  userId: string;
+  promise: Promise<AppRole | null>;
+  at: number;
+}
+const ROLE_CACHE_TTL_MS = 5 * 60 * 1000;
+let roleQueryCache: RoleQueryCache | null = null;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // In-flight role query dedup: Supabase may emit several auth events on boot
-  // (INITIAL_SESSION, SIGNED_IN); all of them collapse into ONE user_roles
-  // query per user per mount. refreshRole(force=true) bypasses the cache.
-  const roleRequestRef = useRef<{ userId: string; promise: Promise<void> } | null>(null);
-
   const fetchRole = useCallback(async (userId: string, force = false) => {
-    const inFlight = roleRequestRef.current;
-    if (!force && inFlight && inFlight.userId === userId) {
-      await inFlight.promise;
-      return;
-    }
-    const promise = (async () => {
-      try {
-        console.log("[authDebug] fetchRole", userId, new Error().stack?.split("\n").slice(1,6).join(" | "));
-        const data = await fetchUserRoles(userId);
+    let promise: Promise<AppRole | null>;
+    const cached = roleQueryCache;
+    if (!force && cached && cached.userId === userId && Date.now() - cached.at < ROLE_CACHE_TTL_MS) {
+      promise = cached.promise;
+    } else {
+      promise = fetchUserRoles(userId).then((data) => {
         if (data.length > 0) {
           const roles = data.map((d) => d.role as AppRole);
           const best = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? roles[0];
-          setRole(best);
-        } else {
-          setRole(null);
+          return best;
         }
-      } finally {
-        setLoading(false);
-      }
-    })();
-    roleRequestRef.current = { userId, promise };
-    await promise;
+        return null;
+      });
+      roleQueryCache = { userId, promise, at: Date.now() };
+      promise.catch(() => {
+        if (roleQueryCache?.promise === promise) roleQueryCache = null;
+      });
+    }
+    try {
+      const best = await promise;
+      setRole(best);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     // IMPORTANT: the callback must stay synchronous. Awaiting Supabase calls
     // inside onAuthStateChange holds the auth lock and deadlocks signIn.
-    // Role fetches are deduped by relying ONLY on auth-state events:
+    // Role fetches are deduped by the module-level cache above:
     // INITIAL_SESSION covers the initial load (getSession() removed — it
     // duplicated the same role query), and TOKEN_REFRESHED is skipped
     // because the role does not change when the access token refreshes.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("[authDebug] event:", event);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -100,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await signOutUser();
+    roleQueryCache = null;
     setRole(null);
   }, []);
 
@@ -107,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (newRole: AppRole) => {
       if (!user) throw new Error("Not authenticated");
       await upsertUserRole(user.id, newRole);
+      roleQueryCache = null;
       setRole(newRole);
     },
     [user],
