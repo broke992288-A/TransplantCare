@@ -84,6 +84,12 @@ export async function recordLabRiskSnapshot(labResultId: string): Promise<Record
   };
 }
 
+/** Clinician confirms a patient-submitted snapshot (server checks admin/assigned doctor). */
+export async function verifyRiskSnapshot(snapshotId: string): Promise<void> {
+  const { error } = await supabase.rpc("verify_risk_snapshot", { _snapshot_id: snapshotId });
+  if (error) throw error;
+}
+
 /**
  * Snapshots awaiting clinician verification (patient-submitted labs).
  * RLS scopes this to patients the caller may access; we still pass the
