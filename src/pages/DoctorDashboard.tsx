@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, AlertTriangle, Clock, ChevronRight, ShieldQuestion } from "lucide-react";
+import { Plus, AlertTriangle, Clock, ChevronRight, ChevronDown, ChevronUp, ShieldQuestion } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctorPatientsWithLabs } from "@/hooks/usePatients";
@@ -67,6 +67,38 @@ export default function DoctorDashboard() {
     return map;
   }, [patients]);
 
+  // Group pending-verification items per patient, preserving the
+  // high → medium → low severity ordering between patients.
+  const pendingGroups = useMemo(() => {
+    const order: string[] = [];
+    const byId = new Map<string, { items: typeof pendingSorted }>();
+    for (const s of pendingSorted) {
+      const found = byId.get(s.patient_id);
+      if (found) {
+        found.items.push(s);
+      } else {
+        byId.set(s.patient_id, { items: [s] });
+        order.push(s.patient_id);
+      }
+    }
+    return order.map((patientId) => ({
+      patientId,
+      name: patientNameById[patientId] ?? "—",
+      items: byId.get(patientId)!.items,
+    }));
+  }, [pendingSorted, patientNameById]);
+
+  // Temporary measure: each patient's pending-verification list starts
+  // collapsed; the doctor taps the summary row to expand it.
+  const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
+  const togglePatientExpanded = (patientId: string) =>
+    setExpandedPatients((prev) => {
+      const next = new Set(prev);
+      if (next.has(patientId)) next.delete(patientId);
+      else next.add(patientId);
+      return next;
+    });
+
   const highRiskCount = patients.filter((p) => p.risk_level === "high").length;
   const overdueCount = Array.isArray(overdue) ? overdue.length : 0;
   const pendingCount = pendingSorted.length;
@@ -115,34 +147,55 @@ export default function DoctorDashboard() {
                 <span className="font-medium">{t("dashboard.pendingVerification")}</span>
                 <span className="text-sm text-muted-foreground">{t("dashboard.pendingVerificationDesc")}</span>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("dashboard.patient")}</TableHead>
-                    <TableHead>{t("dashboard.risk")}</TableHead>
-                    <TableHead>{t("dashboard.score")}</TableHead>
-                    <TableHead>{t("dashboard.lastLab")}</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingSorted.map((s) => (
-                    <TableRow
-                      key={s.id}
-                      className="cursor-pointer"
-                      onClick={() => navigate(`/patient/${s.patient_id}`)}
-                    >
-                      <TableCell className="font-medium py-2">{patientNameById[s.patient_id] ?? "—"}</TableCell>
-                      <TableCell className="py-2">
-                        <Badge className={riskColorClass(s.risk_level)}>{t(`risk.${s.risk_level}`)}</Badge>
-                      </TableCell>
-                      <TableCell className="py-2 text-sm">{Math.round(s.score)}</TableCell>
-                      <TableCell className="py-2 text-sm text-muted-foreground">{relativeLabText(s.created_at, t)}</TableCell>
-                      <TableCell className="py-2 text-muted-foreground"><ChevronRight className="h-4 w-4" /></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div>
+                {pendingGroups.map(({ patientId, name, items }) => {
+                  const isExpanded = expandedPatients.has(patientId);
+                  return (
+                    <div key={patientId} className="border-b last:border-b-0">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                        onClick={() => togglePatientExpanded(patientId)}
+                        aria-expanded={isExpanded}
+                      >
+                        <span className="font-medium truncate">{name}</span>
+                        <span className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+                          {items.length} {t("dashboard.alertsWord")}
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      </button>
+                      {isExpanded && (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t("dashboard.risk")}</TableHead>
+                              <TableHead>{t("dashboard.score")}</TableHead>
+                              <TableHead>{t("dashboard.lastLab")}</TableHead>
+                              <TableHead className="w-12"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map((s) => (
+                              <TableRow
+                                key={s.id}
+                                className="cursor-pointer"
+                                onClick={() => navigate(`/patient/${s.patient_id}`)}
+                              >
+                                <TableCell className="py-2">
+                                  <Badge className={riskColorClass(s.risk_level)}>{t(`risk.${s.risk_level}`)}</Badge>
+                                </TableCell>
+                                <TableCell className="py-2 text-sm">{Math.round(s.score)}</TableCell>
+                                <TableCell className="py-2 text-sm text-muted-foreground">{relativeLabText(s.created_at, t)}</TableCell>
+                                <TableCell className="py-2 text-muted-foreground"><ChevronRight className="h-4 w-4" /></TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         )}
