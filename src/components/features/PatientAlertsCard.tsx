@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Bell, CheckCheck, Check, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { usePatientAlerts, useInvalidatePatientAlerts } from "@/hooks/usePatientAlerts";
 import {
@@ -46,7 +45,6 @@ const statusClass: Record<string, string> = {
 
 export default function PatientAlertsCard({ patientId, patientView = false }: PatientAlertsCardProps) {
   const { t } = useLanguage();
-  const { role } = useAuth();
   const [showResolved, setShowResolved] = useState(false);
   const [expanded, setExpanded] = useState(!patientView);
   const { data: alerts = [], isLoading } = usePatientAlerts(patientId, 20, showResolved);
@@ -164,7 +162,7 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
                 }`}
               >
                 <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-                  <span className="text-sm font-medium">{alert.title}</span>
+                  {!patientView && <span className="text-sm font-medium">{alert.title}</span>}
                   <div className="flex items-center gap-1">
                     <Badge className={statusClass[alert.status] ?? statusClass.new} variant="outline">
                       {t(`patientAlerts.status.${alert.status}`) || alert.status}
@@ -208,7 +206,7 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
                         {t("patientAlerts.acknowledge") || "Acknowledge"}
                       </Button>
                     )}
-                    {(!patientView || alert.severity !== "critical") && role !== "patient" && <Button
+                    {(!patientView || alert.severity !== "critical") && <Button
                       size="sm"
                       variant="default"
                       className="h-7"
