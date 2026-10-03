@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync } from "fs";
 
 const profile = readFileSync("src/pages/PatientProfile.tsx", "utf8");
 const alerts = readFileSync("src/components/features/PatientAlertsCard.tsx", "utf8");

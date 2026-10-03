@@ -44,7 +44,7 @@ export default function PatientProfile() {
   const latestRisk = riskSnapshots[0] ?? null;
   const prevRisk = riskSnapshots[1] ?? null;
   const hasActiveHighRiskAlert = activeAlerts.some((alert) => alert.severity === "critical");
-  const effectiveRiskLevel = hasActiveHighRiskAlert ? "high" : patient?.risk_level;
+  const effectiveRiskLevel = hasActiveHighRiskAlert ? "high" : patient?.risk_level ?? "low";
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["patient-labs", patient?.id] });
