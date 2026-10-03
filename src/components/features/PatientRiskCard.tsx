@@ -6,9 +6,10 @@ import type { RiskSnapshot } from "@/services/riskSnapshotService";
 interface PatientRiskCardProps {
   snapshot: RiskSnapshot | null;
   loading?: boolean;
+  activeHighRiskAlert?: boolean;
 }
 
-export default function PatientRiskCard({ snapshot, loading }: PatientRiskCardProps) {
+export default function PatientRiskCard({ snapshot, loading, activeHighRiskAlert = false }: PatientRiskCardProps) {
   const { t } = useLanguage();
 
   if (loading) {
@@ -19,7 +20,7 @@ export default function PatientRiskCard({ snapshot, loading }: PatientRiskCardPr
     );
   }
 
-  if (!snapshot) {
+  if (!snapshot && !activeHighRiskAlert) {
     return (
       <Card>
         <CardHeader>
@@ -35,7 +36,7 @@ export default function PatientRiskCard({ snapshot, loading }: PatientRiskCardPr
     );
   }
 
-  const level = snapshot.risk_level;
+  const level = activeHighRiskAlert ? "high" : snapshot?.risk_level ?? "low";
 
   const config = {
     low: {
@@ -100,9 +101,11 @@ export default function PatientRiskCard({ snapshot, loading }: PatientRiskCardPr
           </p>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          {t("patientRisk.lastCheck")}: {new Date(snapshot.created_at).toLocaleString()}
-        </p>
+        {snapshot && (
+          <p className="text-xs text-muted-foreground">
+            {t("patientRisk.lastCheck")}: {new Date(snapshot.created_at).toLocaleString()}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

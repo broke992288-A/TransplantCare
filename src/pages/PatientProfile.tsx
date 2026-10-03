@@ -19,8 +19,8 @@ import LabHistoryTable from "@/components/features/LabHistoryTable";
 const LabTrendCharts = lazy(() => import("@/components/features/LabTrendCharts"));
 import PatientRiskCard from "@/components/features/PatientRiskCard";
 import PatientAlertsCard from "@/components/features/PatientAlertsCard";
-import DoctorNotesCard from "@/components/features/DoctorNotesCard";
 import { usePatientMedications } from "@/hooks/useMedications";
+import { usePatientAlerts } from "@/hooks/usePatientAlerts";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PatientProfile() {
@@ -30,6 +30,7 @@ export default function PatientProfile() {
   const { data: timeline = [] } = usePatientHomeEvents(patient?.id);
   const { data: riskSnapshots = [] } = useRiskSnapshots(patient?.id);
   const { data: medications = [] } = usePatientMedications(patient?.id);
+  const { data: activeAlerts = [] } = usePatientAlerts(patient?.id, 20, false);
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "overview";
@@ -42,6 +43,8 @@ export default function PatientProfile() {
 
   const latestRisk = riskSnapshots[0] ?? null;
   const prevRisk = riskSnapshots[1] ?? null;
+  const hasActiveHighRiskAlert = activeAlerts.some((alert) => alert.severity === "critical");
+  const effectiveRiskLevel = hasActiveHighRiskAlert ? "high" : patient?.risk_level;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["patient-labs", patient?.id] });
@@ -80,7 +83,7 @@ export default function PatientProfile() {
             <div>
               <h1 className="text-xl font-bold">{patient.full_name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <Badge className={riskColorClass(patient.risk_level)}>{t(`risk.${patient.risk_level}`)}</Badge>
+                <Badge className={riskColorClass(effectiveRiskLevel)}>{t(`risk.${effectiveRiskLevel}`)}</Badge>
                 <span className="text-sm text-muted-foreground">{t(`organ.${patient.organ_type}`)} {t("profile.transplant").toLowerCase()}</span>
               </div>
             </div>
@@ -129,15 +132,14 @@ export default function PatientProfile() {
                 {patient.transplant_date && <InfoRow label={t("profile.transplantDate")} value={new Date(patient.transplant_date).toLocaleDateString()} icon={<Calendar className="h-3 w-3" />} />}
               </CardContent>
             </Card>
-            <PatientRiskCard snapshot={latestRisk} />
-            {patient.risk_level === "high" && (
+            <PatientRiskCard snapshot={latestRisk} activeHighRiskAlert={hasActiveHighRiskAlert} />
+            {effectiveRiskLevel === "high" && (
               <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm flex items-start gap-2">
                 <Stethoscope className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
                 {t("profile.highRiskWarning")}
               </div>
             )}
-            <DoctorNotesCard patientId={patient.id} readOnly />
-            <PatientAlertsCard patientId={patient.id} />
+            <PatientAlertsCard patientId={patient.id} patientView />
             <NotificationSettings />
           </TabsContent>
 
@@ -182,8 +184,8 @@ export default function PatientProfile() {
 
           {/* Risk */}
           <TabsContent value="risk" className="space-y-4">
-            <PatientRiskCard snapshot={latestRisk} />
-            <PatientAlertsCard patientId={patient.id} />
+            <PatientRiskCard snapshot={latestRisk} activeHighRiskAlert={hasActiveHighRiskAlert} />
+            <PatientAlertsCard patientId={patient.id} patientView />
           </TabsContent>
 
           {/* Timeline */}

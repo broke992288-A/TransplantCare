@@ -12,7 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Bell, CheckCheck, Check, ShieldCheck } from "lucide-react";
+import { Bell, CheckCheck, Check, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { usePatientAlerts, useInvalidatePatientAlerts } from "@/hooks/usePatientAlerts";
 import {
@@ -26,6 +27,7 @@ import TranslatedText from "@/components/features/TranslatedText";
 
 interface PatientAlertsCardProps {
   patientId: string;
+  patientView?: boolean;
 }
 
 const severityClass: Record<string, string> = {
@@ -42,9 +44,11 @@ const statusClass: Record<string, string> = {
   dismissed: "bg-muted text-muted-foreground",
 };
 
-export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps) {
+export default function PatientAlertsCard({ patientId, patientView = false }: PatientAlertsCardProps) {
   const { t } = useLanguage();
+  const { role } = useAuth();
   const [showResolved, setShowResolved] = useState(false);
+  const [expanded, setExpanded] = useState(!patientView);
   const { data: alerts = [], isLoading } = usePatientAlerts(patientId, 20, showResolved);
   const invalidate = useInvalidatePatientAlerts();
   const { toast } = useToast();
@@ -97,14 +101,29 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
     <>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Bell className="h-5 w-5 text-destructive shrink-0" />
-            {t("patientAlerts.title")}
-            {newCount > 0 && (
-              <Badge variant="destructive" className="ml-1">{newCount}</Badge>
-            )}
-          </CardTitle>
-          <div className="flex items-center gap-3">
+          {patientView ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto w-full justify-between p-0 hover:bg-transparent sm:w-auto"
+              onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
+              aria-label={expanded ? t("patientAlerts.collapse") : t("patientAlerts.expand")}
+            >
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Bell className="h-5 w-5 text-destructive shrink-0" />
+                {t("patientAlerts.title")} · <Badge variant="destructive">{activeCount}</Badge>
+              </CardTitle>
+              {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </Button>
+          ) : (
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Bell className="h-5 w-5 text-destructive shrink-0" />
+              {t("patientAlerts.title")}
+              {newCount > 0 && <Badge variant="destructive" className="ml-1">{newCount}</Badge>}
+            </CardTitle>
+          )}
+          {!patientView && <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Switch
                 id={`show-resolved-${patientId}`}
@@ -123,9 +142,9 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
                 <CheckCheck className="h-4 w-4 mr-1" /> {t("patientAlerts.markAllRead")}
               </Button>
             )}
-          </div>
+          </div>}
         </CardHeader>
-        <CardContent className="space-y-2">
+        {expanded && <CardContent className="space-y-2">
           {alerts.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
               {t("patientAlerts.noActive") || "No active alerts"}
@@ -159,7 +178,11 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
                     </Badge>
                   </div>
                 </div>
-                {alert.message && (
+                {patientView ? (
+                  <p className="text-sm text-foreground">
+                    {t("patientAlerts.patientMessage")}
+                  </p>
+                ) : alert.message && (
                   <p className="text-xs text-muted-foreground">
                     <TranslatedText text={alert.message} />
                   </p>
@@ -167,7 +190,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
                 <p className="text-xs text-muted-foreground mt-1">
                   {new Date(alert.created_at).toLocaleString()}
                 </p>
-                {alert.resolution_note && (
+                {!patientView && alert.resolution_note && (
                   <p className="text-xs italic text-muted-foreground mt-1">
                     “{alert.resolution_note}”
                   </p>
@@ -185,7 +208,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
                         {t("patientAlerts.acknowledge") || "Acknowledge"}
                       </Button>
                     )}
-                    <Button
+                    {(!patientView || alert.severity !== "critical") && role !== "patient" && <Button
                       size="sm"
                       variant="default"
                       className="h-7"
@@ -196,7 +219,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
                     >
                       <ShieldCheck className="h-3.5 w-3.5 mr-1" />
                       {t("patientAlerts.resolve") || "Resolve"}
-                    </Button>
+                    </Button>}
                   </div>
                 )}
               </div>
@@ -207,7 +230,7 @@ export default function PatientAlertsCard({ patientId }: PatientAlertsCardProps)
               {t("patientAlerts.allResolved") || "All alerts resolved"}
             </p>
           )}
-        </CardContent>
+        </CardContent>}
       </Card>
 
       <Dialog
