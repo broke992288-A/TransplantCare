@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Patient portal: translations, patient-safe alerts, collapsed alert list, unified high-risk display, and debug-control removal
+- [x] Patient portal: translations, patient-safe alerts, collapsed alert list, unified high-risk display, and debug-control removal
 
 - [x] Email infra for notify.transplantcare.uz: scaffolded auth email templates, styled with TransplantCare branding (Uzbek copy, medical cyan), deployed auth-email-hook
 
