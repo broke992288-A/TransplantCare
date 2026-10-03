@@ -1,0 +1,1 @@
+Patient-facing alerts must hide clinical values, units, guideline codes, and citations while clinician views retain full technical detail — this prevents unsafe self-interpretation without removing clinical context.
