@@ -206,7 +206,7 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
                         {t("patientAlerts.acknowledge") || "Acknowledge"}
                       </Button>
                     )}
-                    {(!patientView || alert.severity !== "critical") && <Button
+                    {!patientView && <Button
                       size="sm"
                       variant="default"
                       className="h-7"

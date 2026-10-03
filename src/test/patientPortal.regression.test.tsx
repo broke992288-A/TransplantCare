@@ -21,7 +21,7 @@ describe("patient portal safety regressions", () => {
   it("keeps patient alerts collapsed and removes technical alert detail", () => {
     expect(alerts).toContain("useState(!patientView)");
     expect(alerts).toContain('t("patientAlerts.patientMessage")');
-    expect(alerts).toContain('alert.severity !== "critical"');
+    expect(alerts).toContain("{!patientView && <Button");
   });
 
   it("contains the requested Uzbek alert translations", () => {
