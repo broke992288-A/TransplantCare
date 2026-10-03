@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-
-const profile = readFileSync("src/pages/PatientProfile.tsx", "utf8");
-const alerts = readFileSync("src/components/features/PatientAlertsCard.tsx", "utf8");
-const notifications = readFileSync("src/components/features/NotificationSettings.tsx", "utf8");
-const language = readFileSync("src/hooks/useLanguage.tsx", "utf8");
+import profile from "@/pages/PatientProfile.tsx?raw";
+import alerts from "@/components/features/PatientAlertsCard.tsx?raw";
+import notifications from "@/components/features/NotificationSettings.tsx?raw";
+import language from "@/hooks/useLanguage.tsx?raw";
 
 describe("patient portal safety regressions", () => {
   it("does not show doctor-note controls or push debug tools on the patient dashboard", () => {
