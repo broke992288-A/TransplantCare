@@ -158,18 +158,32 @@ Deno.serve(async (req: Request) => {
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Authorization: doctor/admin/support may target any user; patients only themselves.
+    // Authorization: admin may target any user; doctors only themselves and
+    // their assigned patients' linked accounts; everyone else only themselves.
+    const callerId = userData.user.id;
     const { data: rolesData } = await serviceClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", userData.user.id);
+      .eq("user_id", callerId);
     const roles = (rolesData ?? []).map((r: { role: string }) => r.role);
-    const isPrivileged = roles.some((r) => ["doctor", "admin", "support"].includes(r));
-    if (!isPrivileged) {
-      const onlySelf = user_ids.every((uid: string) => uid === userData.user.id);
-      if (!onlySelf) {
+    const isAdmin = roles.includes("admin");
+    if (!isAdmin) {
+      const allowed = new Set<string>([callerId]);
+      if (roles.includes("doctor")) {
+        const { data: assigned } = await serviceClient
+          .from("patients")
+          .select("linked_user_id")
+          .eq("assigned_doctor_id", callerId)
+          .is("deleted_at", null)
+          .not("linked_user_id", "is", null);
+        for (const p of assigned ?? []) {
+          if (p.linked_user_id) allowed.add(p.linked_user_id as string);
+        }
+      }
+      const permitted = user_ids.every((uid: unknown) => typeof uid === "string" && allowed.has(uid));
+      if (!permitted) {
         return new Response(
-          JSON.stringify({ error: "Forbidden: insufficient role to send notifications to other users" }),
+          JSON.stringify({ error: "Forbidden: you may only notify your assigned patients" }),
           { status: 403, headers: { ...headers, "Content-Type": "application/json" } },
         );
       }
