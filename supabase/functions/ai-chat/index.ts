@@ -51,6 +51,14 @@ Deno.serve(async (req) => {
       return json(400, { error: "messages must be a non-empty array" });
     }
 
+    const safeMessages = messages
+      .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .slice(-50)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
+    if (safeMessages.length === 0) {
+      return json(400, { error: "messages must contain user or assistant messages" });
+    }
+
     const systemPrompt =
       "You are a helpful AI assistant inside the TransplantCare clinical app. " +
       "Answer clearly and concisely using markdown. " +
@@ -66,7 +74,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         stream: true,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        messages: [{ role: "system", content: systemPrompt }, ...safeMessages],
       }),
     });
 

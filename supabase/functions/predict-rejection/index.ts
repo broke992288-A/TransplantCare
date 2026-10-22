@@ -41,7 +41,9 @@ serve(async (req) => {
   if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
-    const { patient_id, organ_type, labs, language = "en", patient_data } = await req.json();
+    const { patient_id, organ_type: rawOrganType, labs, language = "en", patient_data } = await req.json();
+    const organ_type: "kidney" | "liver" | null =
+      rawOrganType === "kidney" || rawOrganType === "liver" ? rawOrganType : null;
 
     log("info", FN_NAME, "Prediction requested", { requestId, userId, patient_id, organ_type });
 

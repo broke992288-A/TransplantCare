@@ -74,7 +74,12 @@ export default function Analytics() {
   const handleExportCSV = () => {
     const headers = [t("analytics.region"), t("analytics.total"), t("analytics.kidney"), t("analytics.liver"), t("dashboard.highRisk"), t("dashboard.mediumRisk"), t("patients.lowRisk")];
     const rows = filteredRegions.map(r => [r.name, r.total, r.kidney, r.liver, r.high, r.medium, r.low]);
-    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const csvCell = (v: string | number): string => {
+      let str = String(v);
+      if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+      return /[",\n\r]/.test(str) || str.startsWith("'") ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+    const csv = [headers.map(csvCell).join(","), ...rows.map(r => r.map(csvCell).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
