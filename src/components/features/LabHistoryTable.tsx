@@ -187,7 +187,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
     <TooltipProvider delayDuration={0}>
       <div className="rounded-lg border overflow-hidden">
         <ScrollArea className="w-full">
-          <Table>
+          <Table className="border-collapse [&_th]:border [&_td]:border [&_th]:border-border [&_td]:border-border [&_th]:bg-muted [&_th]:font-semibold [&_th]:h-10 [&_td]:py-2">
             <TableHeader>
               <TableRow>
                 {editable && <TableHead className="whitespace-nowrap sticky left-0 bg-background z-10 min-w-[80px]" />}
