@@ -1,10 +1,10 @@
 ## Selected monitoring findings
-- [ ] Historical pending-verification queue: verify and design without marking unreviewed data verified
-- [ ] Verify current normalization-before-validation flow (90 µmol/L creatinine)
-- [ ] Password reset must not confirm email implicitly
-- [ ] Realtime alert events must refresh header unread count
-- [ ] Unsupported lab units: verify and design a safe escape path without unit guessing
-- [ ] Failed reminder claims: verify and design retry-safe delivery
+- [ ] Historical pending-verification queue: confirmed; awaiting approval of safe review workflow (no inferred verification)
+- [x] Normalization-before-validation finding is stale; current 90 µmol/L -> 1.02 mg/dL flow passes regression tests
+- [x] Password-only reset no longer confirms email; explicit confirmation preserved; handler tests passed and function deployed
+- [x] Realtime alert events refresh header unread count; callback regression passed
+- [ ] Unsupported lab units: confirmed; awaiting approval of unit-selection and optional-field correction workflow
+- [ ] Failed reminder claims: confirmed; awaiting approval of atomic retry-safe delivery workflow
 
 - [x] Doctor dashboard: pending-verification list grouped per patient, collapsed by default (temporary measure; doctor expands a patient's rows; severity/actions unchanged)
 
