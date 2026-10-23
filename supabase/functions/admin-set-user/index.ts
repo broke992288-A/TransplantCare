@@ -92,11 +92,10 @@ Deno.serve(async (req) => {
     if (password) {
       const { error } = await admin.auth.admin.updateUserById(user_id, {
         password,
-        email_confirm: true,
       });
       if (error) throw error;
     }
-    if (confirm_email === true && !password) {
+    if (confirm_email === true) {
       const { error } = await admin.auth.admin.updateUserById(user_id, {
         email_confirm: true,
       });
@@ -110,7 +109,7 @@ Deno.serve(async (req) => {
     // Audit trail: who changed what for whom (never stores the password).
     const actions: string[] = [];
     if (password) actions.push("password_reset");
-    if (confirm_email === true && !password) actions.push("email_confirmed");
+    if (confirm_email === true) actions.push("email_confirmed");
     if (role) actions.push("role_changed");
     if (actions.length > 0) {
       const { error: auditErr } = await admin.from("audit_logs").insert({

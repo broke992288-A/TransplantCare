@@ -7,7 +7,7 @@ const WATCHED_TABLES = [
   { table: "patients", queryKeys: ["doctor-patients", "doctor-patients-with-labs", "all-patients", "patient", "linked-patient"] },
   { table: "lab_results", queryKeys: ["patient-labs", "latest-labs-map", "doctor-patients-with-labs"] },
   { table: "risk_snapshots", queryKeys: ["risk-snapshots", "risk-snapshot-latest"] },
-  { table: "patient_alerts", queryKeys: ["patient-alerts", "patient-alerts-unread"] },
+  { table: "patient_alerts", queryKeys: ["patient-alerts", "patient-alerts-unread", "unread-alert-count"] },
   { table: "lab_schedules", queryKeys: ["lab-schedules", "overdue-lab-schedules"] },
   { table: "doctor_notes", queryKeys: ["doctor-notes"] },
 ] as const;
