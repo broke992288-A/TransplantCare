@@ -1,3 +1,11 @@
+## Selected monitoring findings
+- [ ] Historical pending-verification queue: verify and design without marking unreviewed data verified
+- [ ] Verify current normalization-before-validation flow (90 µmol/L creatinine)
+- [ ] Password reset must not confirm email implicitly
+- [ ] Realtime alert events must refresh header unread count
+- [ ] Unsupported lab units: verify and design a safe escape path without unit guessing
+- [ ] Failed reminder claims: verify and design retry-safe delivery
+
 - [x] Doctor dashboard: pending-verification list grouped per patient, collapsed by default (temporary measure; doctor expands a patient's rows; severity/actions unchanged)
 
 - [x] Patient portal: translations, patient-safe alerts, collapsed alert list, unified high-risk display, and debug-control removal
