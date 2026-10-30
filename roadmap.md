@@ -40,4 +40,4 @@
 - [x] Doctor "confirm risk assessment" button (verify_risk_snapshot)
 
 ## Infrastructure & compliance audit (uploaded brief, read-only)
-- [ ] Full audit report: infra/data locations, stored data types, test vs real data, security (RLS/keys/TLS/audit/backups), Uzbekistan law compliance, pilot readiness (Namangan, 50 patients) — deliver as document, no code changes
+- [x] Full audit report delivered: TransplantCare-infratuzilma-auditi-2026-10-30.md (no code changes)
