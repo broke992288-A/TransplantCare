@@ -38,3 +38,6 @@
 
 - [x] coalesce_recent_lab_values access check; trigger fn EXECUTE revoked; log_audit_event anon revoked
 - [x] Doctor "confirm risk assessment" button (verify_risk_snapshot)
+
+## Infrastructure & compliance audit (uploaded brief, read-only)
+- [x] Full audit report delivered: TransplantCare-infratuzilma-auditi-2026-10-30.md (no code changes)
