@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { localizeClinicalText } from "@/i18n/clinicalText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ const statusClass: Record<string, string> = {
 };
 
 export default function PatientAlertsCard({ patientId, patientView = false }: PatientAlertsCardProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [showResolved, setShowResolved] = useState(false);
   const [expanded, setExpanded] = useState(!patientView);
   const { data: alerts = [], isLoading } = usePatientAlerts(patientId, 20, showResolved);
@@ -162,7 +163,7 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
                 }`}
               >
                 <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-                  {!patientView && <span className="text-sm font-medium">{alert.title}</span>}
+                  {!patientView && <span className="text-sm font-medium">{localizeClinicalText(alert.title, lang)}</span>}
                   <div className="flex items-center gap-1">
                     <Badge className={statusClass[alert.status] ?? statusClass.new} variant="outline">
                       {t(`patientAlerts.status.${alert.status}`) || alert.status}

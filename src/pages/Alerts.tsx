@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from "react";
+import { localizeClinicalText } from "@/i18n/clinicalText";
 import { AlertTriangle, Activity, CheckCircle, Clock, Pill, ChevronDown, ChevronUp, FileText, Eye, Check, Stethoscope } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -138,7 +139,7 @@ interface CardProps {
 }
 
 function AlertCard({ group, onResolve }: CardProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const summary = useMemo(() => buildSummary(group, t), [group, t]);
@@ -268,7 +269,7 @@ function AlertCard({ group, onResolve }: CardProps) {
               <li key={a.id} className="flex items-start gap-2">
                 <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full",
                   a.severity === "critical" ? "bg-warning" : a.severity === "warning" ? "bg-primary" : "bg-muted-foreground")} />
-                <span className="line-clamp-2">{a.title}{a.message ? ` — ${a.message}` : ""}</span>
+                <span className="line-clamp-2">{localizeClinicalText(a.title, lang)}{a.message ? ` — ${localizeClinicalText(a.message, lang)}` : ""}</span>
               </li>
             ))}
           </ul>
@@ -279,7 +280,7 @@ function AlertCard({ group, onResolve }: CardProps) {
 }
 
 export default function Alerts() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { data: groups = [], isLoading } = useGroupedAlerts();
   const queryClient = useQueryClient();
   const { toast } = useToast();
