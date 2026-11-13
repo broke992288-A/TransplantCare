@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import EditPatientDialog from "@/components/features/EditPatientDialog";
 import { useLanguage } from "@/hooks/useLanguage";
+import { localizeClinicalText, localizeStage } from "@/i18n/clinicalText";
 import { useToast } from "@/hooks/use-toast";
 import { deletePatient } from "@/services/patientService";
 import { riskColorClass } from "@/utils/risk";
@@ -24,7 +25,7 @@ interface Props {
 }
 
 export default function PatientCockpitHeader({ patient, latestRisk, latestLab, onUpdated }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { data: schedules = [] } = useLabSchedules(patient.id);
@@ -110,10 +111,10 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
                 <Clock className={`h-4 w-4 flex-shrink-0 ${elevated ? "text-warning" : "text-muted-foreground"}`} />
                 <span>
                   <span className="font-medium">
-                    {elevated ? "Lab data is stale" : "Lab data may be outdated"}:
+                    {elevated ? t("cockpit.labStale") : t("cockpit.labMaybeOutdated")}:
                   </span>{" "}
                   <span className="text-muted-foreground">
-                    Latest creatinine/tacrolimus/ALT-AST is {ageDays} days old. Risk interpretation requires fresh laboratory data.
+                    {t("cockpit.labAgeMsg").replace("{days}", String(ageDays))}
                   </span>
                 </span>
               </div>
@@ -126,9 +127,9 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 flex items-center gap-3 text-sm">
               <Info className="h-4 w-4 text-primary flex-shrink-0" />
               <span>
-                <span className="font-medium">Tacrolimus C0 target:</span>{" "}
+                <span className="font-medium">{t("cockpit.tacTarget")}:</span>{" "}
                 <span className="text-primary font-bold">{tacrolimusTarget.target} ng/mL</span>
-                <span className="text-muted-foreground"> • {tacrolimusTarget.stage} • {tacrolimusTarget.guideline}</span>
+                <span className="text-muted-foreground"> • {localizeStage(tacrolimusTarget.stage, lang)} • {tacrolimusTarget.guideline}</span>
               </span>
             </div>
           )}
@@ -140,7 +141,7 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
             .map((w, i) => (
               <div key={i} className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 flex items-center gap-2 text-sm">
                 <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
-                <span className="font-medium">{w.title}: <span className="font-normal text-muted-foreground">{w.message}</span></span>
+                <span className="font-medium">{localizeClinicalText(w.title, lang)}: <span className="font-normal text-muted-foreground">{localizeClinicalText(w.message, lang)}</span></span>
               </div>
             ))}
 

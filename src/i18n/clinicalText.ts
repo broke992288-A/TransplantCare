@@ -79,6 +79,7 @@ const RULES: Rule[] = [
     uz: (m, l) => `Takrolimus ${m[1]} ng/mL maqsadli diapazondan [${m[2]}] tashqarida — ${localizeStage(m[3], l)}`,
     ru: (m, l) => `Такролимус ${m[1]} нг/мл вне целевого диапазона [${m[2]}] — ${localizeStage(m[3], l)}` } },
   { re: /^Tacrolimus data missing$/, out: { uz: () => "Takrolimus ma'lumoti yo'q", ru: () => "Нет данных по такролимусу" } },
+  { re: /^Tacrolimus data missing — cannot assess immunosuppression level$/, out: { uz: () => "Takrolimus ma'lumoti yo'q — immunosupressiya darajasini baholab bo'lmaydi", ru: () => "Нет данных по такролимусу — невозможно оценить уровень иммуносупрессии" } },
   { re: /^Early post-transplant$/, out: { uz: () => "Transplantatsiyadan keyingi erta davr", ru: () => "Ранний посттрансплантационный период" } },
   { re: /^(\d+) days since transplant — higher baseline risk$/, out: {
     uz: (m) => `Transplantatsiyadan ${m[1]} kun o'tdi — boshlang'ich xavf yuqori`,
