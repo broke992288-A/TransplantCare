@@ -98,8 +98,18 @@ const RULES: Rule[] = [
     ru: (m) => `Внимание: оценка риска ${m[1]}/100. Срочно сверьтесь с протоколами ${m[2]}.` } },
 ];
 
+/** Fixed server-generated alert titles (stored in Uzbek). */
+const FIXED: Record<string, Record<Language, string>> = {
+  "Tahlil natijasi e'tiborga loyiq": { uz: "Tahlil natijasi e'tiborga loyiq", ru: "Результат анализа требует внимания", en: "Lab result needs attention" },
+  "Shifokor bilan maslahatlashish tavsiya etiladi": { uz: "Shifokor bilan maslahatlashish tavsiya etiladi", ru: "Рекомендуется консультация врача", en: "Consultation with a doctor is recommended" },
+  "Jiddiy og'shish aniqlandi!": { uz: "Jiddiy og'shish aniqlandi!", ru: "Обнаружено серьёзное отклонение!", en: "Serious deviation detected!" },
+  "Dori dozasi o'zgartirildi": { uz: "Dori dozasi o'zgartirildi", ru: "Доза препарата изменена", en: "Medication dose changed" },
+};
+
 export function localizeClinicalText(text: string | null | undefined, lang: Language): string {
   if (!text) return "";
+  const fixed = FIXED[text.trim()];
+  if (fixed) return fixed[lang];
   if (lang === "en") return text;
   for (const r of RULES) {
     const m = text.match(r.re);
