@@ -8,6 +8,13 @@
       "when": 1792692552703,
       "tag": "0000_restrict_reference_tables_to_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794899277729,
+      "tag": "0001_scope_reference_tables_to_role_holders",
+      "breakpoints": true
     }
   ]
 }
