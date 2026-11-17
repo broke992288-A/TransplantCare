@@ -11,6 +11,17 @@ type Entry = Record<Language, string>;
 const E = (en: string, ru: string, uz: string): Entry => ({ en, ru, uz });
 
 const ENTRIES: Entry[] = [
+  E("Project comparison", "Сравнение проектов", "Loyihalar solishtirmasi"),
+  E("Copy text", "Копировать текст", "Matndan nusxa olish"),
+  E("Copy Markdown", "Копировать Markdown", "Markdown nusxasini olish"),
+  E("TransplantCare Technical Document", "Технический документ TransplantCare", "TransplantCare texnik hujjati"),
+  E("Technical documentation — 15 sections with tables and diagrams in PDF format.", "Техническая документация — 15 разделов с таблицами и диаграммами в формате PDF.", "Texnik hujjat — PDF formatida jadval va diagrammali 15 bo'lim."),
+  E("Generating...", "Создание...", "Yaratilmoqda..."),
+  E("Ready! Download again", "Готово! Скачать снова", "Tayyor! Qayta yuklash"),
+  E("Download PDF", "Скачать PDF", "PDF yuklab olish"),
+  E("Download in Latin alphabet", "Скачать на латинице", "Lotin alifbosida yuklab olish"),
+  E("Download in Cyrillic alphabet", "Скачать на кириллице", "Kirill alifbosida yuklab olish"),
+  E("File downloaded successfully!", "Файл успешно скачан!", "Fayl muvaffaqiyatli yuklab olindi!"),
   E("Today", "Сегодня", "Bugun"),
   E("Try changing your search.", "Попробуйте изменить запрос.", "Qidiruv so'zini o'zgartirib ko'ring."),
   E("Full name", "Имя и фамилия", "Ism Familiya"),
