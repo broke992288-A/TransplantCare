@@ -127,6 +127,14 @@ const RULES: Rule[] = [
 
 /** Fixed server-generated alert titles (stored in Uzbek). */
 const FIXED: Record<string, Record<Language, string>> = {
+  "Critical creatinine elevation": { en: "Critical creatinine elevation", uz: "Kreatinin kritik darajada oshgan", ru: "Критическое повышение креатинина" },
+  "Subtherapeutic tacrolimus — rejection risk": { en: "Subtherapeutic tacrolimus — rejection risk", uz: "Takrolimus davolash diapazonidan past — rad etish xavfi", ru: "Такролимус ниже терапевтического диапазона — риск отторжения" },
+  "Toxic tacrolimus level": { en: "Toxic tacrolimus level", uz: "Takrolimus toksik darajada", ru: "Токсический уровень такролимуса" },
+  "Severe hyperkalemia": { en: "Severe hyperkalemia", uz: "Og'ir giperkaliyemiya", ru: "Тяжёлая гиперкалиемия" },
+  "Critical ALT elevation": { en: "Critical ALT elevation", uz: "ALT kritik darajada oshgan", ru: "Критическое повышение АЛТ" },
+  "Critical AST elevation": { en: "Critical AST elevation", uz: "AST kritik darajada oshgan", ru: "Критическое повышение АСТ" },
+  "Critical hyperbilirubinemia": { en: "Critical hyperbilirubinemia", uz: "Kritik giperbilirubinemiya", ru: "Критическая гипербилирубинемия" },
+  "Critical kidney function decline": { en: "Critical kidney function decline", uz: "Buyrak faoliyati kritik darajada pasaygan", ru: "Критическое снижение функции почек" },
   "Medication held by doctor": { en: "Medication held by doctor", uz: "Shifokor dorini vaqtincha to'xtatdi", ru: "Врач временно приостановил препарат" },
   "Medication restarted by doctor": { en: "Medication restarted by doctor", uz: "Shifokor dorini qayta boshladi", ru: "Врач возобновил препарат" },
   "Tahlil natijasi e'tiborga loyiq": { uz: "Tahlil natijasi e'tiborga loyiq", ru: "Результат анализа требует внимания", en: "Lab result needs attention" },
