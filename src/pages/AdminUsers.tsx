@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, KeyRound, MailCheck, Search, ShieldCheck, Users } from "lucide-react";
@@ -49,6 +50,7 @@ function formatDate(value: string | null): string {
 }
 
 export default function AdminUsers() {
+  const tx = useTx();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -171,7 +173,7 @@ export default function AdminUsers() {
               <SelectContent>
                 <SelectItem value="all">{tx("Barcha rollar")}</SelectItem>
                 {ADMIN_MANAGED_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                  <SelectItem key={r} value={r}>{tx(ROLE_LABEL[r])}</SelectItem>
                 ))}
                 <SelectItem value="none">{tx("Rol berilmagan")}</SelectItem>
               </SelectContent>
@@ -213,7 +215,7 @@ export default function AdminUsers() {
                         <TableCell className="max-w-[260px] break-words text-muted-foreground">{u.email ?? "—"}</TableCell>
                         <TableCell>
                           {role ? (
-                            <Badge className={ROLE_BADGE[role]}>{ROLE_LABEL[role]}</Badge>
+                            <Badge className={ROLE_BADGE[role]}>{tx(ROLE_LABEL[role])}</Badge>
                           ) : (
                             <Badge variant="outline">{tx("Rol berilmagan")}</Badge>
                           )}
@@ -277,7 +279,7 @@ export default function AdminUsers() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {ADMIN_MANAGED_ROLES.map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                <SelectItem key={r} value={r}>{tx(ROLE_LABEL[r])}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -330,7 +332,7 @@ export default function AdminUsers() {
           <DialogHeader>
             <DialogTitle>{tx("Parolni tiklash")}</DialogTitle>
             <DialogDescription>
-              {pwTarget?.email ?? pwTarget?.full_name ?? ""} uchun yangi parol kiriting.
+              {pwTarget?.email ?? pwTarget?.full_name ?? ""} {tx("uchun yangi parol kiriting.")}
             </DialogDescription>
           </DialogHeader>
           <form

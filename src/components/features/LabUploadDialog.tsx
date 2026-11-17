@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { getErrorMessage } from "@/utils/errorHandler";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -289,6 +290,7 @@ function DateGroupValues({
   verifications: Record<string, boolean>;
   onToggleVerify: (groupIndex: number, key: string, verified: boolean) => void;
 }) {
+  const tx = useTx();
   const filledFields = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "");
   const missingFields = LAB_FIELDS.filter((f) => !group.values[f.key] || group.values[f.key] === "");
   const lowConfFields = filledFields.filter(
@@ -439,6 +441,7 @@ function DateGroupValues({
 }
 
 export default function LabUploadDialog({ patientId, organType, patientData, onLabAdded, patientCountry, patientName, patientDOB, patientMRN }: Props) {
+  const tx = useTx();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   const [saving, setSaving] = useState(false);
@@ -706,7 +709,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     if (!verificationStatus.ready) {
       toast({
         title: tx("Verification incomplete"),
-        description: `${verificationStatus.requiredOpen} field(s) still require review before saving.`,
+        description: `${verificationStatus.requiredOpen} ${tx("field(s) still require review before saving.")}`,
         variant: "destructive",
       });
       return;
@@ -1026,7 +1029,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                     <p className="text-sm font-semibold text-destructive">
                       {tx("This report may belong to another patient. Please verify before continuing.")}
                     </p>
-                    <p className="text-xs text-destructive/80 mt-1">{identityCheck.reason}</p>
+                    <p className="text-xs text-destructive/80 mt-1">{tx(identityCheck.reason)}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       Report: <strong>{identityCheck.extracted.name ?? "—"}</strong>
                       {identityCheck.extracted.dob ? ` · DOB ${identityCheck.extracted.dob}` : ""}
@@ -1053,7 +1056,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             )}
             {identityCheck && identityCheck.status === "match" && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 flex items-center gap-2 text-xs text-primary">
-                <CheckCircle2 className="h-4 w-4" /> Identity match: {identityCheck.reason}
+                <CheckCircle2 className="h-4 w-4" /> Identity match: {tx(identityCheck.reason)}
               </div>
             )}
             {identityCheck && identityCheck.status === "unknown" && (
@@ -1062,9 +1065,9 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 <div>
                   <p className="font-medium">{tx("Patient identity could not be verified from this report.")}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {identityCheck.reason}
+                    {tx(identityCheck.reason)}
                     {!patientName && !patientDOB && !patientMRN
-                      ? " · No stored patient identity available for comparison."
+                      ? tx(" · No stored patient identity available for comparison.")
                       : ""}
                   </p>
                 </div>

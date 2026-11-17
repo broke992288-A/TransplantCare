@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ const ROLE_META: Record<AppRole, { icon: typeof User; title: string; desc: strin
 };
 
 export default function SelectRole() {
+  const tx = useTx();
   const { user, role, refreshRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -81,10 +83,10 @@ export default function SelectRole() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="h-7 w-7" />
               </div>
-              <CardTitle className="text-base mt-3">{meta.title}</CardTitle>
+              <CardTitle className="text-base mt-3">{tx(meta.title)}</CardTitle>
             </CardHeader>
             <CardContent className="text-center px-3">
-              <CardDescription className="text-xs">{meta.desc}</CardDescription>
+              <CardDescription className="text-xs">{tx(meta.desc)}</CardDescription>
             </CardContent>
           </Card>
 

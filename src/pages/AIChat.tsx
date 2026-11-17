@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -15,6 +16,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 export default function AIChat() {
+  const tx = useTx();
   const { lang } = useLanguage();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Msg[]>([]);

@@ -1,7 +1,9 @@
+import { useTx } from "@/i18n/uiText";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
+  const tx = useTx();
   const location = useLocation();
 
   useEffect(() => {

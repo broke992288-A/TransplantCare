@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ function emptyRow(): RowData {
 }
 
 export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, patientData }: Props) {
+  const tx = useTx();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<RowData[]>(() => Array.from({ length: 5 }, emptyRow));
   const [errors, setErrors] = useState<Record<string, Set<string>>>({});
@@ -206,8 +208,8 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
 
       if (savedCount > 0) {
         toast({
-          title: `${savedCount} lab result(s) saved`,
-          description: failures.length ? `${failures.length} row(s) failed` : undefined,
+          title: `${savedCount} ${tx("lab result(s) saved")}`,
+          description: failures.length ? `${failures.length} ${tx("row(s) failed")}` : undefined,
           variant: failures.length ? "destructive" : "default",
         });
         setRows(Array.from({ length: 5 }, emptyRow));
@@ -321,7 +323,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
             <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
               {saving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> {tx("Saving...")}
                 </>
               ) : (
                 tx("Save All")
