@@ -311,11 +311,11 @@ function DateGroupValues({
       {/* Detected / Missing summary */}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5">
-          <p className="text-[11px] uppercase font-semibold text-primary tracking-wide">Detected</p>
+          <p className="text-[11px] uppercase font-semibold text-primary tracking-wide">{tx("Detected")}</p>
           <p className="text-lg font-bold text-primary">{filledFields.length}</p>
         </div>
         <div className="rounded-lg border border-warning/40 bg-warning/5 p-2.5">
-          <p className="text-[11px] uppercase font-semibold text-warning tracking-wide">Not detected</p>
+          <p className="text-[11px] uppercase font-semibold text-warning tracking-wide">{tx("Not detected")}</p>
           <p className="text-lg font-bold text-warning">{missingFields.length}</p>
         </div>
       </div>
@@ -400,7 +400,7 @@ function DateGroupValues({
                 placeholder={hasValue ? "—" : "Not detected — enter manually"}
               />
               {!hasValue && (
-                <p className="text-[10px] text-warning font-medium">Not detected</p>
+                <p className="text-[10px] text-warning font-medium">{tx("Not detected")}</p>
               )}
               {unknownUnit && (
                 <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
@@ -597,8 +597,8 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
       setIdentityCheck(idCheck);
       if (idCheck.status === "mismatch") {
         toast({
-          title: "⚠ Patient identity mismatch",
-          description: "This report may belong to another patient. Please verify before continuing.",
+          title: tx("⚠ Patient identity mismatch"),
+          description: tx("This report may belong to another patient. Please verify before continuing."),
           variant: "destructive",
         });
       }
@@ -696,8 +696,8 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     // ── Patient identity gate ──
     if (identityCheck?.status === "mismatch" && !identityOverride) {
       toast({
-        title: "Blocked: identity mismatch",
-        description: "This report may belong to another patient. Please confirm override before saving.",
+        title: tx("Blocked: identity mismatch"),
+        description: tx("This report may belong to another patient. Please confirm override before saving."),
         variant: "destructive",
       });
       return;
@@ -705,7 +705,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
     // ── Verification completeness gate ──
     if (!verificationStatus.ready) {
       toast({
-        title: "Verification incomplete",
+        title: tx("Verification incomplete"),
         description: `${verificationStatus.requiredOpen} field(s) still require review before saving.`,
         variant: "destructive",
       });
@@ -1024,7 +1024,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                   <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-destructive">
-                      This report may belong to another patient. Please verify before continuing.
+                      {tx("This report may belong to another patient. Please verify before continuing.")}
                     </p>
                     <p className="text-xs text-destructive/80 mt-1">{identityCheck.reason}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">
@@ -1060,7 +1060,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               <div className="rounded-lg border border-warning/40 bg-warning/5 p-2 flex items-start gap-2 text-xs text-warning">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Patient identity could not be verified from this report.</p>
+                  <p className="font-medium">{tx("Patient identity could not be verified from this report.")}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
                     {identityCheck.reason}
                     {!patientName && !patientDOB && !patientMRN

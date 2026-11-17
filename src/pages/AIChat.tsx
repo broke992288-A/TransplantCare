@@ -61,7 +61,7 @@ export default function AIChat() {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        toast({ title: "Auth error", description: "Please sign in again", variant: "destructive" });
+        toast({ title: tx("Auth error"), description: tx("Please sign in again"), variant: "destructive" });
         setIsStreaming(false);
         return;
       }
@@ -85,11 +85,11 @@ export default function AIChat() {
           /* ignore */
         }
         if (resp.status === 429) {
-          toast({ title: "Rate limit", description: errMsg, variant: "destructive" });
+          toast({ title: tx("Rate limit"), description: errMsg, variant: "destructive" });
         } else if (resp.status === 402) {
-          toast({ title: "AI credits exhausted", description: errMsg, variant: "destructive" });
+          toast({ title: tx("AI credits exhausted"), description: errMsg, variant: "destructive" });
         } else {
-          toast({ title: "Chat error", description: errMsg, variant: "destructive" });
+          toast({ title: tx("Chat error"), description: errMsg, variant: "destructive" });
         }
         setIsStreaming(false);
         return;
@@ -141,8 +141,8 @@ export default function AIChat() {
     } catch (e) {
       if ((e as Error).name !== "AbortError") {
         toast({
-          title: "Network error",
-          description: e instanceof Error ? e.message : "Unknown error",
+          title: tx("Network error"),
+          description: e instanceof Error ? e.message : tx("Unknown error"),
           variant: "destructive",
         });
       }

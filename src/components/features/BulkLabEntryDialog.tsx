@@ -129,7 +129,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
 
   const handleSave = async () => {
     if (!validate()) {
-      toast({ title: "Validation errors", description: "Fix highlighted cells", variant: "destructive" });
+      toast({ title: tx("Validation errors"), description: tx("Fix highlighted cells"), variant: "destructive" });
       return;
     }
 
@@ -138,7 +138,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
     );
 
     if (dataRows.length === 0) {
-      toast({ title: "No data", description: "Enter at least one row", variant: "destructive" });
+      toast({ title: tx("No data"), description: tx("Enter at least one row"), variant: "destructive" });
       return;
     }
 
@@ -201,7 +201,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
         }
       }
 
-      setProgress("Finalizing...");
+      setProgress(tx("Finalizing..."));
       console.log("[BulkLabEntry] Done", { savedCount, failures });
 
       if (savedCount > 0) {
@@ -217,7 +217,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
       } else {
         toast({
           title: t("common.error"),
-          description: failures[0] ?? "No rows were saved. Check console for details.",
+          description: failures[0] ?? tx("No rows were saved. Check console for details."),
           variant: "destructive",
         });
       }
@@ -324,7 +324,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...
                 </>
               ) : (
-                "Save All"
+                tx("Save All")
               )}
             </Button>
           </div>

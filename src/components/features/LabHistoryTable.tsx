@@ -166,7 +166,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
       ? window.prompt(t("detail.deleteReasonPrompt") ?? "Reason for deletion (required, min 3 chars):")
       : null)?.trim();
     if (!reason || reason.length < 3) {
-      toast({ title: t("common.error"), description: "Deletion cancelled: reason required", variant: "destructive" });
+      toast({ title: t("common.error"), description: tx("Deletion cancelled: reason required"), variant: "destructive" });
       return;
     }
     setLoading(true);

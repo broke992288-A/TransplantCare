@@ -68,8 +68,8 @@ export default function SelectRole() {
           <div className="flex flex-col items-center gap-3">
             <img src={organsImg} alt="Logo" className="h-20 w-40 rounded-2xl object-contain" />
             <div className="text-center">
-              <h1 className="text-3xl font-bold tracking-tight">Welcome to TransplantCare</h1>
-              <p className="mt-1 text-muted-foreground">Confirm your role to continue</p>
+              <h1 className="text-3xl font-bold tracking-tight">{tx("Welcome to TransplantCare")}</h1>
+              <p className="mt-1 text-muted-foreground">{tx("Confirm your role to continue")}</p>
             </div>
           </div>
 
@@ -89,7 +89,7 @@ export default function SelectRole() {
           </Card>
 
           <p className="text-xs text-center text-muted-foreground">
-            Har bir hisob faqat bitta rolga ega. Davom etish uchun rolingizni tasdiqlang.
+            {tx("Har bir hisob faqat bitta rolga ega. Davom etish uchun rolingizni tasdiqlang.")}
           </p>
         </div>
       </div>
@@ -103,8 +103,8 @@ export default function SelectRole() {
         <div className="flex flex-col items-center gap-3">
           <img src={organsImg} alt="Logo" className="h-20 w-40 rounded-2xl object-contain" />
           <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight">Welcome to TransplantCare</h1>
-            <p className="mt-1 text-muted-foreground">Continue as a patient</p>
+            <h1 className="text-3xl font-bold tracking-tight">{tx("Welcome to TransplantCare")}</h1>
+            <p className="mt-1 text-muted-foreground">{tx("Continue as a patient")}</p>
           </div>
         </div>
 
@@ -116,11 +116,11 @@ export default function SelectRole() {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               {busy ? <Loader2 className="h-7 w-7 animate-spin" /> : <User className="h-7 w-7" />}
             </div>
-            <CardTitle className="text-base mt-3">Patient Portal</CardTitle>
+            <CardTitle className="text-base mt-3">{tx("Patient Portal")}</CardTitle>
           </CardHeader>
           <CardContent className="text-center px-3">
             <CardDescription className="text-xs">
-              View your health status, lab results, and care timeline
+              {tx("View your health status, lab results, and care timeline")}
             </CardDescription>
           </CardContent>
         </Card>
