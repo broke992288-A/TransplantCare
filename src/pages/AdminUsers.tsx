@@ -199,7 +199,7 @@ export default function AdminUsers() {
                     <TableHead>{tx("Email tasdiqlangan")}</TableHead>
                     <TableHead>{tx("Oxirgi kirish")}</TableHead>
                     <TableHead>{tx("Ro'yxatdan o'tgan")}</TableHead>
-                    <TableHead className="text-right">Amal</TableHead>
+                    <TableHead className="text-right">{tx("Amal")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

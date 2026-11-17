@@ -52,6 +52,7 @@ const ENTRIES: Entry[] = [
   E("Ism", "Имя", "Ism"),
   E("Rol", "Роль", "Rol"),
   E("Amallar", "Действия", "Amallar"),
+  E("Amal", "Действие", "Amal"),
   E("Email tasdiqlangan", "Email подтверждён", "Email tasdiqlangan"),
   E("Oxirgi kirish", "Последний вход", "Oxirgi kirish"),
   E("Ro'yxatdan o'tgan", "Зарегистрирован", "Ro'yxatdan o'tgan"),
