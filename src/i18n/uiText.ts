@@ -11,6 +11,17 @@ type Entry = Record<Language, string>;
 const E = (en: string, ru: string, uz: string): Entry => ({ en, ru, uz });
 
 const ENTRIES: Entry[] = [
+  E("Today", "Сегодня", "Bugun"),
+  E("Try changing your search.", "Попробуйте изменить запрос.", "Qidiruv so'zini o'zgartirib ko'ring."),
+  E("Full name", "Имя и фамилия", "Ism Familiya"),
+  E("Email", "Электронная почта", "Elektron pochta"),
+  E("Status", "Статус", "Holat"),
+  E("Message", "Сообщение", "Xabar"),
+  E("Subscription", "Подписка", "Obuna"),
+  E("breadcrumb", "Навигационная цепочка", "Sahifa yo'li"),
+  E("pagination", "Навигация по страницам", "Sahifalar bo'ylab o'tish"),
+  E("Go to previous page", "Перейти на предыдущую страницу", "Oldingi sahifaga o'tish"),
+  E("Go to next page", "Перейти на следующую страницу", "Keyingi sahifaga o'tish"),
   E("Bulk Entry", "Пакетный ввод", "Ommaviy kiritish"),
   E("Bulk Lab Entry — Fortis Investigation Sheet", "Пакетный ввод анализов — бланк Fortis", "Tahlillarni ommaviy kiritish — Fortis blankasi"),
   E("Add 5 Rows", "Добавить 5 строк", "5 ta qator qo'shish"),
@@ -154,6 +165,17 @@ for (const e of ENTRIES) {
 export function translateUi(source: string, lang: Language): string {
   const hit = INDEX.get(source);
   if (hit) return hit[lang];
+  const mrn = source.match(/^MRN (match|mismatch): (.*)$/s);
+  if (mrn) return lang === "uz" ? `Bemor raqami ${mrn[1] === "match" ? "mos" : "mos emas"}: ${mrn[2].replace("report=", "hisobot=").replace(" vs patient=", "; bemor=")}`
+    : lang === "ru" ? `Номер пациента ${mrn[1] === "match" ? "совпадает" : "не совпадает"}: ${mrn[2].replace("report=", "отчёт=").replace(" vs patient=", "; пациент=")}` : source;
+  const nameDob = source.match(/^Name "(.*)" and DOB "(.*)" don't match patient "(.*)" \/ (.*)$/s);
+  if (nameDob) return lang === "uz" ? `Hisobotdagi ism "${nameDob[1]}" va tug'ilgan sana "${nameDob[2]}" bemor "${nameDob[3]}" / ${nameDob[4]} bilan mos emas`
+    : lang === "ru" ? `Имя "${nameDob[1]}" и дата рождения "${nameDob[2]}" не совпадают с пациентом "${nameDob[3]}" / ${nameDob[4]}` : source;
+  const name = source.match(/^Name "(.*)" does not match patient "(.*)"$/s);
+  if (name) return lang === "uz" ? `Hisobotdagi ism "${name[1]}" bemor "${name[2]}" bilan mos emas` : lang === "ru" ? `Имя "${name[1]}" не совпадает с пациентом "${name[2]}"` : source;
+  const country = source.match(/^(Creatinine|Bilirubin) unit (.*) \((O'zbekiston|India)\)$/);
+  if (country) return lang === "uz" ? `${country[1] === "Creatinine" ? "Kreatinin" : "Bilirubin"} birligi ${country[2]} (${translateUi(country[3] === "India" ? "India" : "Uzbekistan", lang)})`
+    : lang === "ru" ? `Единица ${country[1] === "Creatinine" ? "креатинина" : "билирубина"}: ${country[2]} (${translateUi(country[3] === "India" ? "India" : "Uzbekistan", lang)})` : source;
   const missed = source.match(/^Missed medication (\d+) days$/);
   if (missed) {
     const n = missed[1];

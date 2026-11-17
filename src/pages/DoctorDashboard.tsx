@@ -21,7 +21,7 @@ import { useTx } from "@/i18n/uiText";
 function relativeLabText(recordedAt: string | undefined | null, t: (k: string) => string): string {
   if (!recordedAt) return t("dashboard.noRecentLabs");
   const days = Math.floor((Date.now() - new Date(recordedAt).getTime()) / 86400000);
-  if (days <= 0) return t("schedule.today");
+  if (days <= 0) return t("time.justNow");
   return `${days} ${t("time.daysAgo")}`;
 }
 

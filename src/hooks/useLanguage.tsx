@@ -10,7 +10,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations: Record<Language, Record<string, string>> = {
+export const translations: Record<Language, Record<string, string>> = {
   en: {
     "app.name": "TransplantCare",
     "nav.addPatient": "Add Patient",
@@ -2483,7 +2483,7 @@ const translations: Record<Language, Record<string, string>> = {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
     const saved = typeof localStorage !== "undefined" ? localStorage.getItem("app-lang") : null;
-    return (saved as Language) || "en";
+    return saved === "uz" || saved === "ru" || saved === "en" ? saved : "en";
   });
 
   const setLang = useCallback((newLang: Language) => {

@@ -1,4 +1,5 @@
 import { useTx } from "@/i18n/uiText";
+import { localizeParam } from "@/i18n/clinicalText";
 import { memo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -78,7 +79,7 @@ interface Props {
 
 function LabHistoryTable({ labs, organType, showAll = false, editable = false, onLabChanged }: Props) {
   const tx = useTx();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Record<string, string>>({});

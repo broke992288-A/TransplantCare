@@ -42,6 +42,12 @@ const PARAM: Record<string, Record<L, string>> = {
   tacrolimus_dose: { uz: "Takrolimus dozasi", ru: "Доза такролимуса" },
   mmf_dose: { uz: "MMF dozasi", ru: "Доза MMF" },
   steroid_dose: { uz: "Steroid dozasi", ru: "Доза стероида" },
+  uric_acid: { uz: "Siydik kislotasi", ru: "Мочевая кислота" },
+  ammonia: { uz: "Ammiak", ru: "Аммиак" },
+  cyclosporine: { uz: "Siklosporin", ru: "Циклоспорин" },
+  crp: { uz: "C-reaktiv oqsil", ru: "С-реактивный белок" },
+  esr: { uz: "Eritrotsitlar cho'kish tezligi", ru: "Скорость оседания эритроцитов" },
+  ldh: { uz: "Laktatdegidrogenaza", ru: "Лактатдегидрогеназа" },
 };
 
 export function localizeParam(name: string, lang: Language): string {
@@ -89,7 +95,7 @@ const RULES: Rule[] = [
   { re: /^(\w+) critically abnormal$/, out: {
     uz: (m, l) => `${localizeParam(m[1], l)} — kritik darajada o'zgargan`,
     ru: (m, l) => `${localizeParam(m[1], l)} — критическое отклонение` } },
-  { re: /^(\w+) ([\d.]+) (\S+) (≥|≤) ([\d.]+) \((critical|warning)\)$/, out: {
+  { re: /^(\w+) ([+-]?[\d.]+(?:e[+-]?\d+)?) (\S+) (≥|≤) ([+-]?[\d.]+(?:e[+-]?\d+)?) \((critical|warning)\)$/i, out: {
     uz: (m, l) => `${localizeParam(m[1], l)} ${m[2]} ${m[3]} ${m[4]} ${m[5]} (${SEV[m[6]][l]})`,
     ru: (m, l) => `${localizeParam(m[1], l)} ${m[2]} ${m[3]} ${m[4]} ${m[5]} (${SEV[m[6]][l]})` } },
   { re: /^(\w+) data not available$/, out: {
