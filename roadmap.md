@@ -1,5 +1,5 @@
 ## Selected monitoring findings
-- [ ] Localize historical alert reference, threshold, and mixed medication templates on read; preserve stored data and clinician detail.
+- [x] Localize historical alert reference, threshold, and mixed medication templates on read; stored data and clinician detail preserved. Translation tests 18/18; authenticated UZ/RU/EN alert views checked, no publishing.
 - [x] Complete UZ/RU/EN presentation audit: fixed UI, machine clinical alerts, priority reasons, medication history, and authenticated browser checks (UZ/RU/EN, mobile alerts, RU/EN PDF downloads); no live data changes or publishing. Translation-focused tests 49/49; full suite 181/183 (two existing autoNotify source-regex failures).
 - [ ] Historical pending-verification queue: confirmed; awaiting approval of safe review workflow (no inferred verification)
 - [x] Normalization-before-validation finding is stale; current 90 µmol/L -> 1.02 mg/dL flow passes regression tests
