@@ -165,7 +165,11 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
     const match = text.match(rule.re);
     if (match) return rule.out(match, lang);
   }
-  if (lang === "en") return text;
+  if (lang === "en") {
+    return text.replace(/Dori:/g, "Medication:").replace(/Eski doza:/g, "Previous dose:")
+      .replace(/Yangi doza:/g, "New dose:").replace(/Sabab:/g, "Reason:")
+      .replace(/\bnorma\b/g, "reference range");
+  }
   for (const r of RULES) {
     const m = text.match(r.re);
     if (m) return r.out[lang](m, lang);
