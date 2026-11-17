@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { ValidatedInput } from "@/components/ui/form-field";
+import { useTx } from "@/i18n/uiText";
 
 export type LabFieldStatus = "normal" | "warning" | "none";
 
@@ -41,6 +42,7 @@ const LabField = memo(function LabField({
   placeholder,
   onValueChange,
 }: LabFieldProps) {
+  const tx = useTx();
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5">
@@ -72,7 +74,7 @@ const LabField = memo(function LabField({
             status === "warning" ? "text-warning font-medium" : "text-muted-foreground"
           }`}
         >
-          {status === "warning" ? "⚠️ " : ""}Norma: {range}
+          {status === "warning" ? "⚠️ " : ""}{tx("Reference range")}: {range}
           {status === "warning" && value && (
             <span className="ml-1">
               <ArrowRight className="inline h-3 w-3" /> {value} {unit}

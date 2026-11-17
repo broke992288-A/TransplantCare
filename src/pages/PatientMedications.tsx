@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getMedicationGroup, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
+import TranslatedText from "@/components/features/TranslatedText";
 
 export default function PatientMedications() {
   const { t } = useLanguage();
@@ -129,7 +130,7 @@ export default function PatientMedications() {
                             </TableCell>
                             <TableCell className="text-sm">{freqLabel(med.frequency)}</TableCell>
                             <TableCell className="text-sm">{new Date(med.start_date).toLocaleDateString()}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{med.notes || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate"><TranslatedText text={med.notes || "—"} /></TableCell>
                             {canEdit && (
                               <TableCell>
                                 <div className="flex items-center gap-1">
@@ -221,11 +222,11 @@ export default function PatientMedications() {
                           <div className="flex-1">
                             <p className="text-sm font-medium">{med?.medication_name || t("med.unknownMed")}</p>
                             <p className="text-sm">
-                              <span className="text-destructive line-through">{ch.old_dosage}</span>
+                              <span className="text-destructive line-through"><TranslatedText text={ch.old_dosage} /></span>
                               {" → "}
-                              <span className="text-primary font-medium">{ch.new_dosage}</span>
+                              <span className="text-primary font-medium"><TranslatedText text={ch.new_dosage} /></span>
                             </p>
-                            {ch.reason && <p className="text-xs text-muted-foreground mt-0.5">{t("med.reason")}: {ch.reason}</p>}
+                            {ch.reason && <p className="text-xs text-muted-foreground mt-0.5">{t("med.reason")}: <TranslatedText text={ch.reason} /></p>}
                           </div>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {new Date(ch.created_at).toLocaleDateString()}

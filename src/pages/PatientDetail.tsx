@@ -227,9 +227,9 @@ export default function PatientDetail() {
                     <Select value={overrideLevel} onValueChange={setOverrideLevel}>
                       <SelectTrigger><SelectValue placeholder={t("detail.newRiskLevel")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="low">LOW</SelectItem>
-                        <SelectItem value="medium">MEDIUM</SelectItem>
-                        <SelectItem value="high">HIGH</SelectItem>
+                        <SelectItem value="low">{t("risk.low")}</SelectItem>
+                        <SelectItem value="medium">{t("risk.medium")}</SelectItem>
+                        <SelectItem value="high">{t("risk.high")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Textarea placeholder={t("detail.overrideReason")} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} className="min-h-[60px]" />

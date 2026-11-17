@@ -272,7 +272,7 @@ export default function AdminUsers() {
           <DialogHeader>
             <DialogTitle>{tx("Rolni o'zgartirish")}</DialogTitle>
             <DialogDescription>
-              {target?.email ?? target?.full_name ?? ""} uchun yangi rolni tanlang. Eski rol olib tashlanadi.
+              {target?.email ?? target?.full_name ?? ""} — {tx("Select a new role. The previous role will be removed.")}
             </DialogDescription>
           </DialogHeader>
           <Select value={nextRole} onValueChange={(v) => setNextRole(v as AppRole)}>
