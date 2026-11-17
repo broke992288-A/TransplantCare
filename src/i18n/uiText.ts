@@ -131,6 +131,11 @@ export function translateUi(source: string, lang: Language): string {
   return source;
 }
 
+export function getStoredUiLang(): Language {
+  const saved = typeof localStorage !== "undefined" ? localStorage.getItem("app-lang") : null;
+  return saved === "en" || saved === "ru" || saved === "uz" ? saved : "uz";
+}
+
 export function useTx(): (source: string) => string {
   const { lang } = useLanguage();
   return useCallback((source: string) => translateUi(source, lang), [lang]);
