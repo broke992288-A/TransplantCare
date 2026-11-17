@@ -2,7 +2,7 @@ import { useTranslatedText } from "@/hooks/useTranslate";
 import { decodeSourceLang } from "@/utils/langPrefix";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Loader2 } from "lucide-react";
-import { localizeClinicalText } from "@/i18n/clinicalText";
+import { isMachineClinicalText, localizeClinicalText } from "@/i18n/clinicalText";
 import { translateUi } from "@/i18n/uiText";
 
 interface Props {
@@ -16,7 +16,8 @@ export default function TranslatedText({ text, className }: Props) {
   const { lang: sourceLang, text: cleanText } = decodeSourceLang(text);
 
   // Only translate if source language differs from UI language
-  const needsTranslation = sourceLang && sourceLang !== uiLang;
+  const needsTranslation = sourceLang && sourceLang !== uiLang && !isMachineClinicalText(cleanText)
+    && translateUi(cleanText, "ru") === cleanText;
   const { translated, loading } = useTranslatedText(
     needsTranslation ? cleanText : undefined,
     needsTranslation ? sourceLang : undefined

@@ -1,4 +1,5 @@
 import { useTx } from "@/i18n/uiText";
+import { localizeParam } from "@/i18n/clinicalText";
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { getErrorMessage } from "@/utils/errorHandler";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -333,7 +334,7 @@ function DateGroupValues({
           {unknownUnitFields.length > 0 && (
             <p className="text-xs text-destructive font-medium flex items-center gap-1">
               <AlertTriangle className="h-3.5 w-3.5" />
-              {unknownUnitFields.length} field(s) with unknown unit — please verify before continuing
+              {unknownUnitFields.length} {tx("field(s) with unknown unit — please verify before continuing")}
             </p>
           )}
         </div>
@@ -383,7 +384,7 @@ function DateGroupValues({
             >
               <Label className="text-xs flex items-center justify-between">
                 <span className="flex items-center">
-                  {field.label}
+                  {localizeParam(field.key, lang)}
                   {hasValue && <ConfidenceBadge confidence={conf} />}
                 </span>
                 <Badge variant="outline" className="text-[10px] px-1 py-0 font-normal">{displayUnit}</Badge>
@@ -399,24 +400,24 @@ function DateGroupValues({
                 value={group.values[field.key] ?? ""}
                 onChange={(e) => onValueChange(field.key, e.target.value)}
                 className={`h-8 text-sm ${unknownUnit ? "border-destructive" : isSusp ? "border-destructive ring-1 ring-destructive" : isLowConf ? "border-destructive/40" : isOutOfRange ? "border-warning/40" : ""}`}
-                placeholder={hasValue ? "—" : "Not detected — enter manually"}
+                placeholder={hasValue ? "—" : tx("Not detected — enter manually")}
               />
               {!hasValue && (
                 <p className="text-[10px] text-warning font-medium">{tx("Not detected")}</p>
               )}
               {unknownUnit && (
                 <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
-                  <AlertTriangle className="h-3 w-3" /> Unit could not be determined. Please verify before continuing.
+                  <AlertTriangle className="h-3 w-3" /> {tx("Unit could not be determined. Please verify before continuing.")}
                 </p>
               )}
               {isSusp && (
                 <p className="text-[10px] text-destructive font-semibold flex items-center gap-0.5">
-                  <AlertTriangle className="h-3 w-3" /> Suspicious value — please verify!
+                  <AlertTriangle className="h-3 w-3" /> {tx("Suspicious value — please verify!")}
                 </p>
               )}
               {refRange && (
                 <p className={`text-[10px] ${isOutOfRange ? "text-warning font-medium" : "text-muted-foreground"}`}>
-                  {isOutOfRange ? "⚠️ " : ""}Norma: {refRange} {displayUnit}
+                  {isOutOfRange ? "⚠️ " : ""}{tx("Reference range")}: {refRange} {displayUnit}
                 </p>
               )}
               {hasValue && (
@@ -428,7 +429,7 @@ function DateGroupValues({
                     className="h-3.5 w-3.5"
                   />
                   <span className={reviewRequired && !isVerified ? "text-destructive font-medium" : "text-muted-foreground"}>
-                    {isVerified ? "✓ Reviewed" : reviewRequired ? "Review required" : "Reviewed"}
+                    {isVerified ? `✓ ${tx("Reviewed")}` : reviewRequired ? tx("Review required") : tx("Reviewed")}
                   </span>
                 </label>
               )}
@@ -999,7 +1000,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
               >
                 <Upload className="h-8 w-8 text-primary" />
                 <span className="font-medium">{t("upload.uploadFile")}</span>
-                <span className="text-[10px] text-muted-foreground">1–5 ta fayl tanlang</span>
+                <span className="text-[10px] text-muted-foreground">{tx("Choose 1–5 files")}</span>
               </Button>
             </div>
             <input ref={cameraRef} type="file" accept="image/jpeg,image/jpg,image/png" capture="environment" className="hidden" onChange={handleFileChange} />
@@ -1031,11 +1032,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                     </p>
                     <p className="text-xs text-destructive/80 mt-1">{tx(identityCheck.reason)}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">
-                      Report: <strong>{identityCheck.extracted.name ?? "—"}</strong>
+                      {tx("Report")}: <strong>{identityCheck.extracted.name ?? "—"}</strong>
                       {identityCheck.extracted.dob ? ` · DOB ${identityCheck.extracted.dob}` : ""}
                       {identityCheck.extracted.mrn ? ` · MRN ${identityCheck.extracted.mrn}` : ""}
                       <br />
-                      Patient: <strong>{patientName ?? "—"}</strong>
+                      {tx("Patient")}: <strong>{patientName ?? "—"}</strong>
                       {patientDOB ? ` · DOB ${patientDOB}` : ""}
                       {patientMRN ? ` · MRN ${patientMRN}` : ""}
                     </p>
@@ -1049,14 +1050,14 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                     className="h-4 w-4"
                   />
                   <span className="font-medium text-destructive">
-                    I have verified this report belongs to the current patient (override will be audited).
+                    {tx("I have verified this report belongs to the current patient (override will be audited).")}
                   </span>
                 </label>
               </div>
             )}
             {identityCheck && identityCheck.status === "match" && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 flex items-center gap-2 text-xs text-primary">
-                <CheckCircle2 className="h-4 w-4" /> Identity match: {tx(identityCheck.reason)}
+                <CheckCircle2 className="h-4 w-4" /> {tx("Identity match")}: {tx(identityCheck.reason)}
               </div>
             )}
             {identityCheck && identityCheck.status === "unknown" && (
@@ -1077,10 +1078,10 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
             {/* ── Verification completeness summary ── */}
             <div className={`rounded-lg border p-2 text-xs flex items-center justify-between ${verificationStatus.ready ? "border-primary/30 bg-primary/5 text-primary" : "border-warning/40 bg-warning/5 text-warning"}`}>
               <span>
-                Detected: <strong>{verificationStatus.detected}</strong> · Reviewed: <strong>{verificationStatus.reviewed}</strong>
+                {tx("Detected")}: <strong>{verificationStatus.detected}</strong> · {tx("Reviewed")}: <strong>{verificationStatus.reviewed}</strong>
               </span>
               <span className="font-semibold">
-                {verificationStatus.ready ? "Ready" : `Verification incomplete (${verificationStatus.requiredOpen} required)`}
+                {verificationStatus.ready ? tx("Ready") : `${tx("Verification incomplete")} (${verificationStatus.requiredOpen} ${tx("required")})`}
               </span>
             </div>
 

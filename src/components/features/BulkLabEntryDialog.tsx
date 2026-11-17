@@ -1,4 +1,5 @@
 import { useTx } from "@/i18n/uiText";
+import { localizeParam } from "@/i18n/clinicalText";
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -239,14 +240,14 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <TableProperties className="mr-1 h-4 w-4" /> Bulk Entry
+          <TableProperties className="mr-1 h-4 w-4" /> {tx("Bulk Entry")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] w-[1400px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TableProperties className="h-5 w-5" />
-            Bulk Lab Entry — Fortis Investigation Sheet
+            {tx("Bulk Lab Entry — Fortis Investigation Sheet")}
           </DialogTitle>
         </DialogHeader>
 
@@ -263,7 +264,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
                         col.key === "recorded_at" ? "min-w-[130px] sticky left-8 bg-muted/50 z-10" : ""
                       }`}
                     >
-                      {col.label}
+                      {tx(col.key === "recorded_at" ? "DATE" : localizeParam(col.key, lang))}
                       {col.required && <span className="text-destructive">*</span>}
                     </TableHead>
                   ))}
@@ -315,7 +316,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
 
         <div className="flex items-center justify-between gap-2 pt-2">
           <Button variant="outline" size="sm" onClick={addRows}>
-            <Plus className="h-4 w-4 mr-1" /> Add 5 Rows
+            <Plus className="h-4 w-4 mr-1" /> {tx("Add 5 Rows")}
           </Button>
 
           <div className="flex items-center gap-3">

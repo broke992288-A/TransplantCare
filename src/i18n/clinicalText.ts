@@ -33,6 +33,15 @@ const PARAM: Record<string, Record<L, string>> = {
   glucose: { uz: "Glyukoza", ru: "Глюкоза" },
   tacrolimus_level: { uz: "Takrolimus", ru: "Такролимус" },
   tacrolimus: { uz: "Takrolimus", ru: "Такролимус" },
+  bilirubin: { uz: "Bilirubin", ru: "Билирубин" },
+  hb: { uz: "Gemoglobin", ru: "Гемоглобин" },
+  tlc: { uz: "Leykotsitlar", ru: "Лейкоциты" },
+  pti: { uz: "Protrombin indeksi", ru: "Протромбиновый индекс" },
+  total_protein: { uz: "Umumiy oqsil", ru: "Общий белок" },
+  recorded_at: { uz: "Sana", ru: "Дата" },
+  tacrolimus_dose: { uz: "Takrolimus dozasi", ru: "Доза такролимуса" },
+  mmf_dose: { uz: "MMF dozasi", ru: "Доза MMF" },
+  steroid_dose: { uz: "Steroid dozasi", ru: "Доза стероида" },
 };
 
 export function localizeParam(name: string, lang: Language): string {
@@ -65,6 +74,18 @@ export function localizeStage(text: string, lang: Language): string {
 }
 
 const RULES: Rule[] = [
+  { re: /^(.+) increased (\d+)%$/, out: {
+    uz: (m, l) => `${localizeParam(m[1], l)} ${m[2]}% oshgan`,
+    ru: (m, l) => `${localizeParam(m[1], l)} вырос на ${m[2]}%` } },
+  { re: /^Risk level: HIGH \(score ([^)]+)\)$/, out: {
+    uz: (m) => `Xavf darajasi: yuqori (baho ${m[1]})`,
+    ru: (m) => `Уровень риска: высокий (оценка ${m[1]})` } },
+  { re: /^(?:\[HELD\]|HELD)\s*(.*)$/s, out: {
+    uz: (m) => `Vaqtincha to'xtatilgan ${m[1]}`.trim(),
+    ru: (m) => `Временно приостановлено ${m[1]}`.trim() } },
+  { re: /^Quick (increase|decrease) by doctor$/, out: {
+    uz: (m) => `Shifokor dozani ${m[1] === "increase" ? "oshirdi" : "kamaytirdi"}`,
+    ru: (m) => `Врач ${m[1] === "increase" ? "увеличил" : "уменьшил"} дозу` } },
   { re: /^(\w+) critically abnormal$/, out: {
     uz: (m, l) => `${localizeParam(m[1], l)} — kritik darajada o'zgargan`,
     ru: (m, l) => `${localizeParam(m[1], l)} — критическое отклонение` } },
@@ -100,6 +121,8 @@ const RULES: Rule[] = [
 
 /** Fixed server-generated alert titles (stored in Uzbek). */
 const FIXED: Record<string, Record<Language, string>> = {
+  "Medication held by doctor": { en: "Medication held by doctor", uz: "Shifokor dorini vaqtincha to'xtatdi", ru: "Врач временно приостановил препарат" },
+  "Medication restarted by doctor": { en: "Medication restarted by doctor", uz: "Shifokor dorini qayta boshladi", ru: "Врач возобновил препарат" },
   "Tahlil natijasi e'tiborga loyiq": { uz: "Tahlil natijasi e'tiborga loyiq", ru: "Результат анализа требует внимания", en: "Lab result needs attention" },
   "Shifokor bilan maslahatlashish tavsiya etiladi": { uz: "Shifokor bilan maslahatlashish tavsiya etiladi", ru: "Рекомендуется консультация врача", en: "Consultation with a doctor is recommended" },
   "Jiddiy og'shish aniqlandi!": { uz: "Jiddiy og'shish aniqlandi!", ru: "Обнаружено серьёзное отклонение!", en: "Serious deviation detected!" },
@@ -115,5 +138,19 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
     const m = text.match(r.re);
     if (m) return r.out[lang](m, lang);
   }
+  // Stored alerts may contain a title plus a threshold or several warnings.
+  const colon = text.indexOf(": ");
+  if (colon > 0) {
+    const left = localizeClinicalText(text.slice(0, colon), lang);
+    const right = localizeClinicalText(text.slice(colon + 2), lang);
+    if (left !== text.slice(0, colon) || right !== text.slice(colon + 2)) return `${left}: ${right}`;
+  }
+  const parts = text.split(/(;\s*|\. (?=[A-Z_]))/);
+  if (parts.length > 1) return parts.map((part, i) => i % 2 ? part : localizeClinicalText(part, lang)).join("");
   return localizeStage(text, lang);
+}
+
+/** Machine templates bypass AI even when their source language differs. */
+export function isMachineClinicalText(text: string): boolean {
+  return Boolean(FIXED[text.trim()]) || localizeClinicalText(text, "uz") !== text;
 }
