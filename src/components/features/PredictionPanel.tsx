@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, BrainCircuit, TrendingUp, Clock, ShieldAlert, CheckCircle2, Loader2, Info } from "lucide-react";
@@ -28,6 +29,7 @@ function riskIcon(level: string) {
 }
 
 export default function PredictionPanel({ patientId, patientName, organType, currentRisk, patientData }: PredictionPanelProps) {
+  const tx = useTx();
   if (PREDICTION_HIDDEN) return null;
 
   const { t, lang } = useLanguage();
@@ -73,7 +75,7 @@ export default function PredictionPanel({ patientId, patientName, organType, cur
           <CardTitle className="text-lg flex-1 text-muted-foreground">{t("prediction.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">{prediction.message}</p>
+          <p className="text-sm text-muted-foreground">{tx(prediction.message)}</p>
         </CardContent>
       </Card>
     );
