@@ -157,6 +157,21 @@ const FIXED: Record<string, Record<Language, string>> = {
   "Dori dozasi o'zgartirildi": { uz: "Dori dozasi o'zgartirildi", ru: "Доза препарата изменена", en: "Medication dose changed" },
 };
 
+/** Historical stored templates: translate on read, never rewrite the record. */
+const LEGACY_RULES: { re: RegExp; out: (m: RegExpMatchArray, lang: Language) => string }[] = [
+  { re: /^(\w+):\s*(.+?)\s*\((?:norma|норма|reference range)\s+([^)]*)\)(\s*\[[^\]]+\])?$/i,
+    out: (m, lang) => `${localizeParam(m[1], lang)}: ${m[2]} (${lang === "ru" ? "норма" : lang === "en" ? "reference range" : "me'yor"} ${m[3]})${m[4] ?? ""}` },
+  { re: /^(\w+) ([+-]?[\d.]+(?:e[+-]?\d+)?) (≥|≤|>|<) ([+-]?[\d.]+(?:e[+-]?\d+)?)$/i,
+    out: (m, lang) => `${localizeParam(m[1], lang)} ${m[2]} ${m[3]} ${m[4]}` },
+  { re: /^Re-transplant patient$/, out: (_, lang) => ({ uz: "Qayta transplantatsiya qilingan bemor", ru: "Пациент после повторной трансплантации", en: "Re-transplant patient" })[lang] },
+  { re: /^Multiple abnormal:\s*(\d+)$/, out: (m, lang) => `${({ uz: "Bir nechta chetlanish", ru: "Несколько отклонений", en: "Multiple abnormal" })[lang]}: ${m[1]}` },
+  { re: /^(?:Dori|Препарат|Medication):\s*(.*?)\.\s*(?:Eski doza|Прежняя доза|Previous dose):\s*(.*?)\s*→\s*(?:Yangi doza|Новая доза|New dose):\s*(.*)$/s,
+    out: (m, lang) => {
+      const labels = { uz: ["Dori", "Eski doza", "Yangi doza"], ru: ["Препарат", "Прежняя доза", "Новая доза"], en: ["Medication", "Previous dose", "New dose"] }[lang];
+      return `${labels[0]}: ${m[1]}. ${labels[1]}: ${m[2]} → ${labels[2]}: ${m[3]}`;
+    } },
+];
+
 export function localizeClinicalText(text: string | null | undefined, lang: Language): string {
   if (!text) return "";
   const fixed = FIXED[text.trim()];
@@ -165,6 +180,14 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
     const match = text.match(rule.re);
     if (match) return rule.out(match, lang);
   }
+  for (const rule of LEGACY_RULES) {
+    const match = text.match(rule.re);
+    if (match) return rule.out(match, lang);
+  }
+  // Match whole medication messages first: their sentence separator is part
+  // of the template. Then localize each historical finding independently.
+  const segments = text.split(/(;\s*|\. (?=[A-Z_]))/);
+  if (segments.length > 1) return segments.map((segment, i) => i % 2 ? segment : localizeClinicalText(segment, lang)).join("");
   if (lang === "en") {
     return text.replace(/Dori:/g, "Medication:").replace(/Eski doza:/g, "Previous dose:")
       .replace(/Yangi doza:/g, "New dose:").replace(/Sabab:/g, "Reason:")
@@ -207,5 +230,5 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
 
 /** Machine templates bypass AI even when their source language differs. */
 export function isMachineClinicalText(text: string): boolean {
-  return Boolean(FIXED[text.trim()]) || VALIDATION_RULES.some(rule => rule.re.test(text)) || localizeClinicalText(text, "uz") !== text;
+  return Boolean(FIXED[text.trim()]) || VALIDATION_RULES.some(rule => rule.re.test(text)) || LEGACY_RULES.some(rule => rule.re.test(text)) || localizeClinicalText(text, "uz") !== text;
 }
