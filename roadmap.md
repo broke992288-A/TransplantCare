@@ -1,4 +1,5 @@
 ## Selected monitoring findings
+- [ ] Complete UZ/RU/EN presentation audit: fixed UI, machine clinical alerts, priority reasons, medication history, and browser checks; no live data changes or publishing.
 - [ ] Historical pending-verification queue: confirmed; awaiting approval of safe review workflow (no inferred verification)
 - [x] Normalization-before-validation finding is stale; current 90 µmol/L -> 1.02 mg/dL flow passes regression tests
 - [x] Password-only reset no longer confirms email; explicit confirmation preserved; handler tests passed and function deployed
