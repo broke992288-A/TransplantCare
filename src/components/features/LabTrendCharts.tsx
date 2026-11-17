@@ -116,7 +116,7 @@ function LabTrendCharts({ labs }: Props) {
         const allPoints = sortedLabs
           .filter((l) => l[key] != null)
           .map((l) => ({
-            date: new Date(l.recorded_at).toLocaleDateString(),
+            date: new Date(l.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB"),
             rawDate: l.recorded_at,
             value: l[key] as number,
           }));

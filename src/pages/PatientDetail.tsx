@@ -39,7 +39,7 @@ export default function PatientDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const isMobile = useIsMobile();
 
   const { patient, labs: allLabs, latestLab, events: timeline, loading, invalidateAll } = usePatientDetail(id);
@@ -269,7 +269,7 @@ export default function PatientDetail() {
                   <div key={ev.id} className="flex items-start gap-3 border-l-2 border-primary/20 pl-4 py-1">
                     <div>
                       <p className="text-sm font-medium">{ev.description}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</p>
                     </div>
                   </div>
                 ))}

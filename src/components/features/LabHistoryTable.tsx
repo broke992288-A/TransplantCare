@@ -237,7 +237,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                           className="h-7 w-36 text-xs"
                         />
                       ) : (
-                        new Date(lab.recorded_at).toLocaleDateString()
+                        new Date(lab.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")
                       )}
                     </TableCell>
                     {headers.map((h) => {
@@ -267,7 +267,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs font-medium">
                               <div>{lang === "en" ? h.label : localizeParam(h.key, lang)}</div>
-                              <div className="text-muted-foreground">{new Date(lab.recorded_at).toLocaleDateString()}</div>
+                              <div className="text-muted-foreground">{new Date(lab.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</div>
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>

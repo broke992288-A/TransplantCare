@@ -187,7 +187,7 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(alert.created_at).toLocaleString()}
+                  {new Date(alert.created_at).toLocaleString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}
                 </p>
                 {!patientView && alert.resolution_note && (
                   <p className="text-xs italic text-muted-foreground mt-1">

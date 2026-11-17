@@ -84,7 +84,7 @@ function LabResultsTable({ labs }: Props) {
         return (
           <div key={lab.id} className="rounded-xl border overflow-hidden">
             <div className="bg-muted/50 px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm font-semibold">{new Date(lab.recorded_at).toLocaleDateString()}</span>
+              <span className="text-sm font-semibold">{new Date(lab.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</span>
               <span className="text-xs text-muted-foreground">{entries.length} {t("common.tests")}</span>
             </div>
             <Table>

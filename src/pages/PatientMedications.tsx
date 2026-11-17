@@ -21,7 +21,7 @@ import { getMedicationGroup, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
 import TranslatedText from "@/components/features/TranslatedText";
 
 export default function PatientMedications() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const { role } = useAuth();
   const { patient, loading } = usePatientDetail(id);
@@ -129,7 +129,7 @@ export default function PatientMedications() {
                               <Badge variant="secondary">{med.dosage}</Badge>
                             </TableCell>
                             <TableCell className="text-sm">{freqLabel(med.frequency)}</TableCell>
-                            <TableCell className="text-sm">{new Date(med.start_date).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-sm">{new Date(med.start_date).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</TableCell>
                             <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate"><TranslatedText text={med.notes || "—"} /></TableCell>
                             {canEdit && (
                               <TableCell>
@@ -195,8 +195,8 @@ export default function PatientMedications() {
                             <TableCell className="font-medium">{med.medication_name}</TableCell>
                             <TableCell>{med.dosage}</TableCell>
                             <TableCell>{freqLabel(med.frequency)}</TableCell>
-                            <TableCell>{new Date(med.start_date).toLocaleDateString()}</TableCell>
-                            <TableCell>{med.end_date ? new Date(med.end_date).toLocaleDateString() : "—"}</TableCell>
+                            <TableCell>{new Date(med.start_date).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</TableCell>
+                            <TableCell>{med.end_date ? new Date(med.end_date).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB") : "—"}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -229,7 +229,7 @@ export default function PatientMedications() {
                             {ch.reason && <p className="text-xs text-muted-foreground mt-0.5">{t("med.reason")}: <TranslatedText text={ch.reason} /></p>}
                           </div>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(ch.created_at).toLocaleDateString()}
+                            {new Date(ch.created_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}
                           </span>
                         </div>
                       );

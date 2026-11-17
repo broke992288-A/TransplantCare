@@ -10,7 +10,7 @@ interface Props {
 }
 
 function LatestLabsTable({ labs, organType }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const latest5 = labs.slice(0, 5);
 
   const isLiver = organType === "liver";
@@ -52,7 +52,7 @@ function LatestLabsTable({ labs, organType }: Props) {
               <tbody>
                 {latest5.map((lab) => (
                   <tr key={lab.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="px-3 py-2 whitespace-nowrap">{new Date(lab.recorded_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{new Date(lab.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{lab.tacrolimus_level ?? "—"}</td>
                     {isLiver ? (
                       <>
