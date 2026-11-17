@@ -194,11 +194,31 @@ const ENTRIES: Entry[] = [
 
 const INDEX = new Map<string, Entry>();
 for (const e of ENTRIES) {
-  for (const v of [e.en, e.uz]) if (!INDEX.has(v)) INDEX.set(v, e);
+  for (const v of [e.en, e.ru, e.uz]) if (!INDEX.has(v)) INDEX.set(v, e);
 }
 
+const LEGACY_ALIASES: Record<string, string> = {
+  "Исм камида 2 та белгидан иборат бўлиши керак": "Name must contain at least 2 characters",
+  "Исм 100 та белгидан ошмаслиги керак": "Name must not exceed 100 characters",
+  "Туғилган сана киритилиши шарт": "Date of birth is required",
+  "Жинс танланиши шарт": "Gender is required",
+  "Вилоят танланиши шарт": "Region is required",
+  "Туман танланиши шарт": "District is required",
+  "Трансплантация рақами камида 1 бўлиши керак": "Transplant number must be at least 1",
+  "Трансплантация рақами 10 дан ошмаслиги керак": "Transplant number must not exceed 10",
+  "Трансплантация санаси киритилиши шарт": "Transplant date is required",
+  "Биопсия натижаси 500 та белгидан ошмаслиги керак": "Biopsy result must not exceed 500 characters",
+  "Дори номи камида 2 та белгидан иборат бўлиши керак": "Medication name must contain at least 2 characters",
+  "Дори номи 100 та белгидан ошмаслиги керак": "Medication name must not exceed 100 characters",
+  "Доза киритилиши шарт": "Dosage is required",
+  "Доза 50 та белгидан ошмаслиги керак": "Dosage must not exceed 50 characters",
+  "Частота танланиши шарт": "Frequency is required",
+  "Бошланиш санаси киритилиши шарт": "Start date is required",
+  "Изоҳ 500 та белгидан ошмаслиги керак": "Notes must not exceed 500 characters"
+};
+
 export function translateUi(source: string, lang: Language): string {
-  const hit = INDEX.get(source);
+  const hit = INDEX.get(LEGACY_ALIASES[source] ?? source);
   if (hit) return hit[lang];
   const mrn = source.match(/^MRN (match|mismatch): (.*)$/s);
   if (mrn) return lang === "uz" ? `Bemor raqami ${mrn[1] === "match" ? "mos" : "mos emas"}: ${mrn[2].replace("report=", "hisobot=").replace(" vs patient=", "; bemor=")}`
