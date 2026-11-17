@@ -179,6 +179,21 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
   }
   const parts = text.split(/(;\s*|\. (?=[A-Z_]))/);
   if (parts.length > 1) return parts.map((part, i) => i % 2 ? part : localizeClinicalText(part, lang)).join("");
+  if (/\b(?:\w+:?\s*[\d.]+\s*(?:mg\/dL|ng\/mL|U\/L|mmol\/L)|Dori:|Eski doza:|Yangi doza:|norma\s+[\d.]+)/.test(text)) {
+    let localized = text.replace(/\b(total_bilirubin|direct_bilirubin|tacrolimus_level|tacrolimus|creatinine|bilirubin|egfr|potassium|sodium|albumin|platelets|alt|ast|alp|ggt|urea)\b/gi, name => localizeParam(name, lang));
+    const words: Record<string, Record<L, string>> = {
+      "norma": { uz: "me'yor", ru: "норма" },
+      "Dori:": { uz: "Dori:", ru: "Препарат:" },
+      "Eski doza:": { uz: "Eski doza:", ru: "Прежняя доза:" },
+      "Yangi doza:": { uz: "Yangi doza:", ru: "Новая доза:" },
+      "Sabab:": { uz: "Sabab:", ru: "Причина:" },
+      "Re-transplant": { uz: "Qayta transplantatsiya", ru: "Повторная трансплантация" },
+      "Re-transplant patient": { uz: "Qayta transplantatsiya qilingan bemor", ru: "Пациент после повторной трансплантации" },
+      "Multiple abnormal": { uz: "Bir nechta chetlanish", ru: "Несколько отклонений" },
+    };
+    for (const word of Object.keys(words).sort((a, b) => b.length - a.length)) localized = localized.split(word).join(words[word][lang]);
+    return localized;
+  }
   return localizeStage(text, lang);
 }
 
