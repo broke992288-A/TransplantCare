@@ -612,7 +612,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
         const detected = detectCountryFromUnits(g);
         if (detected) {
           setCountry(detected.country);
-          toast({ title: "🌍 " + t("common.info"), description: detected.reason });
+          toast({ title: "🌍 " + t("common.info"), description: tx(detected.reason) });
           break;
         }
       }
@@ -975,7 +975,7 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                 <SelectContent>
                   {(countries ?? ["uzbekistan", "india"]).map((c) => (
                     <SelectItem key={c} value={c}>
-                      {COUNTRY_LABELS[c] ?? c}
+                      {c === "uzbekistan" ? tx("Uzbekistan") : c === "india" ? tx("India") : COUNTRY_LABELS[c] ?? c}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1034,11 +1034,11 @@ export default function LabUploadDialog({ patientId, organType, patientData, onL
                     <p className="text-xs text-destructive/80 mt-1">{tx(identityCheck.reason)}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {tx("Report")}: <strong>{identityCheck.extracted.name ?? "—"}</strong>
-                      {identityCheck.extracted.dob ? ` · DOB ${identityCheck.extracted.dob}` : ""}
+                      {identityCheck.extracted.dob ? ` · ${tx("DOB")} ${identityCheck.extracted.dob}` : ""}
                       {identityCheck.extracted.mrn ? ` · MRN ${identityCheck.extracted.mrn}` : ""}
                       <br />
                       {tx("Patient")}: <strong>{patientName ?? "—"}</strong>
-                      {patientDOB ? ` · DOB ${patientDOB}` : ""}
+                      {patientDOB ? ` · ${tx("DOB")} ${patientDOB}` : ""}
                       {patientMRN ? ` · MRN ${patientMRN}` : ""}
                     </p>
                   </div>

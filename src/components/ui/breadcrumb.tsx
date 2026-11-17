@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { LocalizedUi } from "@/i18n/LocalizedUi";
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
@@ -10,7 +11,10 @@ const Breadcrumb = React.forwardRef<
   React.ComponentPropsWithoutRef<"nav"> & {
     separator?: React.ReactNode;
   }
->(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />);
+>(({ ...props }, ref) => {
+  const tx = useTx();
+  return <nav ref={ref} aria-label={tx("breadcrumb")} {...props} />;
+});
 Breadcrumb.displayName = "Breadcrumb";
 
 const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(

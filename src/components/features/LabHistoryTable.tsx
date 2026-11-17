@@ -196,7 +196,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                 {editable && <TableHead className="whitespace-nowrap sticky left-0 bg-background z-10 min-w-[80px]" />}
                 <TableHead className={`whitespace-nowrap ${editable ? 'sticky left-[80px]' : 'sticky left-0'} bg-background z-10 min-w-[100px]`}>{t("detail.date")}</TableHead>
                 {headers.map((h) => (
-                  <TableHead key={h.key} className="whitespace-nowrap text-center min-w-[80px]">{h.label}</TableHead>
+                  <TableHead key={h.key} className="whitespace-nowrap text-center min-w-[80px]">{lang === "en" ? h.label : localizeParam(h.key, lang)}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -266,7 +266,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                               </span>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs font-medium">
-                              <div>{h.label}</div>
+                              <div>{lang === "en" ? h.label : localizeParam(h.key, lang)}</div>
                               <div className="text-muted-foreground">{new Date(lab.recorded_at).toLocaleDateString()}</div>
                             </TooltipContent>
                           </Tooltip>

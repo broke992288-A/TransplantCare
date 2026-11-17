@@ -162,7 +162,7 @@ export default function AdminUsers() {
             <div className="relative w-full sm:max-w-sm sm:flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Email yoki ism bo'yicha qidirish"
+                placeholder={tx("Email yoki ism bo'yicha qidirish")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -186,15 +186,15 @@ export default function AdminUsers() {
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={Users}
-                title="Foydalanuvchi topilmadi"
-                description="Qidiruv yoki filtr shartlarini o'zgartirib ko'ring."
+                title={tx("Foydalanuvchi topilmadi")}
+                description={tx("Qidiruv yoki filtr shartlarini o'zgartirib ko'ring.")}
               />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tx("Ism")}</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>{tx("Email")}</TableHead>
                     <TableHead>{tx("Rol")}</TableHead>
                     <TableHead>{tx("Email tasdiqlangan")}</TableHead>
                     <TableHead>{tx("Oxirgi kirish")}</TableHead>
