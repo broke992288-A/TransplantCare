@@ -13,6 +13,7 @@ import { medicationSchema } from "@/lib/validations";
 import SourceLanguageSelect from "@/components/features/SourceLanguageSelect";
 import { encodeSourceLang } from "@/utils/langPrefix";
 import { MEDICATION_GROUPS, getMedicationDosages, GROUP_LABEL_KEYS } from "@/data/medicationCatalog";
+import { useTx } from "@/i18n/uiText";
 
 interface Props {
   patientId: string;
@@ -22,6 +23,7 @@ const CUSTOM_VALUE = "__custom__";
 
 export default function AddMedicationDialog({ patientId }: Props) {
   const { t, lang } = useLanguage();
+  const tx = useTx();
   const { toast } = useToast();
   const { user } = useAuth();
   const addMed = useAddMedication(patientId);
@@ -132,7 +134,7 @@ export default function AddMedicationDialog({ patientId }: Props) {
               error={errors.medication_name}
               value={customName}
               onChange={(e) => { setCustomName(e.target.value); clearField("medication_name"); }}
-              placeholder="Tacrolimus, Prednisone..."
+              placeholder={tx("Tacrolimus, Prednisone...")}
             />
           )}
 
