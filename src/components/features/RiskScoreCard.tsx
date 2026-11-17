@@ -5,6 +5,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { riskColorClass } from "@/utils/risk";
 import type { RiskSnapshot } from "@/services/riskSnapshotService";
 import type { RiskExplanation } from "@/services/riskSnapshotService";
+import { localizeClinicalText } from "@/i18n/clinicalText";
 
 interface RiskScoreCardProps {
   snapshot: RiskSnapshot | null;
@@ -66,7 +67,7 @@ function translateExplanation(exp: RiskExplanation, t: (key: string) => string):
 }
 
 export default function RiskScoreCard({ snapshot, prevSnapshot, lastEvaluation, loading }: RiskScoreCardProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   if (loading) {
     return (
@@ -156,7 +157,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, lastEvaluation, 
                 >
                   <SeverityIcon severity={exp.severity} />
                   <div className="flex-1 min-w-0">
-                    <p className="leading-snug">{translateExplanation(exp, t)}</p>
+                    <p className="leading-snug">{localizeClinicalText(translateExplanation(exp, t), lang)}</p>
                     {exp.change_pct !== undefined && (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {exp.change_pct > 0 ? "↑" : "↓"} {Math.abs(exp.change_pct).toFixed(0)}% {t("risk.sinceLastTest")}
@@ -175,7 +176,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, lastEvaluation, 
               {flags.map((f, i) => (
                 <li key={i} className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-destructive inline-block" />
-                  {translateFlag(f, t)}
+                  {localizeClinicalText(translateFlag(f, t), lang)}
                 </li>
               ))}
             </ul>
@@ -195,7 +196,7 @@ export default function RiskScoreCard({ snapshot, prevSnapshot, lastEvaluation, 
         )}
 
         <p className="text-xs text-muted-foreground">
-          {t("risk.lastEvaluation")}: {new Date(lastEvaluation ?? snapshot.created_at).toLocaleString()}
+          {t("risk.lastEvaluation")}: {new Date(lastEvaluation ?? snapshot.created_at).toLocaleString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}
         </p>
       </CardContent>
     </Card>

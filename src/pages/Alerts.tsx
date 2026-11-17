@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from "react";
-import { localizeClinicalText } from "@/i18n/clinicalText";
+import { localizeClinicalText, localizeParam } from "@/i18n/clinicalText";
 import { AlertTriangle, Activity, CheckCircle, Clock, Pill, ChevronDown, ChevronUp, FileText, Eye, Check, Stethoscope } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -166,7 +166,7 @@ function AlertCard({ group, onResolve }: CardProps) {
                 {group.unreadCount > 0 && <span className={cn("h-2 w-2 shrink-0 rounded-full", style.dot)} />}
               </div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-                <span className="capitalize">{group.organ_type}</span>
+                <span>{t(`organ.${group.organ_type}`)}</span>
                 {group.transplant_date && <span>· {postTxLabel(group.transplant_date, t)}</span>}
                 <span className="flex items-center gap-1">
                   · <Clock className="h-3 w-3" />{lastLabLabel(group.daysSinceLastLab, t)}
@@ -191,7 +191,7 @@ function AlertCard({ group, onResolve }: CardProps) {
               {t("alerts.aiReasoning")}
             </div>
             <p className="mt-0.5 text-xs leading-relaxed text-foreground/90 line-clamp-3">
-              {summary.reasoning}
+              {localizeClinicalText(summary.reasoning, lang)}
             </p>
           </div>
           {summary.metric.length >= 2 && (
@@ -199,7 +199,7 @@ function AlertCard({ group, onResolve }: CardProps) {
               <Suspense fallback={<div className="h-6 w-20" />}>
                 <Sparkline values={summary.metric} worseDirection={summary.worse} />
               </Suspense>
-              <span className="mt-0.5 text-[10px] text-muted-foreground">{summary.metricLabel}</span>
+              <span className="mt-0.5 text-[10px] text-muted-foreground">{localizeParam(summary.metricLabel, lang)}</span>
             </div>
           )}
         </div>

@@ -25,6 +25,7 @@ import type { OrganType } from "@/types/patient";
 import type { TablesInsert } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { preprocessLabImage } from "@/utils/imagePreprocess";
+import { useTx } from "@/i18n/uiText";
 
 export default function AddPatient() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -38,6 +39,7 @@ export default function AddPatient() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const tx = useTx();
 
   const [form, setForm] = useState<Record<string, string>>({
     full_name: "", phone: "", date_of_birth: "", gender: "male", transplant_number: "1", transplant_date: "",
@@ -296,8 +298,8 @@ export default function AddPatient() {
                 <Select value={form.country} onValueChange={(v) => set("country", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="uzbekistan">🇺🇿 O'zbekiston</SelectItem>
-                    <SelectItem value="india">🇮🇳 India</SelectItem>
+                    <SelectItem value="uzbekistan">🇺🇿 {tx("Uzbekistan")}</SelectItem>
+                    <SelectItem value="india">🇮🇳 {tx("India")}</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>
@@ -315,7 +317,7 @@ export default function AddPatient() {
                 <FormField label={t("add.rejectionType")}>
                   <Select value={form.rejection_type} onValueChange={(v) => set("rejection_type", v)}>
                     <SelectTrigger><SelectValue placeholder={t("add.selectPlaceholder")} /></SelectTrigger>
-                    <SelectContent><SelectItem value="ACR">ACR</SelectItem><SelectItem value="AMR">AMR</SelectItem><SelectItem value="Chronic">Chronic</SelectItem><SelectItem value="Unknown">Unknown</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="ACR">ACR</SelectItem><SelectItem value="AMR">AMR</SelectItem><SelectItem value="Chronic">{tx("Chronic")}</SelectItem><SelectItem value="Unknown">{tx("Unknown")}</SelectItem></SelectContent>
                   </Select>
                 </FormField>
               )}

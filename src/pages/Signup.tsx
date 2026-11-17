@@ -109,7 +109,7 @@ export default function Signup() {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   maxLength={100}
-                  placeholder="Ism Familiya"
+                  placeholder={t("signup.fullName")}
                 />
               </div>
 

@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 import logoImg from "@/assets/logo.png";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
+import { useTx } from "@/i18n/uiText";
 
 export function Sidebar() {
   const location = useLocation();
   const { t } = useLanguage();
+  const tx = useTx();
   const { role } = useAuth();
 
   const allNavItems = [
@@ -17,7 +19,7 @@ export function Sidebar() {
     { icon: Pill, label: t("nav.medications"), path: "/medications", roles: ["admin", "doctor"] },
     { icon: Pill, label: t("nav.medications"), path: "/patient/home?tab=medications", roles: ["patient"] },
     { icon: AlertTriangle, label: t("nav.alerts"), path: "/alerts", roles: ["admin", "doctor", "support"] },
-    { icon: ShieldCheck, label: "Foydalanuvchilar", path: "/admin/users", roles: ["admin"] },
+    { icon: ShieldCheck, label: tx("Users"), path: "/admin/users", roles: ["admin"] },
     // Temporarily hidden from nav (routes/components remain intact):
     // { icon: FileText, label: t("nav.reports"), path: "/reports", roles: ["admin", "doctor"] },
     // { icon: Activity, label: t("nav.analytics"), path: "/analytics", roles: ["admin", "doctor"] },

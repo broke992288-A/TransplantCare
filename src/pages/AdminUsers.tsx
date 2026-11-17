@@ -1,3 +1,4 @@
+import { useLanguage, type Language } from "@/hooks/useLanguage";
 import { useTx } from "@/i18n/uiText";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,15 +43,16 @@ const ROLE_BADGE: Record<AppRole, string> = {
   patient: "bg-accent text-accent-foreground",
 };
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, lang: Language): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("uz-UZ", { dateStyle: "short", timeStyle: "short" });
+  return d.toLocaleString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB", { dateStyle: "short", timeStyle: "short" });
 }
 
 export default function AdminUsers() {
   const tx = useTx();
+  const { lang } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -162,7 +164,7 @@ export default function AdminUsers() {
             <div className="relative w-full sm:max-w-sm sm:flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Email yoki ism bo'yicha qidirish"
+                placeholder={tx("Email yoki ism bo'yicha qidirish")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -186,15 +188,15 @@ export default function AdminUsers() {
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={Users}
-                title="Foydalanuvchi topilmadi"
-                description="Qidiruv yoki filtr shartlarini o'zgartirib ko'ring."
+                title={tx("Foydalanuvchi topilmadi")}
+                description={tx("Qidiruv yoki filtr shartlarini o'zgartirib ko'ring.")}
               />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tx("Ism")}</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>{tx("Email")}</TableHead>
                     <TableHead>{tx("Rol")}</TableHead>
                     <TableHead>{tx("Email tasdiqlangan")}</TableHead>
                     <TableHead>{tx("Oxirgi kirish")}</TableHead>
@@ -225,8 +227,8 @@ export default function AdminUsers() {
                             ? <Badge variant="outline">{tx("Ha")}</Badge>
                             : <Badge variant="destructive">{tx("Yo'q")}</Badge>}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(u.last_sign_in_at)}</TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(u.created_at)}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(u.last_sign_in_at, lang)}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(u.created_at, lang)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex flex-wrap justify-end gap-2">
                             {!u.email_confirmed && (
@@ -272,7 +274,7 @@ export default function AdminUsers() {
           <DialogHeader>
             <DialogTitle>{tx("Rolni o'zgartirish")}</DialogTitle>
             <DialogDescription>
-              {target?.email ?? target?.full_name ?? ""} uchun yangi rolni tanlang. Eski rol olib tashlanadi.
+              {target?.email ?? target?.full_name ?? ""} — {tx("Select a new role. The previous role will be removed.")}
             </DialogDescription>
           </DialogHeader>
           <Select value={nextRole} onValueChange={(v) => setNextRole(v as AppRole)}>

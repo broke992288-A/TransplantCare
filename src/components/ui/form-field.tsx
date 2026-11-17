@@ -1,6 +1,9 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useTx } from "@/i18n/uiText";
+import { localizeClinicalText } from "@/i18n/clinicalText";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface FormFieldProps {
   label: React.ReactNode;
@@ -11,13 +14,15 @@ interface FormFieldProps {
 }
 
 export function FormField({ label, error, required, children, className }: FormFieldProps) {
+  const tx = useTx();
+  const { lang } = useLanguage();
   return (
     <div className={cn("space-y-2", className)}>
       <Label className={cn(error && "text-destructive")}>
         {label} {required && <span className="text-destructive">*</span>}
       </Label>
       {children}
-      {error && <p className="text-xs text-destructive font-medium">{error}</p>}
+      {error && <p className="text-xs text-destructive font-medium">{tx(localizeClinicalText(error, lang))}</p>}
     </div>
   );
 }

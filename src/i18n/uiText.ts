@@ -11,6 +11,86 @@ type Entry = Record<Language, string>;
 const E = (en: string, ru: string, uz: string): Entry => ({ en, ru, uz });
 
 const ENTRIES: Entry[] = [
+  E("Unit unclear", "Единица не определена", "Birlik aniq emas"),
+  E("Please select the country/unit.", "Выберите страну/единицу.", "Iltimos, mamlakat/birlikni tanlang."),
+  E("Name must contain at least 2 characters", "Имя должно содержать минимум 2 символа", "Ism kamida 2 ta belgidan iborat bo'lishi kerak"),
+  E("Name must not exceed 100 characters", "Имя не должно превышать 100 символов", "Ism 100 ta belgidan oshmasligi kerak"),
+  E("Date of birth is required", "Укажите дату рождения", "Tug'ilgan sana kiritilishi shart"),
+  E("Gender is required", "Выберите пол", "Jins tanlanishi shart"),
+  E("Region is required", "Выберите область", "Viloyat tanlanishi shart"),
+  E("District is required", "Выберите район", "Tuman tanlanishi shart"),
+  E("Transplant number must be at least 1", "Номер трансплантации должен быть не менее 1", "Transplantatsiya raqami kamida 1 bo'lishi kerak"),
+  E("Transplant number must not exceed 10", "Номер трансплантации не должен превышать 10", "Transplantatsiya raqami 10 dan oshmasligi kerak"),
+  E("Transplant date is required", "Укажите дату трансплантации", "Transplantatsiya sanasi kiritilishi shart"),
+  E("Biopsy result must not exceed 500 characters", "Результат биопсии не должен превышать 500 символов", "Biopsiya natijasi 500 ta belgidan oshmasligi kerak"),
+  E("Medication name must contain at least 2 characters", "Название препарата должно содержать минимум 2 символа", "Dori nomi kamida 2 ta belgidan iborat bo'lishi kerak"),
+  E("Medication name must not exceed 100 characters", "Название препарата не должно превышать 100 символов", "Dori nomi 100 ta belgidan oshmasligi kerak"),
+  E("Dosage is required", "Укажите дозу", "Doza kiritilishi shart"),
+  E("Dosage must not exceed 50 characters", "Доза не должна превышать 50 символов", "Doza 50 ta belgidan oshmasligi kerak"),
+  E("Frequency is required", "Выберите частоту приёма", "Qabul qilish davriyligi tanlanishi shart"),
+  E("Start date is required", "Укажите дату начала", "Boshlanish sanasi kiritilishi shart"),
+  E("Notes must not exceed 500 characters", "Примечание не должно превышать 500 символов", "Izoh 500 ta belgidan oshmasligi kerak"),
+  E("Lab sanasi noto'g'ri formatda", "Неверный формат даты анализа", "Tahlil sanasi noto'g'ri formatda"),
+  E("Lab sanasi kelajakda bo'lishi mumkin emas", "Дата анализа не может быть в будущем", "Tahlil sanasi kelajakda bo'lishi mumkin emas"),
+  E("Lab sanasi transplantatsiya sanasidan oldin bo'lishi mumkin emas", "Дата анализа не может быть раньше трансплантации", "Tahlil sanasi transplantatsiya sanasidan oldin bo'lishi mumkin emas"),
+  E("No lab values extracted from file", "Из файла не извлечены результаты анализов", "Fayldan tahlil natijalari topilmadi"),
+  E("AI OCR service unavailable", "Сервис распознавания недоступен", "Hujjatni tanish xizmati mavjud emas"),
+  E("Invalid AI OCR response", "Некорректный ответ сервиса распознавания", "Hujjatni tanish xizmatining javobi noto'g'ri"),
+  E("A deletion reason (min 3 chars) is required", "Укажите причину удаления (минимум 3 символа)", "O'chirish sababini yozing (kamida 3 ta belgi)"),
+  E("Project comparison", "Сравнение проектов", "Loyihalar solishtirmasi"),
+  E("Copy text", "Копировать текст", "Matndan nusxa olish"),
+  E("Copy Markdown", "Копировать Markdown", "Markdown nusxasini olish"),
+  E("TransplantCare Technical Document", "Технический документ TransplantCare", "TransplantCare texnik hujjati"),
+  E("Technical documentation — 15 sections with tables and diagrams in PDF format.", "Техническая документация — 15 разделов с таблицами и диаграммами в формате PDF.", "Texnik hujjat — PDF formatida jadval va diagrammali 15 bo'lim."),
+  E("Generating...", "Создание...", "Yaratilmoqda..."),
+  E("Ready! Download again", "Готово! Скачать снова", "Tayyor! Qayta yuklash"),
+  E("Download PDF", "Скачать PDF", "PDF yuklab olish"),
+  E("Download in Latin alphabet", "Скачать на латинице", "Lotin alifbosida yuklab olish"),
+  E("Download in Cyrillic alphabet", "Скачать на кириллице", "Kirill alifbosida yuklab olish"),
+  E("File downloaded successfully!", "Файл успешно скачан!", "Fayl muvaffaqiyatli yuklab olindi!"),
+  E("Today", "Сегодня", "Bugun"),
+  E("Try changing your search.", "Попробуйте изменить запрос.", "Qidiruv so'zini o'zgartirib ko'ring."),
+  E("Full name", "Имя и фамилия", "Ism Familiya"),
+  E("Email", "Электронная почта", "Elektron pochta"),
+  E("Status", "Статус", "Holat"),
+  E("Message", "Сообщение", "Xabar"),
+  E("Subscription", "Подписка", "Obuna"),
+  E("breadcrumb", "Навигационная цепочка", "Sahifa yo'li"),
+  E("pagination", "Навигация по страницам", "Sahifalar bo'ylab o'tish"),
+  E("Go to previous page", "Перейти на предыдущую страницу", "Oldingi sahifaga o'tish"),
+  E("Go to next page", "Перейти на следующую страницу", "Keyingi sahifaga o'tish"),
+  E("Bulk Entry", "Пакетный ввод", "Ommaviy kiritish"),
+  E("Bulk Lab Entry — Fortis Investigation Sheet", "Пакетный ввод анализов — бланк Fortis", "Tahlillarni ommaviy kiritish — Fortis blankasi"),
+  E("Add 5 Rows", "Добавить 5 строк", "5 ta qator qo'shish"),
+  E("DATE", "ДАТА", "SANA"),
+  E("Reference range", "Референсный диапазон", "Me'yoriy oraliq"),
+  E("field(s) with unknown unit — please verify before continuing", "полей с неизвестной единицей — проверьте перед продолжением", "ta maydonning birligi noma'lum — davom etishdan oldin tekshiring"),
+  E("Unit could not be determined. Please verify before continuing.", "Не удалось определить единицу. Проверьте перед продолжением.", "Birlik aniqlanmadi. Davom etishdan oldin tekshiring."),
+  E("Suspicious value — please verify!", "Подозрительное значение — проверьте!", "Shubhali qiymat — tekshiring!"),
+  E("Not detected — enter manually", "Не найдено — введите вручную", "Aniqlanmadi — qo'lda kiriting"),
+  E("Reviewed", "Проверено", "Tekshirildi"),
+  E("Review required", "Требуется проверка", "Tekshirish kerak"),
+  E("Ready", "Готово", "Tayyor"),
+  E("required", "обязательных", "ta majburiy"),
+  E("Report", "Отчёт", "Hisobot"),
+  E("DOB", "Дата рождения", "Tug'ilgan sana"),
+  E("Choose 1–5 files", "Выберите 1–5 файлов", "1–5 ta fayl tanlang"),
+  E("I have verified this report belongs to the current patient (override will be audited).", "Я проверил, что отчёт принадлежит этому пациенту (действие будет записано в журнал).", "Hisobot shu bemorga tegishli ekanini tekshirdim (bu amal qayd etiladi)."),
+  E("Select a new role. The previous role will be removed.", "Выберите новую роль. Предыдущая роль будет удалена.", "Yangi rolni tanlang. Eski rol olib tashlanadi."),
+  E("Uzbekistan", "Узбекистан", "O'zbekiston"),
+  E("India", "Индия", "Hindiston"),
+  E("Chronic", "Хроническое", "Surunkali"),
+  E("Unknown", "Неизвестно", "Noma'lum"),
+  E("Snapshots", "Оценки риска", "Xavf baholari"),
+  E("Close", "Закрыть", "Yopish"),
+  E("More", "Ещё", "Yana"),
+  E("Previous", "Назад", "Oldingi"),
+  E("Next", "Далее", "Keyingi"),
+  E("More pages", "Другие страницы", "Boshqa sahifalar"),
+  E("Previous slide", "Предыдущий слайд", "Oldingi slayd"),
+  E("Next slide", "Следующий слайд", "Keyingi slayd"),
+  E("Toggle Sidebar", "Переключить боковую панель", "Yon menyuni ochish yoki yopish"),
+  E("Stable", "Стабильно", "Barqaror"),
   // App / NotFound / SelectRole
   E("Loading...", "Загрузка...", "Yuklanmoqda..."),
   E("Oops! Page not found", "Упс! Страница не найдена", "Kechirasiz! Sahifa topilmadi"),
@@ -116,12 +196,43 @@ const ENTRIES: Entry[] = [
 
 const INDEX = new Map<string, Entry>();
 for (const e of ENTRIES) {
-  for (const v of [e.en, e.uz]) if (!INDEX.has(v)) INDEX.set(v, e);
+  for (const v of [e.en, e.ru, e.uz]) if (!INDEX.has(v)) INDEX.set(v, e);
 }
 
+const LEGACY_ALIASES: Record<string, string> = {
+  "Исм камида 2 та белгидан иборат бўлиши керак": "Name must contain at least 2 characters",
+  "Исм 100 та белгидан ошмаслиги керак": "Name must not exceed 100 characters",
+  "Туғилган сана киритилиши шарт": "Date of birth is required",
+  "Жинс танланиши шарт": "Gender is required",
+  "Вилоят танланиши шарт": "Region is required",
+  "Туман танланиши шарт": "District is required",
+  "Трансплантация рақами камида 1 бўлиши керак": "Transplant number must be at least 1",
+  "Трансплантация рақами 10 дан ошмаслиги керак": "Transplant number must not exceed 10",
+  "Трансплантация санаси киритилиши шарт": "Transplant date is required",
+  "Биопсия натижаси 500 та белгидан ошмаслиги керак": "Biopsy result must not exceed 500 characters",
+  "Дори номи камида 2 та белгидан иборат бўлиши керак": "Medication name must contain at least 2 characters",
+  "Дори номи 100 та белгидан ошмаслиги керак": "Medication name must not exceed 100 characters",
+  "Доза киритилиши шарт": "Dosage is required",
+  "Доза 50 та белгидан ошмаслиги керак": "Dosage must not exceed 50 characters",
+  "Частота танланиши шарт": "Frequency is required",
+  "Бошланиш санаси киритилиши шарт": "Start date is required",
+  "Изоҳ 500 та белгидан ошмаслиги керак": "Notes must not exceed 500 characters"
+};
+
 export function translateUi(source: string, lang: Language): string {
-  const hit = INDEX.get(source);
+  const hit = INDEX.get(LEGACY_ALIASES[source] ?? source);
   if (hit) return hit[lang];
+  const mrn = source.match(/^MRN (match|mismatch): (.*)$/s);
+  if (mrn) return lang === "uz" ? `Bemor raqami ${mrn[1] === "match" ? "mos" : "mos emas"}: ${mrn[2].replace("report=", "hisobot=").replace(" vs patient=", "; bemor=")}`
+    : lang === "ru" ? `Номер пациента ${mrn[1] === "match" ? "совпадает" : "не совпадает"}: ${mrn[2].replace("report=", "отчёт=").replace(" vs patient=", "; пациент=")}` : source;
+  const nameDob = source.match(/^Name "(.*)" and DOB "(.*)" don't match patient "(.*)" \/ (.*)$/s);
+  if (nameDob) return lang === "uz" ? `Hisobotdagi ism "${nameDob[1]}" va tug'ilgan sana "${nameDob[2]}" bemor "${nameDob[3]}" / ${nameDob[4]} bilan mos emas`
+    : lang === "ru" ? `Имя "${nameDob[1]}" и дата рождения "${nameDob[2]}" не совпадают с пациентом "${nameDob[3]}" / ${nameDob[4]}` : source;
+  const name = source.match(/^Name "(.*)" does not match patient "(.*)"$/s);
+  if (name) return lang === "uz" ? `Hisobotdagi ism "${name[1]}" bemor "${name[2]}" bilan mos emas` : lang === "ru" ? `Имя "${name[1]}" не совпадает с пациентом "${name[2]}"` : source;
+  const country = source.match(/^(Creatinine|Bilirubin) unit (.*) \((O'zbekiston|India)\)$/);
+  if (country) return lang === "uz" ? `${country[1] === "Creatinine" ? "Kreatinin" : "Bilirubin"} birligi ${country[2]} (${translateUi(country[3] === "India" ? "India" : "Uzbekistan", lang)})`
+    : lang === "ru" ? `Единица ${country[1] === "Creatinine" ? "креатинина" : "билирубина"}: ${country[2]} (${translateUi(country[3] === "India" ? "India" : "Uzbekistan", lang)})` : source;
   const missed = source.match(/^Missed medication (\d+) days$/);
   if (missed) {
     const n = missed[1];

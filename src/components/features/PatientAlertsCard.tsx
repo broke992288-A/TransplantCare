@@ -187,11 +187,11 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(alert.created_at).toLocaleString()}
+                  {new Date(alert.created_at).toLocaleString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}
                 </p>
                 {!patientView && alert.resolution_note && (
                   <p className="text-xs italic text-muted-foreground mt-1">
-                    “{alert.resolution_note}”
+                    “<TranslatedText text={alert.resolution_note} />”
                   </p>
                 )}
                 {!isClosed && (
@@ -248,7 +248,7 @@ export default function PatientAlertsCard({ patientId, patientView = false }: Pa
             </DialogTitle>
           </DialogHeader>
           {resolveTarget && (
-            <p className="text-sm text-muted-foreground">{resolveTarget.title}</p>
+            <p className="text-sm text-muted-foreground">{localizeClinicalText(resolveTarget.title, lang)}</p>
           )}
           <div className="space-y-2">
             <Label htmlFor="resolution-note" className="text-xs">

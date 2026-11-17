@@ -1,4 +1,5 @@
 import { useTx } from "@/i18n/uiText";
+import { localizeParam } from "@/i18n/clinicalText";
 import { memo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -78,7 +79,7 @@ interface Props {
 
 function LabHistoryTable({ labs, organType, showAll = false, editable = false, onLabChanged }: Props) {
   const tx = useTx();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
@@ -195,7 +196,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                 {editable && <TableHead className="whitespace-nowrap sticky left-0 bg-background z-10 min-w-[80px]" />}
                 <TableHead className={`whitespace-nowrap ${editable ? 'sticky left-[80px]' : 'sticky left-0'} bg-background z-10 min-w-[100px]`}>{t("detail.date")}</TableHead>
                 {headers.map((h) => (
-                  <TableHead key={h.key} className="whitespace-nowrap text-center min-w-[80px]">{h.label}</TableHead>
+                  <TableHead key={h.key} className="whitespace-nowrap text-center min-w-[80px]">{lang === "en" ? h.label : localizeParam(h.key, lang)}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -236,7 +237,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                           className="h-7 w-36 text-xs"
                         />
                       ) : (
-                        new Date(lab.recorded_at).toLocaleDateString()
+                        new Date(lab.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")
                       )}
                     </TableCell>
                     {headers.map((h) => {
@@ -265,8 +266,8 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
                               </span>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs font-medium">
-                              <div>{h.label}</div>
-                              <div className="text-muted-foreground">{new Date(lab.recorded_at).toLocaleDateString()}</div>
+                              <div>{lang === "en" ? h.label : localizeParam(h.key, lang)}</div>
+                              <div className="text-muted-foreground">{new Date(lab.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</div>
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>

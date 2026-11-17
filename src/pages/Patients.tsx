@@ -14,11 +14,13 @@ import { riskColorClass, getAge } from "@/utils/risk";
 import { SkeletonTable } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { PatientFilters } from "@/services/patientService";
+import { useTx } from "@/i18n/uiText";
 
 const PAGE_SIZE = 20;
 
 export default function Patients() {
   const { t } = useLanguage();
+  const tx = useTx();
   const [searchQuery, setSearchQuery] = useState("");
   const [organFilter, setOrganFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
@@ -85,7 +87,7 @@ export default function Patients() {
               <EmptyState
                 icon={Users}
                 title={searchQuery ? (t("medications.noResults") || "Natija topilmadi") : t("dashboard.noPatients")}
-                description={searchQuery ? "Қидирув сўзини ўзгартириб кўринг" : "Янги бемор қўшиш учун тугмани босинг"}
+                description={searchQuery ? tx("Try changing your search.") : t("dashboard.addFirstPatient")}
                 actionLabel={!searchQuery ? t("patients.newTransplant") : undefined}
                 onAction={!searchQuery ? () => navigate("/add-patient") : undefined}
               />

@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export default function RiskRecalculationCard() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const tx = useTx();
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
@@ -29,7 +31,7 @@ export default function RiskRecalculationCard() {
       setResult(res);
       toast({
         title: t("recalc.success"),
-        description: `${res.totalProcessed} ${t("recalc.patients")}, ${res.totalSnapshots} snapshot, ${res.totalAlerts} ${t("recalc.alerts")}`,
+        description: `${res.totalProcessed} ${t("recalc.patients")}, ${res.totalSnapshots} ${tx("Snapshots")}, ${res.totalAlerts} ${t("recalc.alerts")}`,
       });
       qc.invalidateQueries();
     } catch (err: unknown) {
@@ -73,7 +75,7 @@ export default function RiskRecalculationCard() {
             <div className="text-sm">
               <p className="font-medium text-success">{t("recalc.successLabel")}</p>
               <p className="text-muted-foreground mt-1">
-                {result.totalProcessed} {t("recalc.patients")} • {result.totalSnapshots} snapshot • {result.totalAlerts} {t("recalc.alerts")}
+                {result.totalProcessed} {t("recalc.patients")} • {result.totalSnapshots} {tx("Snapshots")} • {result.totalAlerts} {t("recalc.alerts")}
               </p>
             </div>
           </div>

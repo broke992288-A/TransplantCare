@@ -10,7 +10,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations: Record<Language, Record<string, string>> = {
+export const translations: Record<Language, Record<string, string>> = {
   en: {
     "app.name": "TransplantCare",
     "nav.addPatient": "Add Patient",
@@ -2480,10 +2480,30 @@ const translations: Record<Language, Record<string, string>> = {
   },
 };
 
+const supplemental: Record<string, Record<Language, string>> = {
+  "lab.date": { en: "Date", ru: "Дата", uz: "Sana" },
+  "common.info": { en: "Information", ru: "Информация", uz: "Ma'lumot" },
+  "common.close": { en: "Close", ru: "Закрыть", uz: "Yopish" },
+  "med.twiceDaily": { en: "Twice daily", ru: "Два раза в день", uz: "Kuniga ikki marta" },
+  "med.asNeeded": { en: "As needed", ru: "По необходимости", uz: "Kerak bo'lganda" },
+  "detail.labUpdated": { en: "Lab result updated", ru: "Результат анализа обновлён", uz: "Tahlil natijasi yangilandi" },
+  "detail.deleteReasonPrompt": { en: "Enter deletion reason (at least 3 characters)", ru: "Укажите причину удаления (минимум 3 символа)", uz: "O'chirish sababini yozing (kamida 3 ta belgi)" },
+  "upload.noValuesExtracted": { en: "No lab values extracted", ru: "Результаты анализов не найдены", uz: "Tahlil natijalari topilmadi" },
+  "upload.noValuesFound": { en: "No lab values found", ru: "Результаты анализов не найдены", uz: "Tahlil natijalari topilmadi" },
+  "risk.guidelines": { en: "Clinical guidelines", ru: "Клинические рекомендации", uz: "Klinik qo'llanmalar" },
+  "add.phone": { en: "Phone", ru: "Телефон", uz: "Telefon" },
+  "reports.labResults": { en: "Lab results", ru: "Результаты анализов", uz: "Tahlil natijalari" },
+  "reports.total": { en: "Total", ru: "Всего", uz: "Jami" },
+  "role.contactAdmin": { en: "Contact an administrator for a doctor, support or admin role.", ru: "Для роли врача, поддержки или администратора обратитесь к администратору.", uz: "Shifokor, yordamchi yoki administrator roli uchun administrator bilan bog'laning." },
+};
+for (const [key, entry] of Object.entries(supplemental)) {
+  for (const language of ["en", "ru", "uz"] as const) translations[language][key] = entry[language];
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
     const saved = typeof localStorage !== "undefined" ? localStorage.getItem("app-lang") : null;
-    return (saved as Language) || "en";
+    return saved === "uz" || saved === "ru" || saved === "en" ? saved : "en";
   });
 
   const setLang = useCallback((newLang: Language) => {

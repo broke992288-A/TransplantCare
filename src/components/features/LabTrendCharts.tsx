@@ -19,6 +19,7 @@ import { LazyMount } from "./LazyMount";
 import { cn } from "@/lib/utils";
 import type { LabResult } from "@/types/patient";
 import { REFERENCE_RANGES } from "./LabResultsTable";
+import { localizeParam } from "@/i18n/clinicalText";
 
 /** Cap data points fed to the chart to keep render cost bounded. */
 const MAX_CHART_POINTS = 30;
@@ -89,7 +90,7 @@ function CustomTooltip({ active, payload, unit, color, ref, t }: CustomTooltipPr
 }
 
 function LabTrendCharts({ labs }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const isMobile = useIsMobile();
 
   const sortedLabs = useMemo(
@@ -115,7 +116,7 @@ function LabTrendCharts({ labs }: Props) {
         const allPoints = sortedLabs
           .filter((l) => l[key] != null)
           .map((l) => ({
-            date: new Date(l.recorded_at).toLocaleDateString(),
+            date: new Date(l.recorded_at).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB"),
             rawDate: l.recorded_at,
             value: l[key] as number,
           }));
@@ -177,7 +178,7 @@ function LabTrendCharts({ labs }: Props) {
                       className="w-2.5 h-2.5 rounded-full ring-2 ring-offset-1 ring-offset-card"
                       style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}80` }}
                     />
-                    <span className="truncate">{ref?.label ?? key}</span>
+                    <span className="truncate">{lang === "en" ? ref?.label ?? key : localizeParam(key, lang)}</span>
                     <span className="text-xs font-normal text-muted-foreground">
                       {ref ? `(${ref.unit})` : ""}
                     </span>

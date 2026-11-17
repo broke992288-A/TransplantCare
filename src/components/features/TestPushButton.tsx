@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
+import { LocalizedUi } from "@/i18n/LocalizedUi";
 
 interface DeliveryError {
   id: string;
@@ -303,15 +304,15 @@ export default function TestPushButton() {
                   className="rounded border border-destructive/20 bg-destructive/5 px-2 py-1"
                 >
                   <div>
-                    <span className="text-muted-foreground">sub:</span>{" "}
+                    <span className="text-muted-foreground"><LocalizedUi text="Subscription" />:</span>{" "}
                     {e.id.slice(0, 8)}…
                   </div>
                   <div>
-                    <span className="text-muted-foreground">status:</span>{" "}
+                    <span className="text-muted-foreground"><LocalizedUi text="Status" />:</span>{" "}
                     <span className="font-semibold">{e.status ?? "—"}</span>
                   </div>
                   <div className="whitespace-pre-wrap">
-                    <span className="text-muted-foreground">msg:</span> {e.message}
+                    <span className="text-muted-foreground"><LocalizedUi text="Message" />:</span> {e.message}
                   </div>
                 </li>
               ))}

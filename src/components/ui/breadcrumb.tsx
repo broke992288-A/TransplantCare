@@ -1,3 +1,5 @@
+import { useTx } from "@/i18n/uiText";
+import { LocalizedUi } from "@/i18n/LocalizedUi";
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
@@ -9,7 +11,10 @@ const Breadcrumb = React.forwardRef<
   React.ComponentPropsWithoutRef<"nav"> & {
     separator?: React.ReactNode;
   }
->(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />);
+>(({ ...props }, ref) => {
+  const tx = useTx();
+  return <nav ref={ref} aria-label={tx("breadcrumb")} {...props} />;
+});
 Breadcrumb.displayName = "Breadcrumb";
 
 const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(
@@ -74,7 +79,7 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span"
     {...props}
   >
     <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More</span>
+    <span className="sr-only"><LocalizedUi text="More" /></span>
   </span>
 );
 BreadcrumbEllipsis.displayName = "BreadcrumbElipssis";
