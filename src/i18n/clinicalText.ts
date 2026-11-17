@@ -159,7 +159,7 @@ const FIXED: Record<string, Record<Language, string>> = {
 
 /** Historical stored templates: translate on read, never rewrite the record. */
 const LEGACY_RULES: { re: RegExp; out: (m: RegExpMatchArray, lang: Language) => string }[] = [
-  { re: /^(\w+):\s*(.+?)\s*\((?:norma|норма|reference range)\s+([^)]*)\)(\s*\[[^\]]+\])?$/i,
+  { re: /^(\w+):\s*([^;()]+?)\s*\((?:norma|норма|reference range)\s+([^)]*)\)(\s*\[[^\]]+\])?$/i,
     out: (m, lang) => `${localizeParam(m[1], lang)}: ${m[2]} (${lang === "ru" ? "норма" : lang === "en" ? "reference range" : "me'yor"} ${m[3]})${m[4] ?? ""}` },
   { re: /^(\w+) ([+-]?[\d.]+(?:e[+-]?\d+)?) (≥|≤|>|<) ([+-]?[\d.]+(?:e[+-]?\d+)?)$/i,
     out: (m, lang) => `${localizeParam(m[1], lang)} ${m[2]} ${m[3]} ${m[4]}` },
