@@ -63,6 +63,20 @@ const SEV: Record<string, Record<L, string>> = {
 
 type Rule = { re: RegExp; out: Record<L, (m: RegExpMatchArray, lang: L) => string> };
 
+const VALIDATION_RULES: { re: RegExp; out: (m: RegExpMatchArray, lang: Language) => string }[] = [
+  { re: /^(.+?) — (raqam kiriting|noto'g'ri raqam|fiziologik jihatdan imkonsiz qiymat)$/, out: (m, lang) => {
+    const label = localizeParam(m[1], lang);
+    const reason = m[2] === "raqam kiriting" ? { uz: "raqam kiriting", ru: "введите число", en: "enter a number" }
+      : m[2] === "noto'g'ri raqam" ? { uz: "noto'g'ri raqam", ru: "неверное число", en: "invalid number" }
+      : { uz: "fiziologik jihatdan imkonsiz qiymat", ru: "физиологически невозможное значение", en: "physiologically impossible value" };
+    return `${label} — ${reason[lang]}`;
+  } },
+  { re: /^(.+) manfiy bo'lishi mumkin emas$/, out: (m, lang) => `${localizeParam(m[1], lang)} ${lang === "ru" ? "не может быть отрицательным" : lang === "en" ? "cannot be negative" : "manfiy bo'lishi mumkin emas"}` },
+  { re: /^(\w+) = (.+) — fiziologik jihatdan imkonsiz \((.+)\)$/, out: (m, lang) => `${localizeParam(m[1], lang)} = ${m[2]} — ${lang === "ru" ? "физиологически невозможно" : lang === "en" ? "physiologically impossible" : "fiziologik jihatdan imkonsiz"} (${m[3]})` },
+  { re: /^(\w+) = (.+) — g'ayrioddiy qiymat, tekshirishni tavsiya etamiz$/, out: (m, lang) => `${localizeParam(m[1], lang)} = ${m[2]} — ${lang === "ru" ? "необычное значение, рекомендуется проверка" : lang === "en" ? "unusual value, verification recommended" : "g'ayrioddiy qiymat, tekshirish tavsiya etiladi"}` },
+  { re: /^To'g'ridan-to'g'ri bilirubin \((.+)\) umumiy bilirubindan \((.+)\) katta bo'lishi mumkin emas$/, out: (m, lang) => lang === "en" ? `Direct bilirubin (${m[1]}) cannot exceed total bilirubin (${m[2]})` : lang === "ru" ? `Прямой билирубин (${m[1]}) не может превышать общий билирубин (${m[2]})` : `To'g'ri bilirubin (${m[1]}) umumiy bilirubindan (${m[2]}) katta bo'lishi mumkin emas` },
+];
+
 const stageRe = /(early|intermediate|maintenance) \(([^)]+)\)/g;
 const STAGE: Record<string, Record<L, string>> = {
   early: { uz: "erta davr", ru: "ранний период" },
@@ -147,6 +161,10 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
   if (!text) return "";
   const fixed = FIXED[text.trim()];
   if (fixed) return fixed[lang];
+  for (const rule of VALIDATION_RULES) {
+    const match = text.match(rule.re);
+    if (match) return rule.out(match, lang);
+  }
   if (lang === "en") return text;
   for (const r of RULES) {
     const m = text.match(r.re);
@@ -166,5 +184,5 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
 
 /** Machine templates bypass AI even when their source language differs. */
 export function isMachineClinicalText(text: string): boolean {
-  return Boolean(FIXED[text.trim()]) || localizeClinicalText(text, "uz") !== text;
+  return Boolean(FIXED[text.trim()]) || VALIDATION_RULES.some(rule => rule.re.test(text)) || localizeClinicalText(text, "uz") !== text;
 }

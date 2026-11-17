@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -67,8 +67,8 @@ async function flushQueue() {
         sourceLang: items[0].sourceLang,
       });
       for (const it of items) {
-        const idx = indexMap.get(it.text)!;
-        const tr = translations[idx] ?? it.text;
+        const idx = indexMap.get(it.text);
+        const tr = idx === undefined ? it.text : translations[idx] ?? it.text;
         cache.set(cacheKey(it.text, it.targetLang, it.sourceLang), tr);
         it.resolve(tr);
       }
@@ -93,11 +93,10 @@ export function useTranslatedText(
   const { lang } = useLanguage();
   const [translated, setTranslated] = useState(text ?? "");
   const [loading, setLoading] = useState(false);
-  const abortRef = useRef({ cancelled: false });
 
   useEffect(() => {
-    abortRef.current.cancelled = false;
-    const localRef = abortRef.current;
+    let cancelled = false;
+    setLoading(false);
 
     if (!text) {
       setTranslated("");
@@ -109,20 +108,21 @@ export function useTranslatedText(
     }
 
     const key = cacheKey(text, lang, sourceLang);
-    if (cache.has(key)) {
-      setTranslated(cache.get(key)!);
+    const cached = cache.get(key);
+    if (cached !== undefined) {
+      setTranslated(cached);
       return;
     }
 
     setLoading(true);
     enqueueTranslation(text, lang, sourceLang).then((tr) => {
-      if (localRef.cancelled) return;
+      if (cancelled) return;
       setTranslated(tr);
       setLoading(false);
     });
 
     return () => {
-      localRef.cancelled = true;
+      cancelled = true;
     };
   }, [text, lang, sourceLang]);
 
@@ -138,6 +138,7 @@ export function useTranslatedTexts(
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setLoading(false);
     if (!sourceLang || sourceLang === lang || texts.length === 0) {
       setTranslations(texts.map((t) => t ?? ""));
       return;
@@ -150,8 +151,9 @@ export function useTranslatedTexts(
     texts.forEach((t, i) => {
       if (!t) return;
       const key = cacheKey(t, lang, sourceLang);
-      if (cache.has(key)) {
-        result[i] = cache.get(key)!;
+      const cached = cache.get(key);
+      if (cached !== undefined) {
+        result[i] = cached;
         return;
       }
       pending.push(
