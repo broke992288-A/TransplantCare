@@ -169,6 +169,7 @@ const LEGACY_RULES: { re: RegExp; out: (m: RegExpMatchArray, lang: Language) => 
   { re: /^(?:Dori|Препарат|Medication):\s*(.*?)\.\s*(?:Eski doza|Прежняя доза|Previous dose):\s*(.*?)\s*→\s*(?:Yangi doza|Новая доза|New dose):\s*(.*)$/s,
     out: (m, lang) => {
       const labels = { uz: ["Dori", "Eski doza", "Yangi doza"], ru: ["Препарат", "Прежняя доза", "Новая доза"], en: ["Medication", "Previous dose", "New dose"] }[lang];
+      return `${labels[0]}: ${m[1]}. ${labels[1]}: ${m[2]} → ${labels[2]}: ${m[3]}`;
     } },
 ];
 
@@ -186,10 +187,6 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
     const match = text.match(rule.re);
     if (match) return rule.out(match, lang);
   }
-  // Match whole medication messages first: their sentence separator is part
-  // of the template. Then localize each historical finding independently.
-  const segments = text.split(/(;\s*|\. (?!(?:Eski doza|Previous dose|Прежняя доза):)(?=[A-Z_]))/);
-  if (segments.length > 1) return segments.map((segment, i) => i % 2 ? segment : localizeClinicalText(segment, lang)).join("");
   if (lang === "en") {
     return text.replace(/Dori:/g, "Medication:").replace(/Eski doza:/g, "Previous dose:")
       .replace(/Yangi doza:/g, "New dose:").replace(/Sabab:/g, "Reason:")
