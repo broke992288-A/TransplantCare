@@ -44,7 +44,7 @@ interface Props {
 }
 
 export default function PatientLabScheduleCard({ patientId, isPatientView = false }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { data: schedules = [], isLoading } = useLabSchedules(patientId);
 
   if (isLoading) return null;
@@ -112,7 +112,7 @@ export default function PatientLabScheduleCard({ patientId, isPatientView = fals
                 {getStatusIcon(s.computedStatus)}
                 <div>
                   <p className="text-sm font-medium">
-                    {new Date(s.scheduled_date).toLocaleDateString()}
+                    {new Date(s.scheduled_date).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}
                   </p>
                   <p className="text-xs text-muted-foreground">{t("schedule.scheduledLab")}</p>
                 </div>

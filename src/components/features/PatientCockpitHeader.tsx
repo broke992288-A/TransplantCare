@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import EditPatientDialog from "@/components/features/EditPatientDialog";
 import { useLanguage } from "@/hooks/useLanguage";
 import { localizeClinicalText, localizeStage } from "@/i18n/clinicalText";
+import { useTx } from "@/i18n/uiText";
 import { useToast } from "@/hooks/use-toast";
 import { deletePatient } from "@/services/patientService";
 import { riskColorClass } from "@/utils/risk";
@@ -26,6 +27,7 @@ interface Props {
 
 export default function PatientCockpitHeader({ patient, latestRisk, latestLab, onUpdated }: Props) {
   const { t, lang } = useLanguage();
+  const tx = useTx();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { data: schedules = [] } = useLabSchedules(patient.id);
@@ -64,10 +66,10 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
               <h1 className="text-base sm:text-xl font-bold leading-tight break-words">{patient.full_name}</h1>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs sm:text-sm text-muted-foreground">
                 <span>{t(`organ.${patient.organ_type}`)}</span>
-                {patient.transplant_date && <span>• {new Date(patient.transplant_date).toLocaleDateString()}</span>}
+                {patient.transplant_date && <span>• {new Date(patient.transplant_date).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</span>}
                 {patient.transplant_number && <span>• #{patient.transplant_number}</span>}
                 {patient.blood_type && <span>• {patient.blood_type}</span>}
-                {patient.country && <Badge variant="outline" className="text-[10px] sm:text-xs">{patient.country}</Badge>}
+                {patient.country && <Badge variant="outline" className="text-[10px] sm:text-xs">{patient.country === "uzbekistan" ? tx("Uzbekistan") : patient.country === "india" ? tx("India") : patient.country}</Badge>}
               </div>
             </div>
 
@@ -85,7 +87,7 @@ export default function PatientCockpitHeader({ patient, latestRisk, latestLab, o
               {displaySchedule && (
                 <div className="flex items-center gap-1">
                   <CalendarClock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                  <span className="text-[10px] sm:text-sm font-medium">{new Date(displaySchedule.scheduled_date).toLocaleDateString()}</span>
+                  <span className="text-[10px] sm:text-sm font-medium">{new Date(displaySchedule.scheduled_date).toLocaleDateString(lang === "ru" ? "ru-RU" : lang === "uz" ? "uz-UZ" : "en-GB")}</span>
                   {overdueSchedule && <Badge variant="destructive" className="text-[9px] px-1 py-0">!</Badge>}
                 </div>
               )}
