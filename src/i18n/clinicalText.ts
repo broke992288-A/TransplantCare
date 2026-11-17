@@ -168,7 +168,9 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
   if (lang === "en") {
     return text.replace(/Dori:/g, "Medication:").replace(/Eski doza:/g, "Previous dose:")
       .replace(/Yangi doza:/g, "New dose:").replace(/Sabab:/g, "Reason:")
-      .replace(/\bnorma\b/g, "reference range");
+      .replace(/\bnorma\b/g, "reference range")
+      .replace(/Shifokor dozani kamaytirdi/g, "Doctor decreased the dose")
+      .replace(/Shifokor dozani oshirdi/g, "Doctor increased the dose");
   }
   for (const r of RULES) {
     const m = text.match(r.re);
@@ -194,6 +196,8 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
       "Re-transplant": { uz: "Qayta transplantatsiya", ru: "Повторная трансплантация" },
       "Re-transplant patient": { uz: "Qayta transplantatsiya qilingan bemor", ru: "Пациент после повторной трансплантации" },
       "Multiple abnormal": { uz: "Bir nechta chetlanish", ru: "Несколько отклонений" },
+      "Shifokor dozani kamaytirdi": { uz: "Shifokor dozani kamaytirdi", ru: "Врач уменьшил дозу" },
+      "Shifokor dozani oshirdi": { uz: "Shifokor dozani oshirdi", ru: "Врач увеличил дозу" },
     };
     for (const word of Object.keys(words).sort((a, b) => b.length - a.length)) localized = localized.split(word).join(words[word][lang]);
     return localized;

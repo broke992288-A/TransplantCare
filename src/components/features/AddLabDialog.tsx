@@ -16,6 +16,8 @@ import { STANDARD_UNITS } from "@/utils/unitConversion";
 import { normalizeFields, type NormalizedField } from "@/utils/labNormalization";
 import { autoCalculateEgfr } from "@/utils/egfrCalculator";
 import { useLabReferenceProfiles, useLabCountries } from "@/hooks/useLabReferenceProfiles";
+import { useTx } from "@/i18n/uiText";
+import { localizeParam } from "@/i18n/clinicalText";
 
 interface AddLabDialogProps {
   patientId: string;
@@ -37,7 +39,8 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [country, setCountry] = useState<string>(patientCountry || "uzbekistan");
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const tx = useTx();
   const [form, setForm] = useState<Record<string, string>>({
     tacrolimus_level: "", alt: "", ast: "", total_bilirubin: "", direct_bilirubin: "",
     creatinine: "", egfr: "", proteinuria: "", potassium: "",
@@ -138,7 +141,7 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
       if (ambiguous.length > 0) {
         toast({
           title: t("common.error"),
-          description: `Birlik aniq emas: ${ambiguous.join(", ")}. Iltimos, mamlakat/birlikni tanlang.`,
+          description: `${tx("Unit unclear")}: ${ambiguous.map(key => localizeParam(key, lang)).join(", ")}. ${tx("Please select the country/unit.")}`,
           variant: "destructive",
         });
         setSaving(false);
@@ -239,7 +242,7 @@ export default function AddLabDialog({ patientId, organType, onLabAdded, patient
             <SelectContent>
               {(countries ?? ["uzbekistan", "india"]).map((c) => (
                 <SelectItem key={c} value={c}>
-                  {COUNTRY_LABELS[c] ?? c}
+                  {c === "uzbekistan" ? tx("Uzbekistan") : c === "india" ? tx("India") : COUNTRY_LABELS[c] ?? c}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -11,6 +11,8 @@ type Entry = Record<Language, string>;
 const E = (en: string, ru: string, uz: string): Entry => ({ en, ru, uz });
 
 const ENTRIES: Entry[] = [
+  E("Unit unclear", "Единица не определена", "Birlik aniq emas"),
+  E("Please select the country/unit.", "Выберите страну/единицу.", "Iltimos, mamlakat/birlikni tanlang."),
   E("Name must contain at least 2 characters", "Имя должно содержать минимум 2 символа", "Ism kamida 2 ta belgidan iborat bo'lishi kerak"),
   E("Name must not exceed 100 characters", "Имя не должно превышать 100 символов", "Ism 100 ta belgidan oshmasligi kerak"),
   E("Date of birth is required", "Укажите дату рождения", "Tug'ilgan sana kiritilishi shart"),
