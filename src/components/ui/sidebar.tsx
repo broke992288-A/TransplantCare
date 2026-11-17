@@ -1,3 +1,4 @@
+import { LocalizedUi } from "@/i18n/LocalizedUi";
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
@@ -234,7 +235,7 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         {...props}
       >
         <PanelLeft />
-        <span className="sr-only">Toggle Sidebar</span>
+        <span className="sr-only"><LocalizedUi text="Toggle Sidebar" /></span>
       </Button>
     );
   },

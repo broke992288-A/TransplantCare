@@ -1,3 +1,4 @@
+import { LocalizedUi } from "@/i18n/LocalizedUi";
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
@@ -74,7 +75,7 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span"
     {...props}
   >
     <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More</span>
+    <span className="sr-only"><LocalizedUi text="More" /></span>
   </span>
 );
 BreadcrumbEllipsis.displayName = "BreadcrumbElipssis";
