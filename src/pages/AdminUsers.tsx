@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, KeyRound, MailCheck, Search, ShieldCheck, Users } from "lucide-react";
@@ -49,6 +50,7 @@ function formatDate(value: string | null): string {
 }
 
 export default function AdminUsers() {
+  const tx = useTx();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -68,13 +70,13 @@ export default function AdminUsers() {
     mutationFn: ({ userId, role }: { userId: string; role: AppRole }) => updateUserRole(userId, role),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast({ title: "Rol yangilandi", description: "Foydalanuvchi roli muvaffaqiyatli o'zgartirildi." });
+      toast({ title: tx("Rol yangilandi"), description: tx("Foydalanuvchi roli muvaffaqiyatli o'zgartirildi.") });
       setTarget(null);
     },
     onError: (err) => {
       toast({
         variant: "destructive",
-        title: "Xatolik",
+        title: tx("Xatolik"),
         description: getErrorMessage(err),
       });
     },
@@ -84,11 +86,11 @@ export default function AdminUsers() {
     mutationFn: (userId: string) => confirmUserEmail(userId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast({ title: "Email tasdiqlandi", description: "Foydalanuvchi emaili tasdiqlangan deb belgilandi." });
+      toast({ title: tx("Email tasdiqlandi"), description: tx("Foydalanuvchi emaili tasdiqlangan deb belgilandi.") });
       setConfirmTarget(null);
     },
     onError: (err) => {
-      toast({ variant: "destructive", title: "Xatolik", description: getErrorMessage(err) });
+      toast({ variant: "destructive", title: tx("Xatolik"), description: getErrorMessage(err) });
     },
   });
 
@@ -99,9 +101,9 @@ export default function AdminUsers() {
   const [pw2Visible, setPw2Visible] = useState(false);
   const pwError =
     pw.length === 0 ? null
-    : pw.length < 8 ? "Parol kamida 8 belgidan iborat bo'lishi kerak."
-    : pw.length > 200 ? "Parol juda uzun."
-    : pw2.length > 0 && pw !== pw2 ? "Parollar mos kelmadi."
+    : pw.length < 8 ? tx("Parol kamida 8 belgidan iborat bo'lishi kerak.")
+    : pw.length > 200 ? tx("Parol juda uzun.")
+    : pw2.length > 0 && pw !== pw2 ? tx("Parollar mos kelmadi.")
     : null;
   const pwValid = pw.length >= 8 && pw.length <= 200 && pw === pw2;
   const closePw = () => { setPwTarget(null); setPw(""); setPw2(""); setPwVisible(false); setPw2Visible(false); };
@@ -110,11 +112,11 @@ export default function AdminUsers() {
     mutationFn: ({ userId, password }: { userId: string; password: string }) => resetUserPassword(userId, password),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast({ title: "Parol yangilandi", description: "Foydalanuvchi yangi parol bilan kira oladi." });
+      toast({ title: tx("Parol yangilandi"), description: tx("Foydalanuvchi yangi parol bilan kira oladi.") });
       closePw();
     },
     onError: (err) => {
-      toast({ variant: "destructive", title: "Xatolik", description: getErrorMessage(err) });
+      toast({ variant: "destructive", title: tx("Xatolik"), description: getErrorMessage(err) });
     },
   });
 
@@ -145,13 +147,13 @@ export default function AdminUsers() {
           <div className="flex flex-col gap-2">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Foydalanuvchilar
+              {tx("Foydalanuvchilar")}
               {!isLoading && (
                 <span className="text-sm font-normal text-muted-foreground">({users.length})</span>
               )}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Tizim foydalanuvchilari va ularning rollarini boshqarish. Faqat administratorlar uchun.
+              {tx("Tizim foydalanuvchilari va ularning rollarini boshqarish. Faqat administratorlar uchun.")}
             </p>
           </div>
         </CardHeader>
@@ -169,11 +171,11 @@ export default function AdminUsers() {
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Barcha rollar</SelectItem>
+                <SelectItem value="all">{tx("Barcha rollar")}</SelectItem>
                 {ADMIN_MANAGED_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                  <SelectItem key={r} value={r}>{tx(ROLE_LABEL[r])}</SelectItem>
                 ))}
-                <SelectItem value="none">Rol berilmagan</SelectItem>
+                <SelectItem value="none">{tx("Rol berilmagan")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,13 +193,13 @@ export default function AdminUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ism</TableHead>
+                    <TableHead>{tx("Ism")}</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Email tasdiqlangan</TableHead>
-                    <TableHead>Oxirgi kirish</TableHead>
-                    <TableHead>Ro'yxatdan o'tgan</TableHead>
-                    <TableHead className="text-right">Amal</TableHead>
+                    <TableHead>{tx("Rol")}</TableHead>
+                    <TableHead>{tx("Email tasdiqlangan")}</TableHead>
+                    <TableHead>{tx("Oxirgi kirish")}</TableHead>
+                    <TableHead>{tx("Ro'yxatdan o'tgan")}</TableHead>
+                    <TableHead className="text-right">{tx("Amal")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -208,20 +210,20 @@ export default function AdminUsers() {
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">
                           {u.full_name ?? "—"}
-                          {isSelf && <span className="ml-2 text-xs text-muted-foreground">(siz)</span>}
+                          {isSelf && <span className="ml-2 text-xs text-muted-foreground">{tx("(siz)")}</span>}
                         </TableCell>
                         <TableCell className="max-w-[260px] break-words text-muted-foreground">{u.email ?? "—"}</TableCell>
                         <TableCell>
                           {role ? (
-                            <Badge className={ROLE_BADGE[role]}>{ROLE_LABEL[role]}</Badge>
+                            <Badge className={ROLE_BADGE[role]}>{tx(ROLE_LABEL[role])}</Badge>
                           ) : (
-                            <Badge variant="outline">Rol berilmagan</Badge>
+                            <Badge variant="outline">{tx("Rol berilmagan")}</Badge>
                           )}
                         </TableCell>
                         <TableCell>
                           {u.email_confirmed
-                            ? <Badge variant="outline">Ha</Badge>
-                            : <Badge variant="destructive">Yo'q</Badge>}
+                            ? <Badge variant="outline">{tx("Ha")}</Badge>
+                            : <Badge variant="destructive">{tx("Yo'q")}</Badge>}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(u.last_sign_in_at)}</TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(u.created_at)}</TableCell>
@@ -235,23 +237,23 @@ export default function AdminUsers() {
                                 onClick={() => setConfirmTarget(u)}
                               >
                                 <MailCheck className="h-4 w-4" />
-                                Emailni tasdiqlash
+                                {tx("Emailni tasdiqlash")}
                               </Button>
                             )}
                             {!isSelf && (
                               <Button size="sm" variant="outline" className="gap-1" onClick={() => setPwTarget(u)}>
                                 <KeyRound className="h-4 w-4" />
-                                Parolni tiklash
+                                {tx("Parolni tiklash")}
                               </Button>
                             )}
                             <Button
                               size="sm"
                               variant="outline"
                               disabled={isSelf}
-                              title={isSelf ? "O'z rolingizni o'zgartirish mumkin emas" : undefined}
+                              title={isSelf ? tx("O'z rolingizni o'zgartirish mumkin emas") : undefined}
                               onClick={() => openDialog(u)}
                             >
-                              Rolni o'zgartirish
+                              {tx("Rolni o'zgartirish")}
                             </Button>
                           </div>
                         </TableCell>
@@ -268,7 +270,7 @@ export default function AdminUsers() {
       <Dialog open={target !== null} onOpenChange={(open) => { if (!open) setTarget(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Rolni o'zgartirish</DialogTitle>
+            <DialogTitle>{tx("Rolni o'zgartirish")}</DialogTitle>
             <DialogDescription>
               {target?.email ?? target?.full_name ?? ""} uchun yangi rolni tanlang. Eski rol olib tashlanadi.
             </DialogDescription>
@@ -277,19 +279,19 @@ export default function AdminUsers() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {ADMIN_MANAGED_ROLES.map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                <SelectItem key={r} value={r}>{tx(ROLE_LABEL[r])}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTarget(null)} disabled={mutation.isPending}>
-              Bekor qilish
+              {tx("Bekor qilish")}
             </Button>
             <Button
               onClick={() => target && mutation.mutate({ userId: target.id, role: nextRole })}
               disabled={mutation.isPending || !target}
             >
-              {mutation.isPending ? "Saqlanmoqda..." : "Saqlash"}
+              {mutation.isPending ? tx("Saqlanmoqda...") : tx("Saqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -298,13 +300,13 @@ export default function AdminUsers() {
       <Dialog open={confirmTarget !== null} onOpenChange={(open) => { if (!open) setConfirmTarget(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Emailni tasdiqlash</DialogTitle>
+            <DialogTitle>{tx("Emailni tasdiqlash")}</DialogTitle>
             <DialogDescription>
               <span className="block font-medium text-foreground">
                 {confirmTarget?.email ?? confirmTarget?.full_name ?? ""}
               </span>
               <span className="mt-2 block">
-                Bu emailni administrator sifatida tasdiqlaysizmi? Foydalanuvchi email tasdiqlashsiz tizimga kira oladi.
+                {tx("Bu emailni administrator sifatida tasdiqlaysizmi? Foydalanuvchi email tasdiqlashsiz tizimga kira oladi.")}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -314,13 +316,13 @@ export default function AdminUsers() {
               onClick={() => setConfirmTarget(null)}
               disabled={confirmMutation.isPending}
             >
-              Bekor qilish
+              {tx("Bekor qilish")}
             </Button>
             <Button
               onClick={() => confirmTarget && confirmMutation.mutate(confirmTarget.id)}
               disabled={confirmMutation.isPending || !confirmTarget}
             >
-              {confirmMutation.isPending ? "Tasdiqlanmoqda..." : "Tasdiqlash"}
+              {confirmMutation.isPending ? tx("Tasdiqlanmoqda...") : tx("Tasdiqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -328,9 +330,9 @@ export default function AdminUsers() {
       <Dialog open={pwTarget !== null} onOpenChange={(open) => { if (!open) closePw(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Parolni tiklash</DialogTitle>
+            <DialogTitle>{tx("Parolni tiklash")}</DialogTitle>
             <DialogDescription>
-              {pwTarget?.email ?? pwTarget?.full_name ?? ""} uchun yangi parol kiriting.
+              {pwTarget?.email ?? pwTarget?.full_name ?? ""} {tx("uchun yangi parol kiriting.")}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -342,13 +344,13 @@ export default function AdminUsers() {
             }}
           >
             <div className="space-y-1">
-              <Label htmlFor="new-pw">Yangi parol</Label>
+              <Label htmlFor="new-pw">{tx("Yangi parol")}</Label>
               <div className="relative">
                 <Input id="new-pw" type={pwVisible ? "text" : "password"} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} className="pr-10" />
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label={pwVisible ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                  aria-label={pwVisible ? tx("Parolni yashirish") : tx("Parolni ko'rsatish")}
                   onClick={() => setPwVisible((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                 >
@@ -357,13 +359,13 @@ export default function AdminUsers() {
               </div>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="new-pw2">Parolni tasdiqlang</Label>
+              <Label htmlFor="new-pw2">{tx("Parolni tasdiqlang")}</Label>
               <div className="relative">
                 <Input id="new-pw2" type={pw2Visible ? "text" : "password"} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} className="pr-10" />
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label={pw2Visible ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                  aria-label={pw2Visible ? tx("Parolni yashirish") : tx("Parolni ko'rsatish")}
                   onClick={() => setPw2Visible((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                 >
@@ -374,10 +376,10 @@ export default function AdminUsers() {
             {pwError && <p className="text-sm text-destructive">{pwError}</p>}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closePw} disabled={pwMutation.isPending}>
-                Bekor qilish
+                {tx("Bekor qilish")}
               </Button>
               <Button type="submit" disabled={!pwValid || pwMutation.isPending}>
-                {pwMutation.isPending ? "Saqlanmoqda..." : "Saqlash"}
+                {pwMutation.isPending ? tx("Saqlanmoqda...") : tx("Saqlash")}
               </Button>
             </DialogFooter>
           </form>

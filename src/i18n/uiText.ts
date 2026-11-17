@@ -1,0 +1,141 @@
+import { useCallback } from "react";
+import { useLanguage, type Language } from "@/hooks/useLanguage";
+
+/**
+ * Deterministic UI-string dictionary keyed by the source literal used in code
+ * (English or Uzbek). `tx(source)` returns the text in the active language;
+ * unknown strings are returned unchanged.
+ */
+type Entry = Record<Language, string>;
+
+const E = (en: string, ru: string, uz: string): Entry => ({ en, ru, uz });
+
+const ENTRIES: Entry[] = [
+  // App / NotFound / SelectRole
+  E("Loading...", "Загрузка...", "Yuklanmoqda..."),
+  E("Oops! Page not found", "Упс! Страница не найдена", "Kechirasiz! Sahifa topilmadi"),
+  E("Return to Home", "Вернуться на главную", "Bosh sahifaga qaytish"),
+  E("Welcome to TransplantCare", "Добро пожаловать в TransplantCare", "TransplantCare'ga xush kelibsiz"),
+  E("Confirm your role to continue", "Подтвердите роль, чтобы продолжить", "Davom etish uchun rolingizni tasdiqlang"),
+  E("Continue as a patient", "Продолжить как пациент", "Bemor sifatida davom etish"),
+  E("Patient Portal", "Портал пациента", "Bemor portali"),
+  E("Doctor / Healthcare Provider", "Врач / Медработник", "Shifokor / Tibbiyot xodimi"),
+  E("Support", "Поддержка", "Yordamchi"),
+  E("Administrator", "Администратор", "Administrator"),
+  E("View your health status, lab results, and care timeline", "Состояние здоровья, анализы и план наблюдения", "Sog'liq holati, tahlil natijalari va kuzatuv rejasi"),
+  E("Manage patients, review risks, and oversee transplant care", "Ведение пациентов, оценка рисков и контроль трансплантации", "Bemorlarni boshqarish, xavflarni ko'rib chiqish va transplant kuzatuvi"),
+  E("Help users with issues and manage support requests", "Помощь пользователям и обработка обращений", "Foydalanuvchilarga yordam va murojaatlarni boshqarish"),
+  E("Full system management, users and settings", "Полное управление системой, пользователями и настройками", "Tizim, foydalanuvchilar va sozlamalarni to'liq boshqarish"),
+  E("Each account has only one role. Confirm your role to continue.", "Каждая учётная запись имеет только одну роль. Подтвердите роль, чтобы продолжить.", "Har bir hisob faqat bitta rolga ega. Davom etish uchun rolingizni tasdiqlang."),
+  // AdminUsers
+  E("Doctor", "Врач", "Shifokor"),
+  E("Support", "Поддержка", "Yordamchi"),
+  E("Patient", "Пациент", "Bemor"),
+  E("Users", "Пользователи", "Foydalanuvchilar"),
+  E("Manage system users and their roles. Administrators only.", "Управление пользователями и их ролями. Только для администраторов.", "Tizim foydalanuvchilari va ularning rollarini boshqarish. Faqat administratorlar uchun."),
+  E("Role updated", "Роль обновлена", "Rol yangilandi"),
+  E("User role changed successfully.", "Роль пользователя успешно изменена.", "Foydalanuvchi roli muvaffaqiyatli o'zgartirildi."),
+  E("Error", "Ошибка", "Xatolik"),
+  E("Email confirmed", "Email подтверждён", "Email tasdiqlandi"),
+  E("User email marked as confirmed.", "Email пользователя отмечен как подтверждённый.", "Foydalanuvchi emaili tasdiqlangan deb belgilandi."),
+  E("Password must be at least 8 characters.", "Пароль должен содержать не менее 8 символов.", "Parol kamida 8 belgidan iborat bo'lishi kerak."),
+  E("Password is too long.", "Пароль слишком длинный.", "Parol juda uzun."),
+  E("Passwords do not match.", "Пароли не совпадают.", "Parollar mos kelmadi."),
+  E("Password updated", "Пароль обновлён", "Parol yangilandi"),
+  E("The user can sign in with the new password.", "Пользователь может войти с новым паролем.", "Foydalanuvchi yangi parol bilan kira oladi."),
+  E("Search by email or name", "Поиск по email или имени", "Email yoki ism bo'yicha qidirish"),
+  E("All roles", "Все роли", "Barcha rollar"),
+  E("No role assigned", "Роль не назначена", "Rol berilmagan"),
+  E("No users found", "Пользователи не найдены", "Foydalanuvchi topilmadi"),
+  E("Try changing the search or filter.", "Измените условия поиска или фильтра.", "Qidiruv yoki filtr shartlarini o'zgartirib ko'ring."),
+  E("Name", "Имя", "Ism"),
+  E("Role", "Роль", "Rol"),
+  E("Actions", "Действия", "Amallar"),
+  E("Actions", "Действие", "Amal"),
+  E("Email confirmed", "Email подтверждён", "Email tasdiqlangan"),
+  E("Last sign-in", "Последний вход", "Oxirgi kirish"),
+  E("Registered", "Зарегистрирован", "Ro'yxatdan o'tgan"),
+  E("(you)", "(вы)", "(siz)"),
+  E("Yes", "Да", "Ha"),
+  E("No", "Нет", "Yo'q"),
+  E("Confirm email", "Подтвердить email", "Emailni tasdiqlash"),
+  E("Reset password", "Сбросить пароль", "Parolni tiklash"),
+  E("You cannot change your own role", "Нельзя изменить собственную роль", "O'z rolingizni o'zgartirish mumkin emas"),
+  E("Change role", "Изменить роль", "Rolni o'zgartirish"),
+  E("Cancel", "Отмена", "Bekor qilish"),
+  E("Saving...", "Сохранение...", "Saqlanmoqda..."),
+  E("Save", "Сохранить", "Saqlash"),
+  E("Confirm this email as an administrator? The user will be able to sign in without email verification.", "Подтвердить этот email как администратор? Пользователь сможет войти без подтверждения по почте.", "Bu emailni administrator sifatida tasdiqlaysizmi? Foydalanuvchi email tasdiqlashsiz tizimga kira oladi."),
+  E("Confirming...", "Подтверждение...", "Tasdiqlanmoqda..."),
+  E("Confirm", "Подтвердить", "Tasdiqlash"),
+  E("— enter a new password.", "— введите новый пароль.", "uchun yangi parol kiriting."),
+  E("New password", "Новый пароль", "Yangi parol"),
+  E("Confirm password", "Подтвердите пароль", "Parolni tasdiqlang"),
+  E("Hide password", "Скрыть пароль", "Parolni yashirish"),
+  E("Show password", "Показать пароль", "Parolni ko'rsatish"),
+  // Lab upload / bulk entry / history
+  E("Detected", "Найдено", "Aniqlandi"),
+  E("Not detected", "Не найдено", "Aniqlanmadi"),
+  E("⚠ Patient identity mismatch", "⚠ Несовпадение данных пациента", "⚠ Bemor ma'lumotlari mos emas"),
+  E("This report may belong to another patient. Please verify before continuing.", "Этот отчёт может принадлежать другому пациенту. Проверьте перед продолжением.", "Bu hisobot boshqa bemorga tegishli bo'lishi mumkin. Davom etishdan oldin tekshiring."),
+  E("Blocked: identity mismatch", "Заблокировано: несовпадение данных", "Bloklandi: shaxs ma'lumotlari mos emas"),
+  E("This report may belong to another patient. Please confirm override before saving.", "Этот отчёт может принадлежать другому пациенту. Подтвердите перед сохранением.", "Bu hisobot boshqa bemorga tegishli bo'lishi mumkin. Saqlashdan oldin tasdiqlang."),
+  E("Verification incomplete", "Проверка не завершена", "Tekshiruv yakunlanmagan"),
+  E("field(s) still require review before saving.", "пол(я) требуют проверки перед сохранением.", "ta maydon saqlashdan oldin tekshirilishi kerak."),
+  E("Patient identity could not be verified from this report.", "Не удалось подтвердить личность пациента по этому отчёту.", "Bu hisobotdan bemor shaxsini tasdiqlab bo'lmadi."),
+  E(" · No stored patient identity available for comparison.", " · Нет сохранённых данных пациента для сравнения.", " · Solishtirish uchun saqlangan bemor ma'lumotlari yo'q."),
+  E("No identity block detected on report", "В отчёте не найдены данные пациента", "Hisobotda bemor ma'lumotlari topilmadi"),
+  E("Identity match", "Личность совпадает", "Shaxs mos keldi"),
+  E("Identity could not be confirmed", "Личность не подтверждена", "Shaxsni tasdiqlab bo'lmadi"),
+  E("Validation errors", "Ошибки проверки", "Tekshiruv xatolari"),
+  E("Fix highlighted cells", "Исправьте выделенные ячейки", "Belgilangan kataklarni tuzating"),
+  E("No data", "Нет данных", "Ma'lumot yo'q"),
+  E("Enter at least one row", "Введите хотя бы одну строку", "Kamida bitta qator kiriting"),
+  E("Finalizing...", "Завершение...", "Yakunlanmoqda..."),
+  E("lab result(s) saved", "результат(ов) сохранено", "ta tahlil saqlandi"),
+  E("row(s) failed", "строк(и) с ошибкой", "ta qatorda xato"),
+  E("No rows were saved. Check console for details.", "Ни одна строка не сохранена.", "Hech bir qator saqlanmadi."),
+  E("Saving...", "Сохранение...", "Saqlanmoqda..."),
+  E("Save All", "Сохранить всё", "Hammasini saqlash"),
+  E("Deletion cancelled: reason required", "Удаление отменено: нужна причина", "O'chirish bekor qilindi: sabab ko'rsatilishi kerak"),
+  E("Tacrolimus, Prednisone...", "Такролимус, Преднизолон...", "Takrolimus, Prednizolon..."),
+  // AI chat
+  E("Auth error", "Ошибка авторизации", "Avtorizatsiya xatosi"),
+  E("Please sign in again", "Пожалуйста, войдите снова", "Iltimos, qayta kiring"),
+  E("Rate limit", "Лимит запросов", "So'rovlar chegarasi"),
+  E("AI credits exhausted", "Кредиты AI исчерпаны", "AI kreditlari tugadi"),
+  E("Chat error", "Ошибка чата", "Suhbat xatosi"),
+  E("Network error", "Ошибка сети", "Tarmoq xatosi"),
+  E("Unknown error", "Неизвестная ошибка", "Noma'lum xato"),
+  // Priority / prediction
+  E("Overdue lab tests", "Просроченные анализы", "Muddati o'tgan tahlillar"),
+  E("Medium risk", "Средний риск", "O'rta xavf"),
+  E("Prediction unavailable — manual clinical review required", "Прогноз недоступен — требуется ручная клиническая оценка", "Bashorat mavjud emas — shifokor ko'rigi talab qilinadi"),
+  E("Insufficient lab data — manual clinical review required", "Недостаточно анализов — требуется ручная клиническая оценка", "Tahlillar yetarli emas — shifokor ko'rigi talab qilinadi"),
+];
+
+const INDEX = new Map<string, Entry>();
+for (const e of ENTRIES) {
+  for (const v of [e.en, e.uz]) if (!INDEX.has(v)) INDEX.set(v, e);
+}
+
+export function translateUi(source: string, lang: Language): string {
+  const hit = INDEX.get(source);
+  if (hit) return hit[lang];
+  const missed = source.match(/^Missed medication (\d+) days$/);
+  if (missed) {
+    const n = missed[1];
+    return lang === "ru" ? `Пропуск лекарств ${n} дн.` : lang === "uz" ? `${n} kun dori o'tkazib yuborilgan` : source;
+  }
+  return source;
+}
+
+export function getStoredUiLang(): Language {
+  const saved = typeof localStorage !== "undefined" ? localStorage.getItem("app-lang") : null;
+  return saved === "en" || saved === "ru" || saved === "uz" ? saved : "en";
+}
+
+export function useTx(): (source: string) => string {
+  const { lang } = useLanguage();
+  return useCallback((source: string) => translateUi(source, lang), [lang]);
+}

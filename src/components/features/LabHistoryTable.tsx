@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { memo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -76,6 +77,7 @@ interface Props {
 }
 
 function LabHistoryTable({ labs, organType, showAll = false, editable = false, onLabChanged }: Props) {
+  const tx = useTx();
   const { t } = useLanguage();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -166,7 +168,7 @@ function LabHistoryTable({ labs, organType, showAll = false, editable = false, o
       ? window.prompt(t("detail.deleteReasonPrompt") ?? "Reason for deletion (required, min 3 chars):")
       : null)?.trim();
     if (!reason || reason.length < 3) {
-      toast({ title: t("common.error"), description: "Deletion cancelled: reason required", variant: "destructive" });
+      toast({ title: t("common.error"), description: tx("Deletion cancelled: reason required"), variant: "destructive" });
       return;
     }
     setLoading(true);

@@ -1,3 +1,4 @@
+import { translateUi, getStoredUiLang } from "@/i18n/uiText";
 import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -62,7 +63,7 @@ function PageLoader() {
     <div className="flex min-h-screen items-center justify-center text-muted-foreground">
       <div className="flex flex-col items-center gap-2">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <span className="text-sm">Loading...</span>
+        <span className="text-sm">{translateUi("Loading...", getStoredUiLang())}</span>
       </div>
     </div>
   );

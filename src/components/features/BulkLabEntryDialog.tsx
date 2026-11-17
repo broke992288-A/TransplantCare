@@ -1,3 +1,4 @@
+import { useTx } from "@/i18n/uiText";
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ function emptyRow(): RowData {
 }
 
 export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, patientData }: Props) {
+  const tx = useTx();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<RowData[]>(() => Array.from({ length: 5 }, emptyRow));
   const [errors, setErrors] = useState<Record<string, Set<string>>>({});
@@ -129,7 +131,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
 
   const handleSave = async () => {
     if (!validate()) {
-      toast({ title: "Validation errors", description: "Fix highlighted cells", variant: "destructive" });
+      toast({ title: tx("Validation errors"), description: tx("Fix highlighted cells"), variant: "destructive" });
       return;
     }
 
@@ -138,7 +140,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
     );
 
     if (dataRows.length === 0) {
-      toast({ title: "No data", description: "Enter at least one row", variant: "destructive" });
+      toast({ title: tx("No data"), description: tx("Enter at least one row"), variant: "destructive" });
       return;
     }
 
@@ -201,13 +203,13 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
         }
       }
 
-      setProgress("Finalizing...");
+      setProgress(tx("Finalizing..."));
       console.log("[BulkLabEntry] Done", { savedCount, failures });
 
       if (savedCount > 0) {
         toast({
-          title: `${savedCount} lab result(s) saved`,
-          description: failures.length ? `${failures.length} row(s) failed` : undefined,
+          title: `${savedCount} ${tx("lab result(s) saved")}`,
+          description: failures.length ? `${failures.length} ${tx("row(s) failed")}` : undefined,
           variant: failures.length ? "destructive" : "default",
         });
         setRows(Array.from({ length: 5 }, emptyRow));
@@ -217,7 +219,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
       } else {
         toast({
           title: t("common.error"),
-          description: failures[0] ?? "No rows were saved. Check console for details.",
+          description: failures[0] ?? tx("No rows were saved. Check console for details."),
           variant: "destructive",
         });
       }
@@ -321,10 +323,10 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
             <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
               {saving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> {tx("Saving...")}
                 </>
               ) : (
-                "Save All"
+                tx("Save All")
               )}
             </Button>
           </div>
