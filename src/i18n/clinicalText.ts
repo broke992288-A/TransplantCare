@@ -186,7 +186,7 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
   }
   // Match whole medication messages first: their sentence separator is part
   // of the template. Then localize each historical finding independently.
-  const segments = text.split(/(;\s*|\. (?=[A-Z_]))/);
+  const segments = text.split(/(;\s*|\. (?!(?:Eski doza|Previous dose|Прежняя доза):)(?=[A-Z_]))/);
   if (segments.length > 1) return segments.map((segment, i) => i % 2 ? segment : localizeClinicalText(segment, lang)).join("");
   if (lang === "en") {
     return text.replace(/Dori:/g, "Medication:").replace(/Eski doza:/g, "Previous dose:")
