@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { DateInputSeparate } from "@/components/features/DateInputSeparate";
 import { updatePatient } from "@/services/patientService";
+import { useTx } from "@/i18n/uiText";
 
 interface EditPatientDialogProps {
   patient: any;
@@ -18,6 +19,7 @@ interface EditPatientDialogProps {
 
 export default function EditPatientDialog({ patient, onUpdated }: EditPatientDialogProps) {
   const { t } = useLanguage();
+  const tx = useTx();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -133,8 +135,8 @@ export default function EditPatientDialog({ patient, onUpdated }: EditPatientDia
             <Select value={country} onValueChange={setCountry}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="uzbekistan">🇺🇿 O'zbekiston</SelectItem>
-                <SelectItem value="india">🇮🇳 India</SelectItem>
+                <SelectItem value="uzbekistan">🇺🇿 {tx("Uzbekistan")}</SelectItem>
+                <SelectItem value="india">🇮🇳 {tx("India")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

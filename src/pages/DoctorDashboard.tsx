@@ -15,29 +15,30 @@ import { riskColorClass } from "@/utils/risk";
 import { SkeletonTable } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
+import { useTx } from "@/i18n/uiText";
 
 /** Lightweight relative time for dashboard */
 function relativeLabText(recordedAt: string | undefined | null, t: (k: string) => string): string {
   if (!recordedAt) return t("dashboard.noRecentLabs");
   const days = Math.floor((Date.now() - new Date(recordedAt).getTime()) / 86400000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "1d ago";
-  return `${days}d ago`;
+  if (days <= 0) return t("schedule.today");
+  return `${days} ${t("time.daysAgo")}`;
 }
 
 /** Compact transplant age: 3d, 27d, 4mo, 2y */
-function txAgeText(transplantDate: string | undefined | null): string {
-  if (!transplantDate) return "Unknown";
+function txAgeText(transplantDate: string | undefined | null, t: (key: string) => string, tx: (text: string) => string): string {
+  if (!transplantDate) return tx("Unknown");
   const days = Math.floor((Date.now() - new Date(transplantDate).getTime()) / 86400000);
-  if (days < 0) return "Unknown";
-  if (days < 30) return `${days}d`;
-  if (days < 365) return `${Math.floor(days / 30)}mo`;
-  return `${Math.floor(days / 365)}y`;
+  if (days < 0) return tx("Unknown");
+  if (days < 30) return `${days} ${t("alerts.daysPostTx")}`;
+  if (days < 365) return `${Math.floor(days / 30)} ${t("alerts.monthsPostTx")}`;
+  return `${Math.floor(days / 365)} ${t("alerts.yearsPostTx")}`;
 }
 
 export default function DoctorDashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const tx = useTx();
   const { data, isLoading: loading } = useDoctorPatientsWithLabs();
   const { data: overdue } = useOverdueLabSchedules();
 
@@ -242,7 +243,7 @@ export default function DoctorDashboard() {
                           <Badge className={riskColorClass(p.risk_level)}>{t(`risk.${p.risk_level}`)}</Badge>
                         </TableCell>
                         <TableCell className="py-2 text-sm text-muted-foreground">{relativeLabText(lab?.recorded_at, t)}</TableCell>
-                        <TableCell className="py-2 text-sm text-muted-foreground">{txAgeText(p.transplant_date)}</TableCell>
+                        <TableCell className="py-2 text-sm text-muted-foreground">{txAgeText(p.transplant_date, t, tx)}</TableCell>
                         <TableCell className="py-2 text-muted-foreground"><ChevronRight className="h-4 w-4" /></TableCell>
                       </TableRow>
                     );

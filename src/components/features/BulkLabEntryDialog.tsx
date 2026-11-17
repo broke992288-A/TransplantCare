@@ -73,7 +73,7 @@ export default function BulkLabEntryDialog({ patientId, organType, onLabsAdded, 
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState("");
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const updateCell = useCallback((rowIdx: number, key: string, value: string) => {
     setRows((prev) => {

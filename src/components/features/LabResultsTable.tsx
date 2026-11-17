@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/useLanguage";
 import type { LabResult } from "@/types/patient";
+import { localizeParam } from "@/i18n/clinicalText";
 
 /** Keys of LabResult that hold numeric lab values */
 type LabValueKey = keyof Pick<LabResult,
@@ -62,7 +63,7 @@ interface Props {
 }
 
 function LabResultsTable({ labs }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   if (labs.length === 0) return <p className="text-muted-foreground text-sm py-4">{t("lab.noResults")}</p>;
 
@@ -74,7 +75,7 @@ function LabResultsTable({ labs }: Props) {
             const val = lab[key];
             if (val == null) return null;
             const status = getStatus(key, val, t);
-            return { key, label: ref.label, value: val, unit: ref.unit, range: `${ref.min}–${ref.max}`, status };
+            return { key, label: lang === "en" ? ref.label : localizeParam(key, lang), value: val, unit: ref.unit, range: `${ref.min}–${ref.max}`, status };
           })
           .filter(Boolean) as Array<{ key: string; label: string; value: number; unit: string; range: string; status: { label: string; color: string } }>;
 

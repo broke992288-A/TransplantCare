@@ -292,6 +292,7 @@ function DateGroupValues({
   onToggleVerify: (groupIndex: number, key: string, verified: boolean) => void;
 }) {
   const tx = useTx();
+  const { lang } = useLanguage();
   const filledFields = LAB_FIELDS.filter((f) => group.values[f.key] && group.values[f.key] !== "");
   const missingFields = LAB_FIELDS.filter((f) => !group.values[f.key] || group.values[f.key] === "");
   const lowConfFields = filledFields.filter(
