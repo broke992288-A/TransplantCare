@@ -1,4 +1,13 @@
+import { useLanguage } from "@/hooks/useLanguage";
+import { useTx } from "@/i18n/uiText";
+import { translateDocument } from "@/i18n/documentText";
+import LanguageSelector from "@/components/features/LanguageSelector";
+import { Button } from "@/components/ui/button";
+
 const Index = () => {
+  const { lang } = useLanguage();
+  const tx = useTx();
+  const td = (text: string) => translateDocument(text, lang);
   const tableData = [
     {
       category: "УМУМИЙ МАЪЛУМОТ",
@@ -61,13 +70,15 @@ const Index = () => {
     },
   ];
 
+  const localizedData = tableData.map(section => ({ category: td(section.category), rows: section.rows.map(row => row.map(td)) }));
+
   const copyTable = () => {
     let text = "";
-    tableData.forEach((section) => {
+    localizedData.forEach((section) => {
       text += `\n${"=".repeat(100)}\n`;
       text += `${section.category}\n`;
       text += `${"=".repeat(100)}\n`;
-      const headers = ["Хусусият", "Health C R", "Dream Weaver", "Transplant Guardian"];
+      const headers = [td("Хусусият"), "Health C R", "Dream Weaver", "Transplant Guardian"];
       const colWidths = [30, 22, 22, 22];
       text += headers.map((h, i) => h.padEnd(colWidths[i])).join(" | ") + "\n";
       text += colWidths.map((w) => "-".repeat(w)).join("-+-") + "\n";
@@ -77,15 +88,15 @@ const Index = () => {
     });
 
     navigator.clipboard.writeText(text).then(() => {
-      alert("Жадвал нусха олинди! ✅");
+      alert(td("Жадвал нусха олинди! ✅"));
     });
   };
 
   const copyMarkdown = () => {
-    let md = "# 🏥 Уч лойиҳа солиштирмаси\n\n";
-    tableData.forEach((section) => {
+    let md = `# ${tx("Project comparison")}\n\n`;
+    localizedData.forEach((section) => {
       md += `## ${section.category}\n\n`;
-      md += "| Хусусият | Health C R | Dream Weaver | Transplant Guardian |\n";
+      md += `| ${td("Хусусият")} | Health C R | Dream Weaver | Transplant Guardian |\n`;
       md += "|----------|-----------|--------------|---------------------|\n";
       section.rows.forEach((row) => {
         md += `| ${row.join(" | ")} |\n`;
@@ -94,7 +105,7 @@ const Index = () => {
     });
 
     navigator.clipboard.writeText(md).then(() => {
-      alert("Markdown жадвал нусха олинди! ✅");
+      alert(td("Markdown жадвал нусха олинди! ✅"));
     });
   };
 
@@ -103,25 +114,26 @@ const Index = () => {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-foreground md:text-3xl">
-            🏥 Уч лойиҳа солиштирмаси
+            {tx("Project comparison")}
           </h1>
-          <div className="flex gap-2">
-            <button
+          <div className="flex flex-wrap gap-2">
+            <LanguageSelector />
+            <Button
               onClick={copyTable}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              📋 Текст нусха
-            </button>
-            <button
+              {tx("Copy text")}
+            </Button>
+            <Button
               onClick={copyMarkdown}
               className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
             >
-              📝 Markdown нусха
-            </button>
+              {tx("Copy Markdown")}
+            </Button>
           </div>
         </div>
 
-        {tableData.map((section, si) => (
+        {localizedData.map((section, si) => (
           <div key={si} className="mb-6">
             <h2 className="mb-3 text-lg font-semibold text-foreground">
               {section.category}
@@ -130,7 +142,7 @@ const Index = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted">
-                    <th className="p-3 text-left font-semibold text-muted-foreground">Хусусият</th>
+                    <th className="p-3 text-left font-semibold text-muted-foreground">{td("Хусусият")}</th>
                     <th className="p-3 text-left font-semibold text-muted-foreground">Health C R</th>
                     <th className="p-3 text-left font-semibold text-muted-foreground">Dream Weaver</th>
                     <th className="p-3 text-left font-semibold text-muted-foreground">Transplant Guardian</th>

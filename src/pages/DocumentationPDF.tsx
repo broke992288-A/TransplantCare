@@ -1,3 +1,8 @@
+import { useLanguage, type Language } from "@/hooks/useLanguage";
+import { useTx } from "@/i18n/uiText";
+import { translateDocument } from "@/i18n/documentText";
+import LanguageSelector from "@/components/features/LanguageSelector";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileDown, CheckCircle, Loader2, Languages } from "lucide-react";
@@ -47,7 +52,8 @@ function t(text: string, variant: Variant): string {
 
 /* ═══════════════ PDF ГЕНЕРАТОР (pdfmake) ═══════════════ */
 
-async function generateDoc(variant: Variant) {
+async function generateDoc(variant: Variant, lang: Language) {
+  const t = (text: string, script: Variant) => lang === "uz" ? (script === "cyr" ? uzToCyr(text) : text) : translateDocument(text, lang);
   const pdfMakeModule = await import('pdfmake/build/pdfmake');
   const pdfFontsModule = await import('pdfmake/build/vfs_fonts');
   const pdfMake = pdfMakeModule.default || pdfMakeModule;
@@ -64,8 +70,8 @@ async function generateDoc(variant: Variant) {
   const DARK = '#212121';
   const GREY = '#646464';
 
-  const today = new Date().toLocaleDateString('uz-UZ');
-  const variantLabel = variant === 'lat' ? 'Lotin alifbosi' : 'Кирил алифбоси';
+  const today = new Date().toLocaleDateString(lang === 'ru' ? 'ru-RU' : lang === 'uz' ? 'uz-UZ' : 'en-GB');
+  const variantLabel = lang === 'uz' ? (variant === 'lat' ? 'Lotin alifbosi' : 'Кирил алифбоси') : lang === 'ru' ? 'Русский' : 'English';
 
   /* --- Section helper --- */
   function section(num: number, title: string): any {
@@ -641,7 +647,7 @@ async function generateDoc(variant: Variant) {
     styles: {},
   };
 
-  const fileName = variant === 'lat'
+  const fileName = lang !== 'uz' ? `TransplantCare_Technical_Document_${lang}.pdf` : variant === 'lat'
     ? 'TransplantCare_Texnik_Hujjat_Lotin.pdf'
     : 'TransplantCare_Техник_Ҳужжат_Кирил.pdf';
 
@@ -650,6 +656,8 @@ async function generateDoc(variant: Variant) {
 
 /* ════════════════ REACT SAHIFA ════════════════ */
 export default function DocumentationPDF() {
+  const { lang } = useLanguage();
+  const tx = useTx();
   const [statusLat, setStatusLat] = useState<"idle" | "generating" | "done">("idle");
   const [statusCyr, setStatusCyr] = useState<"idle" | "generating" | "done">("idle");
 
@@ -657,7 +665,7 @@ export default function DocumentationPDF() {
     const setStatus = variant === 'lat' ? setStatusLat : setStatusCyr;
     setStatus("generating");
     try {
-      await generateDoc(variant);
+      await generateDoc(variant, lang);
       setStatus("done");
     } catch (e) {
       console.error("PDF generation error:", e);
@@ -677,12 +685,12 @@ export default function DocumentationPDF() {
         {status === "generating" ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            {variant === 'lat' ? "Yaratilmoqda..." : "Яратилмоқда..."}
+            {tx("Generating...")}
           </>
         ) : status === "done" ? (
           <>
             <CheckCircle className="h-5 w-5" />
-            {variant === 'lat' ? "Tayyor! Qayta yuklash" : "Тайёр! Қайта юклаш"}
+            {tx("Ready! Download again")}
           </>
         ) : (
           <>
@@ -701,21 +709,22 @@ export default function DocumentationPDF() {
         <div className="rounded-full bg-primary/10 p-4">
           <Languages className="h-10 w-10 text-primary" />
         </div>
+        <LanguageSelector />
         <h1 className="text-2xl font-bold text-foreground text-center">
-          TransplantCare Texnik Hujjat
+          {tx("TransplantCare Technical Document")}
         </h1>
         <p className="text-sm text-muted-foreground text-center">
-          15 bo'limli to'liq texnik hujjatlashtirish — PDF formatda, rangli jadvallar va diagrammalar bilan.
+          {tx("Technical documentation — 15 sections with tables and diagrams in PDF format.")}
         </p>
 
         <div className="flex flex-col gap-4 w-full">
-          {renderButton('lat', statusLat, "Lotin alifbosida yuklab olish", "O'zbek tili — Lotin (a, b, c...)")}
-          {renderButton('cyr', statusCyr, "Кирил алифбосида юклаб олиш", "Ўзбек тили — Кирил (а, б, в...)")}
+          {renderButton('lat', statusLat, lang === "uz" ? tx("Download in Latin alphabet") : tx("Download PDF"), lang === "uz" ? "O'zbek" : lang === "ru" ? "Русский" : "English")}
+          {lang === "uz" && renderButton('cyr', statusCyr, tx("Download in Cyrillic alphabet"), "O'zbek — kirill")}
         </div>
 
         {(statusLat === "done" || statusCyr === "done") && (
           <p className="text-xs text-green-600">
-            ✅ Fayl muvaffaqiyatli yuklab olindi!
+            ✅ {tx("File downloaded successfully!")}
           </p>
         )}
       </div>
