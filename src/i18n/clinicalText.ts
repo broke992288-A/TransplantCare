@@ -165,10 +165,10 @@ const LEGACY_RULES: { re: RegExp; out: (m: RegExpMatchArray, lang: Language) => 
     out: (m, lang) => `${localizeParam(m[1], lang)} ${m[2]} ${m[3]} ${m[4]}` },
   { re: /^Re-transplant patient$/, out: (_, lang) => ({ uz: "Qayta transplantatsiya qilingan bemor", ru: "Пациент после повторной трансплантации", en: "Re-transplant patient" })[lang] },
   { re: /^Multiple abnormal:\s*(\d+)$/, out: (m, lang) => `${({ uz: "Bir nechta chetlanish", ru: "Несколько отклонений", en: "Multiple abnormal" })[lang]}: ${m[1]}` },
+  { re: /^Sabab:\s*(.*)$/s, out: (m, lang) => `${({ uz: "Sabab", ru: "Причина", en: "Reason" })[lang]}: ${localizeClinicalText(m[1], lang)}` },
   { re: /^(?:Dori|Препарат|Medication):\s*(.*?)\.\s*(?:Eski doza|Прежняя доза|Previous dose):\s*(.*?)\s*→\s*(?:Yangi doza|Новая доза|New dose):\s*(.*)$/s,
     out: (m, lang) => {
       const labels = { uz: ["Dori", "Eski doza", "Yangi doza"], ru: ["Препарат", "Прежняя доза", "Новая доза"], en: ["Medication", "Previous dose", "New dose"] }[lang];
-      return `${labels[0]}: ${m[1]}. ${labels[1]}: ${m[2]} → ${labels[2]}: ${m[3]}`;
     } },
 ];
 
@@ -180,6 +180,8 @@ export function localizeClinicalText(text: string | null | undefined, lang: Lang
     const match = text.match(rule.re);
     if (match) return rule.out(match, lang);
   }
+  const segments = text.split(/(;\s*|\. (?!(?:Eski doza|Previous dose|Прежняя доза):)(?=[A-Z_]|[a-z_]+:\s*\d))/);
+  if (segments.length > 1) return segments.map((segment, i) => i % 2 ? segment : localizeClinicalText(segment, lang)).join("");
   for (const rule of LEGACY_RULES) {
     const match = text.match(rule.re);
     if (match) return rule.out(match, lang);
