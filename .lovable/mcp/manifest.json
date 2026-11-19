@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "sdk_version": "3.6.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://uszimflqyqmhlxbizcre.supabase.co/auth/v1",
+    "require_oauth_client_claim": true,
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "transplantcare",
+      "version": "0.1.0",
+      "title": "TransplantCare"
+    },
+    "tools": [
+      {
+        "name": "get_account_access",
+        "title": "Account access",
+        "description": "Read only the caller's assigned TransplantCare roles; no patient records or clinical actions are exposed.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

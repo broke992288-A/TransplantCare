@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = oauthReturnPath(params.get("next"));
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -55,7 +58,7 @@ export default function Login() {
         } catch (auditErr) {
           console.warn("[Login] audit log failed (non-blocking)", auditErr);
         }
-        navigate("/select-role", { replace: true });
+        navigate(next === "/" ? "/select-role" : next, { replace: true });
       }
     } catch (err: unknown) {
       const anyErr = err as { message?: unknown; error_description?: unknown; msg?: unknown };
@@ -188,7 +191,7 @@ export default function Login() {
             ) : (
               <div className="mt-4 text-center text-sm text-muted-foreground">
                 {t("login.dontHave")}{" "}
-                <Link to="/signup" className="font-medium text-primary hover:underline">
+                <Link to={next === "/" ? "/signup" : "/signup?next=" + encodeURIComponent(next)} className="font-medium text-primary hover:underline">
                   {t("login.signUp")}
                 </Link>
               </div>

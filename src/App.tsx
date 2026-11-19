@@ -15,6 +15,7 @@ import { handleError } from "@/utils/errorHandler";
 
 // Lazy-loaded pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const Signup = lazy(() => import("./pages/Signup"));
 const SelectRole = lazy(() => import("./pages/SelectRole"));
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
@@ -127,6 +128,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/.lovable/oauth/consent" element={<RouteWrap><OAuthConsent /></RouteWrap>} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/select-role" element={<SelectRole />} />

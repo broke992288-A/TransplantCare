@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,8 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = oauthReturnPath(params.get("next"));
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -43,9 +46,9 @@ export default function Signup() {
       const normalizedPhone = mode === "phone" ? normalizePhone(phone) : "";
 
       if (mode === "email") {
-        await signUpWithEmail(email.trim(), password, fullName.trim());
+        await signUpWithEmail(email.trim(), password, fullName.trim(), undefined, new URL(next, window.location.origin).href);
       } else {
-        await signUpWithPhone(normalizedPhone, password, fullName.trim());
+        await signUpWithPhone(normalizedPhone, password, fullName.trim(), new URL(next, window.location.origin).href);
       }
 
       // Auto sign-in so we can call register_patient_self under the new user
@@ -62,7 +65,7 @@ export default function Signup() {
       }
 
       toast({ title: t("signup.success"), description: t("signup.successDesc") });
-      navigate("/login", { replace: true });
+      navigate(next === "/" ? "/login" : "/login?next=" + encodeURIComponent(next), { replace: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       toast({ title: t("common.error"), description: message, variant: "destructive" });
@@ -174,7 +177,7 @@ export default function Signup() {
 
             <div className="mt-4 text-center text-sm text-muted-foreground">
               {t("signup.haveAccount")}{" "}
-              <Link to="/login" className="font-medium text-primary hover:underline">
+              <Link to={next === "/" ? "/login" : "/login?next=" + encodeURIComponent(next)} className="font-medium text-primary hover:underline">
                 {t("signup.signIn")}
               </Link>
             </div>

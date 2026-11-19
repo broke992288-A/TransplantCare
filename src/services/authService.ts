@@ -19,12 +19,14 @@ export async function signUpWithPhone(
   phone: string,
   password: string,
   fullName: string,
+  emailRedirectTo?: string,
 ) {
   const email = phoneToEmail(phone);
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo,
       data: { full_name: fullName, phone: phone },
     },
   });
@@ -35,13 +37,14 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   fullName: string,
-  phone?: string
+  phone?: string,
+  emailRedirectTo?: string,
 ) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: window.location.origin,
+      emailRedirectTo: emailRedirectTo ?? window.location.origin,
       data: { full_name: fullName, phone: phone || "" },
     },
   });

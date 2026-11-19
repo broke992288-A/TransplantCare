@@ -15,6 +15,8 @@ import { SkeletonTable } from "@/components/ui/skeleton-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { PatientFilters } from "@/services/patientService";
 import { useTx } from "@/i18n/uiText";
+import { useWebMCP } from "use-webmcp-tool";
+import { runWebMCPTool } from "@/lib/webmcp-telemetry";
 
 const PAGE_SIZE = 20;
 
@@ -45,6 +47,24 @@ export default function Patients() {
   const handleSearchChange = useCallback((v: string) => { setSearchQuery(v); setPage(1); }, []);
   const handleOrganChange = useCallback((v: string) => { setOrganFilter(v); setPage(1); }, []);
   const handleRiskChange = useCallback((v: string) => { setRiskFilter(v); setPage(1); }, []);
+
+  useWebMCP({
+    name: "read_visible_patient_list",
+    description: "Read the names and IDs on the currently displayed patient page, respecting its filters and permissions.",
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    execute: () => runWebMCPTool("read_visible_patient_list", () => loading || isFetching ? "Patient list is loading." : patients.length === 0 ? "No patients shown." : patients.map(patient => `${patient.id}: ${patient.full_name}`).join("\n")),
+  });
+  useWebMCP<{ patient_id: string }>({
+    name: "open_visible_patient",
+    description: "Open a patient record from the currently displayed patient page; use an ID returned by read_visible_patient_list.",
+    enabled: !loading && !isFetching,
+    inputSchema: { type: "object", properties: { patient_id: { type: "string", description: "ID of a patient visible on the current page." } }, required: ["patient_id"], additionalProperties: false },
+    execute: ({ patient_id }) => runWebMCPTool("open_visible_patient", () => {
+      if (typeof patient_id !== "string" || loading || isFetching || !patients.some(patient => patient.id === patient_id)) throw new Error("Patient is not available in the current view.");
+      navigate(`/patient/${patient_id}`);
+      return "Patient record opened.";
+    }),
+  });
 
   const getRiskBadge = (level: string) => <Badge className={riskColorClass(level)}>{t(`risk.${level}`)}</Badge>;
 
