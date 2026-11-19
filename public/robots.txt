@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://transplantcare-uz.lovable.app/sitemap.xml
