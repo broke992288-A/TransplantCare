@@ -15,6 +15,13 @@
       "when": 1794899277729,
       "tag": "0001_scope_reference_tables_to_role_holders",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795105807361,
+      "tag": "0002_prevent_phone_based_patient_claim",
+      "breakpoints": true
     }
   ]
 }

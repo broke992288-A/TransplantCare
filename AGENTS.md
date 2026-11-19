@@ -3,3 +3,4 @@ Shared controls use reactive localized labels; authored notes use TranslatedText
 MCP server tools live in src/lib/mcp with OAuth client-claim validation and caller-scoped RLS clients; expose only own account roles initially because clinical-data integrations require separately defined safe capabilities.
 Browser tools use use-webmcp-tool in the visible screen owner with shared UI guards and static telemetry; keep them separate from remote MCP to preserve session and visibility boundaries.
 OAuth login and signup preserve validated same-origin return paths so authorization requests survive authentication without open redirects.
+Self-registration may reuse only a patient record already linked to the caller; phone numbers are contact data, not proof of medical-record ownership.
