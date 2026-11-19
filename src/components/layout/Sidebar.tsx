@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Pill, AlertTriangle, FileText, Activity, Sparkles, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import logoEmblem from "@/assets/transplantcare-emblem.png.asset.json";
+import logoImg from "@/assets/logo.png";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useTx } from "@/i18n/uiText";
@@ -32,7 +32,7 @@ export function Sidebar() {
     <aside className="w-56 min-h-screen bg-sidebar text-sidebar-foreground flex flex-col">
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img src={logoEmblem.url} alt="TransplantCare" className="w-10 h-10 object-contain" />
+          <img src={logoImg} alt="Logo" className="w-10 h-10 rounded-full object-cover" />
           <span className="font-semibold text-sm leading-tight">{t("app.name")}</span>
         </div>
       </div>
