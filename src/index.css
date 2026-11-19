@@ -44,6 +44,10 @@ All colors MUST be HSL.
     --liver: 15 72% 45%;
 
     --radius: 0.625rem;
+    --watermark-opacity: 0.26;
+    --login-background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--primary) / 0.07));
+    --login-card-opacity: 0.66;
+    --login-shadow: 0 18px 55px hsl(var(--primary) / 0.08);
 
     --sidebar-background: 210 25% 97%;
     --sidebar-foreground: 220 20% 25%;
@@ -56,6 +60,7 @@ All colors MUST be HSL.
   }
 
   .dark {
+    --login-card-opacity: 0.84;
     --background: 220 25% 7%;
     --foreground: 210 20% 95%;
 
@@ -99,6 +104,27 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 199 60% 70%;
     --sidebar-border: 220 18% 14%;
     --sidebar-ring: 199 89% 48%;
+  }
+}
+
+@layer components {
+  .login-scene { background: var(--login-background); font-size: 16px; }
+  .login-watermark {
+    width: min(760px, 94vw);
+    max-height: 92%;
+    object-fit: contain;
+    left: 50%;
+    top: 54%;
+    transform: translate(-50%, -50%);
+    opacity: var(--watermark-opacity);
+  }
+  .login-scene .login-glass {
+    background: hsl(var(--card) / var(--login-card-opacity));
+    box-shadow: var(--login-shadow);
+  }
+  .login-scene .login-input { background: hsl(var(--background) / 0.72); }
+  @media (max-width: 640px) {
+    .login-watermark { width: 100vw; max-width: none; top: 54%; }
   }
 }
 
