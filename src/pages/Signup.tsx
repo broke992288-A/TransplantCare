@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail, Phone, Eye, EyeOff } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+import logoFull from "@/assets/transplantcare-logo-full.png.asset.json";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import LanguageSelector from "@/components/features/LanguageSelector";
@@ -76,7 +76,7 @@ export default function Signup() {
       <div className="w-full max-w-md space-y-6">
         <div className="flex justify-end"><LanguageSelector /></div>
         <div className="flex flex-col items-center gap-3">
-          <img src={logoImg} alt="Logo" className="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-primary/25" />
+          <img src={logoFull.url} alt="TransplantCare" className="h-32 w-auto sm:h-36" />
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">{t("login.title")}</h1>
           </div>
